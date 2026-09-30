@@ -1,6 +1,7 @@
 import { voteRequest, currentVotes } from './vote.mjs';
 const status = document.querySelector('#status');
 let reading = false, dirty = false;
+let participant = null;
 async function refresh() {
   dirty = true;
   if (reading) return;
@@ -10,8 +11,10 @@ async function refresh() {
       dirty = false;
       const response = await fetch('/data/votes.html', { cache: 'no-store' });
       if (!response.ok) throw Error('The room could not be loaded. Reconnecting…');
-      const votes = currentVotes(new DOMParser().parseFromString(await response.text(), 'text/html'));
+      const votes = currentVotes(new DOMParser().parseFromString(await response.text(), 'text/html'), participant);
       document.querySelector('#totals').textContent = `Tea ${votes.tea} · Coffee ${votes.coffee}`;
+      document.querySelector('#mine').textContent = votes.mine ? `Your current choice: ${votes.mine}.` : '';
+      for (const button of document.querySelectorAll('[data-choice]')) button.setAttribute('aria-pressed', String(button.dataset.choice === votes.mine));
     }
   } catch (error) { status.textContent = error.message; }
   finally { reading = false; }
@@ -26,7 +29,7 @@ for (const button of document.querySelectorAll('[data-choice]')) button.addEvent
   const buttons = [...document.querySelectorAll('button')];
   buttons.forEach(item => { item.disabled = true; });
   try {
-    const participant = await pagelike.participate();
+    participant = await pagelike.participate();
     const response = await fetch('/data/votes.html', voteRequest(participant, button.dataset.choice));
     if (!response.ok) throw Error(`Your choice was not saved (${response.status}). Please try again.`);
     status.textContent = 'Your latest choice counts.';
@@ -35,3 +38,5 @@ for (const button of document.querySelectorAll('[data-choice]')) button.addEvent
   finally { buttons.forEach(item => { item.disabled = false; }); }
 });
 await refresh();
+participant = await pagelike.identity();
+if (participant) await refresh();

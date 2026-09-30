@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.1
+
+- Teach posts to restore returning participants on open with
+  `pagelike.identity()`, while keeping first-time and signed-out viewers anonymous.
+- Show an existing choice in the vote example before another click, and include
+  a browser check that opening the example writes no contribution.
+- Refresh both distributions from Control's verified public skill snapshot.
+
 ## 0.5.0
 
 - Extract the creator plugin into its own public, MIT-licensed repository.

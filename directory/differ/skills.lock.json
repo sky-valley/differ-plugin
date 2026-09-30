@@ -77,8 +77,13 @@
     },
     {
       "uri": "skill://publish-content/examples/vote/README.md",
-      "digest": "sha256:136357a5930e8e61fe1f3161db053435d81341526445b0edfda1e815b4cdc2d2",
-      "size": 1889
+      "digest": "sha256:d291254b1d3fceea3b3b829a8ff8125b6ed1b1e729bc57576c682a5f9097a3e2",
+      "size": 2589
+    },
+    {
+      "uri": "skill://publish-content/examples/vote/check-browser.mjs",
+      "digest": "sha256:44f2d6c31a07f59ae8cb0ed7655d06309b6cffb38081d27baf27cb6b7d8f5b79",
+      "size": 1819
     },
     {
       "uri": "skill://publish-content/examples/vote/check.mjs",
@@ -87,8 +92,8 @@
     },
     {
       "uri": "skill://publish-content/examples/vote/content/app.mjs",
-      "digest": "sha256:e1010cb228523ebdc499d008c15c201b290149dce297192253420dd0e9a3dfc6",
-      "size": 1952
+      "digest": "sha256:237ee0de7f0968ec43f19ffc21fd5077e8d0778cf9f49b38d9102a68a167596e",
+      "size": 2321
     },
     {
       "uri": "skill://publish-content/examples/vote/content/data/votes.html",
@@ -97,8 +102,8 @@
     },
     {
       "uri": "skill://publish-content/examples/vote/content/index.html",
-      "digest": "sha256:d44bec3347f4c4536a15fc9633ab9f9b4e255618edb6d498d9a8d08be0f99d1d",
-      "size": 1131
+      "digest": "sha256:ce0aa62697568b6f1d683b21748f48d7cb9cc1436f87e07099aabfe03f5d1a57",
+      "size": 1168
     },
     {
       "uri": "skill://publish-content/examples/vote/content/rules.html",
@@ -107,8 +112,8 @@
     },
     {
       "uri": "skill://publish-content/examples/vote/content/vote.mjs",
-      "digest": "sha256:3ce07820bfba8d8792bbea28671d7d835b3e3c5a1011e65ec7215d999bb22502",
-      "size": 894
+      "digest": "sha256:1eeac58ec35de44f18b68064a0de2da6e30e13d6486a7c29f197397295f23fa1",
+      "size": 978
     },
     {
       "uri": "skill://publish-content/references/connector.md",
@@ -122,8 +127,8 @@
     },
     {
       "uri": "skill://publish-content/references/participation.md",
-      "digest": "sha256:a4f05532cd9159907852fe1795e12705acd2deb0ec05acf2135fd2385ac43271",
-      "size": 7620
+      "digest": "sha256:b8ff86ab2003b6ad5a4f044f420f428d190f2478c64a9576019d17197dc67513",
+      "size": 8108
     },
     {
       "uri": "skill://publish-content/references/setup.md",
