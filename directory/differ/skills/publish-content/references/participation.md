@@ -14,9 +14,17 @@ authored files, rules and seeds. Never download live visitor data into a remix.
 Use relative authored asset URLs to stay on the selected version; root URLs
 address the current post. Live data always uses root `/data/...` URLs.
 
-Load `<script src="/-/client.js"></script>`. When someone explicitly chooses
+Load `<script src="/-/client.js"></script>`. On load, call
+`await pagelike.identity()` to quietly restore a returning participant's opaque
+post identity, including on another device signed into the same account. It
+returns `null` for first-time or signed-out visitors and when identity is
+unavailable, without a popup. Use the returned identity to read and mark their
+existing entries; restoration never adds a contribution. Keep public reads and
+local play usable while it resolves. Do not infer ownership from localStorage.
+
+When someone explicitly chooses
 to contribute, call `await pagelike.participate()`. Player handles sign-in and
-consent, and the runtime sets its host-only HttpOnly partitioned cookie. The
+participation, and the runtime sets its host-only HttpOnly partitioned cookie. The
 result is an opaque identity string stable within this post. No email,
 handle or cross-post identity is disclosed. Then use same-origin `fetch`:
 
