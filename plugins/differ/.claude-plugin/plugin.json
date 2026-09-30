@@ -1,0 +1,19 @@
+{
+  "name": "differ",
+  "version": "0.5.0",
+  "description": "Create, preview, publish and revise interactive social posts.",
+  "author": {
+    "name": "Sky Valley",
+    "url": "https://skyvalley.ac"
+  },
+  "homepage": "https://github.com/sky-valley/differ-plugin",
+  "repository": "https://github.com/sky-valley/differ-plugin",
+  "license": "MIT",
+  "keywords": [
+    "differ",
+    "interactive",
+    "publishing",
+    "participation"
+  ],
+  "displayName": "Differ"
+}

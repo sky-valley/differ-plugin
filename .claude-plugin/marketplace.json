@@ -1,0 +1,15 @@
+{
+  "name": "differ",
+  "owner": {
+    "name": "Sky Valley"
+  },
+  "metadata": {
+    "description": "Differ creation skills and local publishing helper."
+  },
+  "plugins": [
+    {
+      "name": "differ",
+      "source": "./plugins/differ"
+    }
+  ]
+}

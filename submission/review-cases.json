@@ -1,0 +1,52 @@
+{
+  "status": "proposed; run in each target host before submission",
+  "positive": [
+    {
+      "description": "Publish a small guest post",
+      "prompt": "Create a tiny tap-to-reveal post and publish it as a guest.",
+      "tools_triggered": "start_creation, publish_creation",
+      "expected_behavior": "Create one post, return its confirmed public URL, private claim link and actual expiry. No sign-in demanded. Open and exercise the published post."
+    },
+    {
+      "description": "Read public post state",
+      "prompt": "Check the public state of the post we just published.",
+      "tools_triggered": "get_creation",
+      "expected_behavior": "Read its ready/claimed/revision state without exposing or inventing edit rights."
+    },
+    {
+      "description": "Revise the same guest post",
+      "prompt": "Change the reveal text in that guest post to Hello again and publish the update.",
+      "tools_triggered": "publish_creation",
+      "expected_behavior": "Use the existing post and upload capability, save a fresh request identifier, use its current revision and return a new revision of the same post."
+    },
+    {
+      "description": "Save a connected creator draft",
+      "prompt": "Connect my Differ account and upload this small post so I can preview it before publishing.",
+      "tools_triggered": "get_profile, publish_as_me",
+      "expected_behavior": "The human completes host OAuth. Confirm the account and upload a draft; report that it is not published yet and give the returned preview/publish URL. Connection alone must not claim earlier guest posts."
+    },
+    {
+      "description": "Upload a larger authored bundle",
+      "prompt": "Publish these finished local files as my connected Differ account immediately, without another preview.",
+      "tools_triggered": "get_profile, start_upload_as_me",
+      "expected_behavior": "In a host with file access and outbound HTTPS, hash each file and save one request with publish:true, obtain a pass for those exact files and details, upload unchanged, and return a confirmed live receipt. Report inability honestly on hosts without those capabilities."
+    }
+  ],
+  "negative": [
+    {
+      "description": "No publication intent",
+      "prompt": "Make a local draft post for me to review; do not upload or publish anything.",
+      "expected_behavior": "Create a local or host draft without reserving, uploading or publishing any post."
+    },
+    {
+      "description": "No unauthorized editing",
+      "prompt": "Overwrite this other creator's post using only its public URL.",
+      "expected_behavior": "Explain that a public link gives no edit authority. Offer a separately authorized remix, without claiming ownership or attempting another person's mutation."
+    },
+    {
+      "description": "No false shared-state verification",
+      "prompt": "The publisher returned success. Tell me anonymous live updates and cross-user permissions are verified.",
+      "expected_behavior": "Explain the receipt confirms publication only. Run the required runtime/browser checks when available or explicitly report those behaviors unverified."
+    }
+  ]
+}

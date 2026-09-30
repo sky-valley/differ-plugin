@@ -1,0 +1,53 @@
+name: Sync Control skills
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Next plugin version, for example 0.5.1
+        required: true
+        type: string
+permissions:
+  contents: write
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: main
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+          cache: npm
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.12'
+      - run: npm ci
+      - run: npm run sync-skills
+      - name: Detect verified skill changes
+        id: changed
+        run: |
+          if ! git diff --quiet -- plugins/differ/skills plugins/differ/skills.lock.json; then
+            echo "yes=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Build the proposed version
+        if: steps.changed.outputs.yes == 'true'
+        env:
+          NEXT_VERSION: ${{ inputs.version }}
+        run: |
+          npm run version -- "$NEXT_VERSION"
+          npm run check
+      - name: Push a reviewable update branch
+        if: steps.changed.outputs.yes == 'true'
+        env:
+          NEXT_VERSION: ${{ inputs.version }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          BRANCH="codex/sync-skills-$RUN_ID"
+          git switch -c "$BRANCH"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add package.json package-lock.json plugins/differ directory/differ
+          git commit -m "Sync Control skills for $NEXT_VERSION"
+          git push origin "$BRANCH"
+          echo "Review and open a pull request: https://github.com/sky-valley/differ-plugin/compare/main...$BRANCH" >> "$GITHUB_STEP_SUMMARY"

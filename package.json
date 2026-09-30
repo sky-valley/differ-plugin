@@ -1,0 +1,32 @@
+{
+  "name": "differ-plugin",
+  "version": "0.5.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "node --test test/*.test.mjs",
+    "sync-skills": "node scripts/sync-skills.mjs",
+    "check-skills": "node scripts/sync-skills.mjs --check",
+    "check": "npm run build && npm test && node scripts/validate.mjs",
+    "release": "python3 scripts/package-release.py",
+    "version": "node scripts/version.mjs",
+    "check-service": "node scripts/check-service.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.30.0",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.12"
+  },
+  "license": "MIT",
+  "description": "Differ creation skills and publishing helper",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sky-valley/differ-plugin.git"
+  }
+}

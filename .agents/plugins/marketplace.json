@@ -1,0 +1,20 @@
+{
+  "name": "differ",
+  "interface": {
+    "displayName": "Differ"
+  },
+  "plugins": [
+    {
+      "name": "differ",
+      "source": {
+        "source": "local",
+        "path": "./plugins/differ"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

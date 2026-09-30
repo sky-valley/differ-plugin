@@ -1,0 +1,19 @@
+<!doctype html><title>Sky permissions</title>
+<div itemscope itemtype="https://pagelove.org/AuthorizationRule"><meta itemprop="actor" content="*"><meta itemprop="resource" content="/data/skies.html"><meta itemprop="method" content="GET"><meta itemprop="action" content="Allow"></div>
+<div itemscope itemtype="https://pagelove.org/AuthorizationRule"><meta itemprop="actor" content="users"><meta itemprop="resource" content="/data/skies.html"><meta itemprop="method" content="POST"><meta itemprop="selector" content="#skies"><meta itemprop="action" content="Allow"></div>
+<div itemscope itemtype="https://pagelove.org/AuthorizationRule"><meta itemprop="actor" content="users"><meta itemprop="resource" content="/uploads/${request.auth.username}/*"><meta itemprop="method" content="PUT"><meta itemprop="action" content="Allow"></div>
+<div itemscope itemtype="https://pagelove.org/Trigger"><meta itemprop="resource" content="/data/skies.html"><meta itemprop="method" content="POST">
+<div itemprop="action" itemscope itemtype="https://pagelove.org/Sessel"><script itemprop="source" type="text/sessel">
+@schema Context url("https://pagelove.org/Context");
+@schema HTTPResponse url("https://pagelove.org/HTTPResponse");
+let body = Document.parse("<div>" + Context.request.body + "</div>");
+if (body.children().count() != 1 || body.${li}.count() != 1 || body.${img}.count() != 1) {
+  throw new HTTPResponse { status: 422, message: "Submit one sky photo." }
+}
+let entry = body.children().first();
+let src = body.${img}.first().attr("src");
+if (entry.attr("data-owner") != Context.request.auth.username || src.startsWith("/uploads/" + Context.request.auth.username + "/") == false || src.matches("[.][.]|%|[?#]") == true) {
+  throw new HTTPResponse { status: 403, message: "Share only your own uploaded photo." }
+}
+</script></div></div>
+<div itemscope itemtype="https://pagelove.org/ShapeConstraint"><meta itemprop="resource" content="/data/skies.html"><meta itemprop="selector" content="#skies"><code itemprop="permit">ul[id="skies"]</code><code itemprop="permit">li[data-owner][data-contribution-id]</code><code itemprop="permit">img[src][alt]</code></div>

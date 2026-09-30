@@ -1,0 +1,39 @@
+<!doctype html><title>Vote permissions</title>
+<p>Anyone reads and follows. Signed-in people append choices only as themselves.
+The latest remaining choice per identity counts; deleting it reveals an earlier
+choice, if one remains. Player provides contribution removal and moderation.</p>
+<div itemscope itemtype="https://pagelove.org/AuthorizationRule">
+  <meta itemprop="actor" content="*"><meta itemprop="resource" content="/data/votes.html">
+  <meta itemprop="method" content="GET"><meta itemprop="action" content="Allow">
+</div>
+<div itemscope itemtype="https://pagelove.org/AuthorizationRule">
+  <meta itemprop="actor" content="users"><meta itemprop="resource" content="/data/votes.html">
+  <meta itemprop="method" content="POST"><meta itemprop="selector" content="#votes"><meta itemprop="action" content="Allow">
+</div>
+<div itemscope itemtype="https://pagelove.org/Trigger">
+  <meta itemprop="resource" content="/data/votes.html"><meta itemprop="method" content="POST">
+  <div itemprop="action" itemscope itemtype="https://pagelove.org/Sessel">
+    <script itemprop="source" type="text/sessel">
+      @schema Context url("https://pagelove.org/Context");
+      @schema HTTPResponse url("https://pagelove.org/HTTPResponse");
+      let body = Document.parse("<div>" + Context.request.body + "</div>");
+      let entries = body.children();
+      if (entries.count() != 1 || body.${li}.count() != 1) {
+        throw new HTTPResponse { status: 422, message: "Submit one choice." }
+      }
+      let vote = entries.first();
+      if (vote.attr("data-voter") != Context.request.auth.username) {
+        throw new HTTPResponse { status: 403, message: "Choose only as yourself." }
+      }
+      if (vote.attr("data-choice") != "tea" && vote.attr("data-choice") != "coffee") {
+        throw new HTTPResponse { status: 422, message: "Choose tea or coffee." }
+      }
+    </script>
+  </div>
+</div>
+<div itemscope itemtype="https://pagelove.org/ShapeConstraint">
+  <meta itemprop="resource" content="/data/votes.html"><meta itemprop="selector" content="#votes">
+  <!-- The platform adds this marker before shape validation. Incoming markers
+       are still rejected by runtime hygiene; clients never supply one. -->
+  <code itemprop="permit">ul[id="votes"]</code><code itemprop="permit">li[data-voter][data-choice][data-contribution-id]</code>
+</div>

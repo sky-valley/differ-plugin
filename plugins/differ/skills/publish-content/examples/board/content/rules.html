@@ -1,0 +1,7 @@
+<!doctype html><title>Deliberately shared editing</title>
+<p>Anyone reads and follows. Signed-in visitors add notes and may replace or
+delete any individual note. They cannot replace the whole document.</p>
+<div itemscope itemtype="https://pagelove.org/AuthorizationRule"><meta itemprop="actor" content="*"><meta itemprop="resource" content="/data/notes.html"><meta itemprop="method" content="GET"><meta itemprop="action" content="Allow"></div>
+<div itemscope itemtype="https://pagelove.org/AuthorizationRule"><meta itemprop="actor" content="users"><meta itemprop="resource" content="/data/notes.html"><meta itemprop="method" content="POST"><meta itemprop="selector" content="#notes"><meta itemprop="action" content="Allow"></div>
+<div itemscope itemtype="https://pagelove.org/AuthorizationRule"><meta itemprop="actor" content="users"><meta itemprop="resource" content="/data/notes.html"><meta itemprop="method" content="PUT"><meta itemprop="method" content="DELETE"><meta itemprop="selector" content="#notes &gt; li"><meta itemprop="action" content="Allow"></div>
+<div itemscope itemtype="https://pagelove.org/ShapeConstraint"><meta itemprop="resource" content="/data/notes.html"><meta itemprop="selector" content="#notes"><code itemprop="permit">ul[id="notes"]</code><code itemprop="permit">li[id][data-contribution-id]</code></div>
