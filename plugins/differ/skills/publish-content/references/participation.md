@@ -9,8 +9,8 @@ authored version, `/data/` is live data and `/uploads/` is participant media.
 
 Keep app code and rules outside `data/`. A `data/*.html`, `.json` or `.txt`
 file in the bundle is a seed, applied once to that path. Revisions keep existing
-participation, including deleted seeds. A remix starts fresh from the selected
-authored files, rules and seeds. Never download live visitor data into a remix.
+participation, including deleted seeds. A diff starts fresh from the selected
+authored files, rules and seeds. Never download live visitor data into a diff.
 Use relative authored asset URLs to stay on the selected version; root URLs
 address the current post. Live data always uses root `/data/...` URLs.
 
@@ -130,7 +130,7 @@ If `PAGELIKE_BINARY` or browser tooling is unavailable, stop that verification
 step and report the missing dependency. Do not search unrelated projects or
 substitute a mock runtime as authorization evidence.
 
-Analysis/remix previews use disposable one-hour origins, but all visitors there
+Analysis and diff previews use disposable one-hour origins, but all visitors there
 share one authenticated preview identity. They cannot prove anonymous access or
 cross-person authorization. The rehearsal tests the runtime with fixture identity;
 Player sign-in, consent and browser cookie behavior need separate verification.

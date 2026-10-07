@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.6.0
+
+- Call them diffs: a post made from someone's published post is a diff, in the
+  skills, the helper's messages and the docs (gdiffer decision 0109).
+- The helper's problem code for a half-named parent is now `invalid_diff`
+  (was `invalid_remix`).
+- Refresh both distributions from Control's verified public skill snapshot.
+
 ## 0.5.1
 
 - Teach posts to restore returning participants on open with

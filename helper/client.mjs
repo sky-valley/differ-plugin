@@ -91,7 +91,7 @@ export async function status(directory) {
 }
 export async function publish(directory, title, { newPost = false, parentPostId, parentRevisionId } = {}) {
   directory = contentDirectory(directory); title = contentTitle(directory, title);
-  if (!!parentPostId !== !!parentRevisionId) throw problem('invalid_remix', 'Remix requires source post and revision IDs.', 'Read the source post first.');
+  if (!!parentPostId !== !!parentRevisionId) throw problem('invalid_diff', 'A diff requires source post and revision IDs.', 'Read the source post first.');
   const config = await activeConfiguration(); const artifact = pack(directory); const unlock = lock(directory);
   try { return await publishCreator(config, stateFor(directory, config), directory, artifact, title, { newPost, parentPostId, parentRevisionId }); }
   finally { unlock(); }
@@ -127,13 +127,13 @@ async function bearerFor(config, state, me) {
   const creation = state.creation;
   if (me === undefined) me = await account(config);
   if (creation.mode === 'connected') {
-    if (me?.username !== creation.accountUsername) throw problem('account_changed', 'This draft belongs to a different connected creator.', 'Reconnect that account, or deliberately create a separate remix.');
+    if (me?.username !== creation.accountUsername) throw problem('account_changed', 'This draft belongs to a different connected creator.', 'Reconnect that account, or deliberately create a separate diff.');
     return config.token;
   }
   if (me) {
     const current = await publicState(config, creation.id);
     if (current.claimed) {
-      if (current.post?.username !== me.username) throw problem('owner_conflict', 'This claimed post belongs to another creator.', 'Connect its owner or create a remix.');
+      if (current.post?.username !== me.username) throw problem('owner_conflict', 'This claimed post belongs to another creator.', 'Connect its owner or create a diff.');
       creation.mode = 'connected'; creation.accountUsername = me.username;
       return config.token;
     }
@@ -176,7 +176,7 @@ async function publishCreator(config, state, directory, artifact, title, { newPo
     delete state.creation; delete state.receipt; delete state.lastInput;
   }
   if (!state.creation) {
-    if (state.receipt && !me) throw problem('ownership_required', 'A public post binding does not grant editing rights.', 'Use the original private workspace or connect the owner. To make your own version, create a remix.');
+    if (state.receipt && !me) throw problem('ownership_required', 'A public post binding does not grant editing rights.', 'Use the original private workspace or connect the owner. To make your own version, create a diff.');
     state.creation = { id: state.receipt?.postId ?? randomUUID(), mode: me ? 'connected' : 'guest',
       ...(me ? { accountUsername: me.username } : { ownerProof: randomBytes(32).toString('hex') }) };
     atomic(statePath(directory), state);

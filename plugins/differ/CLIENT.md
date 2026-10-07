@@ -24,7 +24,7 @@ private journal and shows it; it never builds one.
 POST /v1/publishing/posts/{id}/versions carries Authorization: Bearer with the
 guest upload pass or the connected account's access token. The body is
 {requestId, title, expectedRevisionId (null first), files [{path, base64
-content}]}, plus parentPostId and parentRevisionId for a remix. The post id and
+content}]}, plus parentPostId and parentRevisionId for a diff. The post id and
 credentials never travel in it. A connected account creates a post by publishing
 to a fresh UUID and revises only posts it owns. GET
 /v1/publishing/posts/{id}/operations/{requestId} with the same bearer returns

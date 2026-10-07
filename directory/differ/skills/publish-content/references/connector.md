@@ -6,7 +6,13 @@ upload URL: a guest post's comes from `start_creation`, a connected creator's
 from `start_upload_as_me`. Otherwise send every finished file in the call,
 base64 encoded, with `index.html` at the root: that suits a small, mostly-text
 post, and a whole call must stay under 4 MiB. If an upload URL cannot be
-reached, publish a small post through the call instead of starting again.
+reached, publish a small post through the call instead of starting again, and
+tell the human how to allow its host, as the skill's section on Differ being
+unreachable says.
+
+The connector's sign-in belongs to the human's account, not this machine, so
+in a cloud sandbox it is usually already connected: check `get_profile` before
+asking them to sign in.
 
 ## As a guest
 
@@ -64,8 +70,8 @@ Anything but a small post as the creator uploads over HTTPS:
    returns its receipt through the new pass, and one that did not can be
    sent unchanged.
 
-## Reading and remixing
+## Reading and diffing
 
 `get_creation` reads a post's public state and revision identifiers; it grants
-no editing or claiming rights. For a remix, add `parentPostId` and
+no editing or claiming rights. For a diff, add `parentPostId` and
 `parentRevisionId` to the publishing request.

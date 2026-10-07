@@ -2,8 +2,8 @@
   "files": [
     {
       "uri": "skill://interactive-content/SKILL.md",
-      "digest": "sha256:575a5e0f04de4204144fe42b010538307f01241c6d5a12277617d9af46d5174c",
-      "size": 5071
+      "digest": "sha256:e7dd43cc3e032c535973986c02f523a707044d2c8d690aa7afe077e1a6a17e39",
+      "size": 5068
     },
     {
       "uri": "skill://interactive-content/references/recording.md",
@@ -12,8 +12,8 @@
     },
     {
       "uri": "skill://publish-content/SKILL.md",
-      "digest": "sha256:b827901738fb24f0810df998bbe6fd2203505d287a1086d1f448cb2f77701e69",
-      "size": 4030
+      "digest": "sha256:132436fd378af087cf1558ca49458c93ae206d721a49bd966c57dadf52f6d108",
+      "size": 5494
     },
     {
       "uri": "skill://publish-content/examples/board/README.md",
@@ -117,8 +117,8 @@
     },
     {
       "uri": "skill://publish-content/references/connector.md",
-      "digest": "sha256:1e2638f643a12932be5d6b42e11d2991c73e24887e3b7e66fe277b758943e08f",
-      "size": 4083
+      "digest": "sha256:ee0f083cbb4e92b5c5896a80e664879d597ac5af88ff9fe9657f3f645ce8c47d",
+      "size": 4361
     },
     {
       "uri": "skill://publish-content/references/helper.md",
@@ -127,13 +127,13 @@
     },
     {
       "uri": "skill://publish-content/references/participation.md",
-      "digest": "sha256:b8ff86ab2003b6ad5a4f044f420f428d190f2478c64a9576019d17197dc67513",
-      "size": 8108
+      "digest": "sha256:cda548b481ae958728be9594a3933a993cf2bad01b58eeaee1c3adda6d3f88d0",
+      "size": 8109
     },
     {
       "uri": "skill://publish-content/references/setup.md",
-      "digest": "sha256:5850af3cf2022594aa7e24c05493a24c661f0982e8aaf7d23d1220feadc39b90",
-      "size": 2003
+      "digest": "sha256:5cdb1cfbf94baa5a7dcef29f00960601d1580fe7454d9676894c891c1bd84290",
+      "size": 2208
     },
     {
       "uri": "skill://publish-content/scripts/browser.mjs",

@@ -32,7 +32,10 @@ that distribution. Local and directory packages both identify as `differ`;
 install one per host. A GitHub release does not imply directory approval.
 
 The helper needs Node and file access, so installing the plugin does not make
-it runnable in a mobile or cloud sandbox. There, the connector needs either the
-files in its calls or outbound HTTPS to upload them. A host whose code sandbox
-reaches only allowed domains needs `publish.getdiffer.com` allowed; without it,
-only a post small enough to send in the calls can publish.
+it runnable in a mobile or cloud sandbox, and a connection it makes there is
+lost with the sandbox. There, use the connector: its sign-in lasts across
+sessions. It needs either the files in its calls or outbound HTTPS to upload
+them. A host whose code sandbox reaches only allowed domains needs
+`publish.getdiffer.com` allowed, once per environment (in Claude Code on the
+web: the environment menu, then Edit, then Network access); without it, only a
+post small enough to send in the calls can publish.
