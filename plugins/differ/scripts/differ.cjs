@@ -36684,7 +36684,7 @@ function configuration() {
 }
 var recoveries = {
   reconnect_required: reconnect,
-  owner_conflict: "Connect the account that owns this post, or publish your own version as a remix.",
+  owner_conflict: "Connect the account that owns this post, or publish your own version as a diff.",
   revision_conflict: "Compare get-post ID with your files, then deliberately bind DIR --post ID and publish again.",
   creation_expired: "Unclaimed guest posts expire after 24 hours. Publish again with --new to start a new post."
 };
@@ -36923,7 +36923,7 @@ async function status(directory) {
 async function publish(directory, title, { newPost = false, parentPostId, parentRevisionId } = {}) {
   directory = contentDirectory(directory);
   title = contentTitle(directory, title);
-  if (!!parentPostId !== !!parentRevisionId) throw problem("invalid_remix", "Remix requires source post and revision IDs.", "Read the source post first.");
+  if (!!parentPostId !== !!parentRevisionId) throw problem("invalid_diff", "A diff requires source post and revision IDs.", "Read the source post first.");
   const config2 = await activeConfiguration();
   const artifact = pack(directory);
   const unlock = lock(directory);
@@ -36963,13 +36963,13 @@ async function bearerFor(config2, state, me) {
   const creation = state.creation;
   if (me === void 0) me = await account(config2);
   if (creation.mode === "connected") {
-    if (me?.username !== creation.accountUsername) throw problem("account_changed", "This draft belongs to a different connected creator.", "Reconnect that account, or deliberately create a separate remix.");
+    if (me?.username !== creation.accountUsername) throw problem("account_changed", "This draft belongs to a different connected creator.", "Reconnect that account, or deliberately create a separate diff.");
     return config2.token;
   }
   if (me) {
     const current = await publicState(config2, creation.id);
     if (current.claimed) {
-      if (current.post?.username !== me.username) throw problem("owner_conflict", "This claimed post belongs to another creator.", "Connect its owner or create a remix.");
+      if (current.post?.username !== me.username) throw problem("owner_conflict", "This claimed post belongs to another creator.", "Connect its owner or create a diff.");
       creation.mode = "connected";
       creation.accountUsername = me.username;
       return config2.token;
@@ -37012,7 +37012,7 @@ async function publishCreator(config2, state, directory, artifact, title, { newP
     delete state.lastInput;
   }
   if (!state.creation) {
-    if (state.receipt && !me) throw problem("ownership_required", "A public post binding does not grant editing rights.", "Use the original private workspace or connect the owner. To make your own version, create a remix.");
+    if (state.receipt && !me) throw problem("ownership_required", "A public post binding does not grant editing rights.", "Use the original private workspace or connect the owner. To make your own version, create a diff.");
     state.creation = {
       id: state.receipt?.postId ?? (0, import_node_crypto3.randomUUID)(),
       mode: me ? "connected" : "guest",
@@ -37138,7 +37138,7 @@ function inspectVideo(input2) {
 // package.json
 var package_default = {
   name: "differ-plugin",
-  version: "0.5.1",
+  version: "0.6.0",
   private: true,
   type: "module",
   engines: {
@@ -37195,7 +37195,7 @@ async function mcp() {
   server.registerTool("connection_status", { description: "After the human approves the connection link, finish connecting. Respect retryAfter; do not poll in a tight loop.", inputSchema: {}, annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false } }, wrap(connectionStatus));
   server.registerTool("disconnect_account", { description: "Only when the human requests it, revoke this agent connection and explicitly return future publishing to guest mode. Existing posts keep ownership.", inputSchema: {}, annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false } }, wrap(disconnect));
   server.registerTool("publication_status", { description: "Recover a pending publication or verify the saved receipt for a local directory.", inputSchema: { directory }, annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false } }, wrap(({ directory: directory2 }) => status(directory2)));
-  server.registerTool("get_post", { description: "Inspect a remote post before conflict recovery or remixing.", inputSchema: { postId: external_exports.string().uuid() }, annotations }, wrap(({ postId }) => getPost(postId)));
+  server.registerTool("get_post", { description: "Inspect a remote post before conflict recovery or diffing.", inputSchema: { postId: external_exports.string().uuid() }, annotations }, wrap(({ postId }) => getPost(postId)));
   server.registerTool("image_candidate", { description: "Create a separate WebP candidate using installed cwebp. Never replaces source or adopts visual quality automatically.", inputSchema: { source: external_exports.string(), output: external_exports.string(), quality: external_exports.number().min(0).max(100).optional() }, annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false } }, wrap(({ source, output: output3, quality }) => imageCandidate(source, output3, quality)));
   server.registerTool("inspect_video", { description: "Read recording dimensions, codec, duration and encoded frame rate using installed ffprobe. Not proof of smooth motion or good composition.", inputSchema: { file: external_exports.string() }, annotations }, wrap(({ file: file2 }) => inspectVideo(file2)));
   await server.connect(new StdioServerTransport());

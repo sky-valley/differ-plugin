@@ -38,7 +38,7 @@ Public bindings identify posts; they grant no editing rights. Private state hold
 guest proof and retry requests and must stay out of Git. Uncertain publication
 is reconciled with `status`, never by deleting state. Stale revisions conflict;
 compare `get-post ID`, then deliberately `bind DIR --post ID` after review.
-`--new` starts a separate post only when requested. Remix keeps parent post and
+`--new` starts a separate post only when requested. A diff keeps parent post and
 revision IDs. Static assets are limited to 256 files / 20 MiB per revision.
 
 ## Installation and remote connectors

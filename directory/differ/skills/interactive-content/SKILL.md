@@ -2,7 +2,7 @@
 name: interactive-content
 description: >-
   Create or refine interactive social content, playable posts, and small browser
-  experiences: hooks, gestures, payoffs, participation, sharing, and remixing.
+  experiences: hooks, gestures, payoffs, participation, sharing, and diffing.
   Use before choosing architecture. Excludes general SaaS interfaces,
   deployment-only work, and read-only app analysis.
 ---
@@ -17,7 +17,7 @@ Images, copy, and screenshots support it; they are not substitutes.
 ## Frame
 
 Before coding, identify the hook, action, payoff, sharing motive, and recipient
-experience. Always assess self-insertion, response, challenge, and remix;
+experience. Always assess self-insertion, response, challenge, and diffing;
 implement opportunities inherent in the premise, not unrelated mechanics.
 Participation is optional for visitors, not optional to consider.
 Infer from the brief; ask only about consequential gaps.
@@ -35,9 +35,9 @@ Infer from the brief; ask only about consequential gaps.
 - Deliver a perceptible payoff: reveal, transformation, answer, punchline,
   personal artifact, win/loss, or satisfying loop. Spend effort on assets,
   composition, timing, motion, sound, and exact copy.
-- Participation fills the format (your location/picks/answers); remixing changes
+- Participation fills the format (your location/picks/answers); diffing changes
   it (time spans/rules/style/premise). Make invitations concrete and optional.
-  Consumption and participation must stand alone without remixing.
+  Consumption and participation must stand alone without diffing.
 - Separate invariants from variation. Preserve the agreed subject/context;
   vary meaningful form or behavior, not merely branding, unless a reskin was requested.
 - Identify why someone would send this to whom: challenge, gift, identity,
@@ -83,7 +83,7 @@ reach its payoff, and test participation/sharing as a fresh recipient when
 present. Check loading, gestures, framing, and failure states; report what was
 observed versus unverified. Remove friction and generic product chrome.
 
-When testing remix behaviour, distinguish consumption, participation, remixing,
+When testing diff behaviour, distinguish consumption, participation, diffing,
 and subsequent sharing. Forced steps do not demonstrate desire. Inherited
 exposure is a distribution condition to verify, not assume; accept null results.
 

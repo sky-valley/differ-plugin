@@ -37,7 +37,7 @@ export function configuration() {
 // Control reports stable codes. The helper owns what a creator does next.
 const recoveries = {
   reconnect_required: reconnect,
-  owner_conflict: 'Connect the account that owns this post, or publish your own version as a remix.',
+  owner_conflict: 'Connect the account that owns this post, or publish your own version as a diff.',
   revision_conflict: 'Compare get-post ID with your files, then deliberately bind DIR --post ID and publish again.',
   creation_expired: 'Unclaimed guest posts expire after 24 hours. Publish again with --new to start a new post.',
 };
