@@ -10,7 +10,10 @@ brief was given. Each post has its own origin on differ.page and normal browser
 storage and capabilities, subject to the browser's permission prompts. Private
 audiences and arbitrary Node servers are unsupported. For shared durable state,
 use the document runtime described in [participation](references/participation.md).
-A post is at most 256 files and 20 MiB. Guests can publish and interact locally;
+A post is at most 256 files and 20 MiB. Files under `data/` need a root
+`rules.html`, since only live participation serves them; a bundle with them and
+no `rules.html` is refused with the code data_without_rules, so put static
+assets in another folder, such as `assets/`. Guests can publish and interact locally;
 the post must be claimed before signed-in visitors can contribute shared state.
 
 ## Choose the path
