@@ -8,7 +8,9 @@ No Node process or external database is needed. Runtime paths are reserved:
 authored version, `/data/` is live data and `/uploads/` is participant media.
 
 Keep app code and rules outside `data/`. A `data/*.html`, `.json` or `.txt`
-file in the bundle is a seed, applied once to that path. Revisions keep existing
+file in the bundle is a seed, applied once to that path. Seeds need the root
+`rules.html`: a bundle with files under `data/` and no `rules.html` is refused
+(`data_without_rules`). Revisions keep existing
 participation, including deleted seeds. A diff starts fresh from the selected
 authored files, rules and seeds. Never download live visitor data into a diff.
 Use relative authored asset URLs to stay on the selected version; root URLs

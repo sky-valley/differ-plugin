@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.6.2
+
+- Say in the publish-content skill and its participation reference that files
+  under `data/` belong to live-participation posts: Control refuses them, with
+  `data_without_rules`, in a post without `rules.html` (gdiffer decision 0126).
+- Refresh both distributions from Control's verified public skill snapshot.
+
 ## 0.6.0
 
 - Call them diffs: a post made from someone's published post is a diff, in the
