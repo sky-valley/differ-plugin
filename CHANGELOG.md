@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.6.3
+
+- Update zod, body-parser, hono, fast-uri and ip-address for security advisories.
+
 ## 0.6.2
 
 - Say in the publish-content skill and its participation reference that files
