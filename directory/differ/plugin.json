@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "differ",
-  "version": "0.7.3",
+  "version": "0.7.4",
   "description": "Make, publish and diff interactive bits on Differ.",
   "author": {
     "name": "Sky Valley",
@@ -92,7 +92,12 @@
               "expected_behavior": "Explain the receipt confirms publication only. Run the required runtime/browser checks when available or explicitly report those behaviors unverified."
             }
           ]
-        }
+        },
+        "commerce": false,
+        "commerce_description": "Differ is free. The plugin sells nothing and takes no payments."
+      },
+      "publication": {
+        "release_notes": "Make, publish and diff interactive bits on Differ. Publish as a guest with no account, or connect your Differ account to publish as you."
       }
     }
   }

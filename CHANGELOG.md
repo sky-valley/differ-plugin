@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.7.4
+
+- Declare the directory package's MCP authentication for OpenAI: `mixed`
+  (guest tools need no account, account tools use OAuth) with dynamic client
+  registration, in `mcp.json` under `extensions.com.openai.auth`.
+- Declare that the plugin has no commerce, and carry release notes, so the
+  dashboard imports them from the ZIP.
+
 ## 0.7.3
 
 - Carry the five positive and three negative review cases in the directory

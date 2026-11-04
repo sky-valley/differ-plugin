@@ -16,7 +16,11 @@ test('directory package connects remotely and preserves every verified skill', (
     differ: { type: 'http', url: 'https://publish.getdiffer.com/mcp' },
   });
   assert.deepEqual(json(join(directory, 'mcp.json')).mcpServers, {
-    differ: { type: 'streamable-http', url: 'https://publish.getdiffer.com/mcp' },
+    differ: {
+      type: 'streamable-http', url: 'https://publish.getdiffer.com/mcp',
+      // OpenAI's portal reads the MCP sign-in from here: guests need none, accounts use OAuth via DCR.
+      extensions: { 'com.openai': { auth: { type: 'mixed', client: { mode: 'dcr' } } } },
+    },
   });
   assert.deepEqual(readSnapshot(directory), readLock(join(root, 'plugins/differ')));
   assert.ok(!existsSync(join(directory, 'scripts/differ.cjs')), 'remote package must not imply a local helper');

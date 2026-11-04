@@ -56,7 +56,12 @@ const interfaceFields = {
 const cases = JSON.parse(readFileSync('submission/review-cases.json', 'utf8'));
 assert.equal(cases.positive.length, 5, 'OpenAI review needs exactly five positive cases.');
 assert.equal(cases.negative.length, 3, 'OpenAI review needs exactly three negative cases.');
-const review = { test_cases: { positive: cases.positive, negative: cases.negative } };
+const review = {
+  test_cases: { positive: cases.positive, negative: cases.negative },
+  commerce: false,
+  commerce_description: 'Differ is free. The plugin sells nothing and takes no payments.',
+};
+const publication = { release_notes: 'Make, publish and diff interactive bits on Differ. Publish as a guest with no account, or connect your Differ account to publish as you.' };
 const json = (path, value) => { mkdirSync(dirname(path), { recursive: true }); writeFileSync(path, JSON.stringify(value, null, 2) + '\n'); };
 
 rmSync(remote, { recursive: true, force: true });
@@ -70,7 +75,7 @@ for (const plugin of [local, remote]) {
   cpSync('LICENSE', `${plugin}/LICENSE`);
   // The directory package carries the OpenAI review cases, which the dashboard
   // imports from the ZIP and shows read-only.
-  const openai = plugin === remote ? { interface: interfaceFields, review } : { interface: interfaceFields };
+  const openai = plugin === remote ? { interface: interfaceFields, review, publication } : { interface: interfaceFields };
   json(`${plugin}/plugin.json`, { $schema: 'https://agent-plugins.org/schemas/1.0.0/plugin.schema.json', ...identity, extensions: { 'com.openai': openai } });
   // The older compatibility validator predates the support, privacy and terms
   // links; current hosts read the complete inline extension above.
@@ -80,6 +85,9 @@ for (const plugin of [local, remote]) {
 }
 json(`${local}/mcp.json`, { $schema: 'https://agent-plugins.org/schemas/1.0.0/mcp.schema.json', mcpServers: { differ: { type: 'stdio', command: 'node', args: ['${PLUGIN_ROOT}/scripts/differ.cjs', 'mcp'] } } });
 json(`${local}/.mcp.json`, { mcpServers: { differ: { command: 'node', args: ['${CLAUDE_PLUGIN_ROOT}/scripts/differ.cjs', 'mcp'] } } });
-json(`${remote}/mcp.json`, { $schema: 'https://agent-plugins.org/schemas/1.0.0/mcp.schema.json', mcpServers: { differ: { type: 'streamable-http', url: 'https://publish.getdiffer.com/mcp' } } });
+// Guest tools need no account; the account tools sign in with OAuth, and
+// Control registers each host as a client (DCR). OpenAI reads this from here.
+const auth = { type: 'mixed', client: { mode: 'dcr' } };
+json(`${remote}/mcp.json`, { $schema: 'https://agent-plugins.org/schemas/1.0.0/mcp.schema.json', mcpServers: { differ: { type: 'streamable-http', url: 'https://publish.getdiffer.com/mcp', extensions: { 'com.openai': { auth } } } } });
 json(`${remote}/.mcp.json`, { mcpServers: { differ: { type: 'http', url: 'https://publish.getdiffer.com/mcp' } } });
 console.log(`Built Differ ${version}: local helper and remote directory package.`);
