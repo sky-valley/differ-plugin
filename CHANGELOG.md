@@ -1,5 +1,50 @@
 # Changelog
 
+## 0.7.0
+
+Breaking: Control now speaks of bits, versions, captions and handles (gdiffer
+decision 0145), and this helper speaks only that wire. Earlier helpers stop
+working against it; update the plugin and reconnect.
+
+- A post is now a **bit** and a revision a **version**. The helper calls
+  `/v1/publishing/bits/{bit}/reservation|versions|operations/{request}` and
+  `/v1/publishing/bits/{bit}`, and sends `expectedVersionId`, `parentBitId` and
+  `parentVersionId`. Receipts carry `bitId` and `versionId`, have no
+  `revisionUrl`, and the helper shows their `url`.
+- The maker's words are a **caption**, not a title: `publish --caption` and the
+  `publish_directory` input `caption` (1–200 characters, at most 3 line breaks,
+  checked before upload). It is optional on upload; the maker confirms it in
+  Differ before the bit goes public. Differ generates the bit's title, so
+  `--title`, the `title` input and the HTML `<title>` default are gone. The
+  saved caption carries to the next version of the same bit; `--new` and diffs
+  start without one.
+- Renamed: `get-post` → `get-bit`, the tool `get_post` → `get_bit` (input
+  `bitId`), `bind DIR --post` → `bind DIR --bit`, `--parent-post` /
+  `--parent-revision` → `--parent-bit` / `--parent-version`, tool inputs
+  `newPost`, `parentPostId`, `parentRevisionId` → `newBit`, `parentBitId`,
+  `parentVersionId`, and the account's `username` → `handle` (config
+  `accountHandle`, `connection-status` returns `handle`).
+- `connect` asks for the scope `profile bits:write`. Every connection made
+  before reconnects.
+- The public binding is `differ-bit.json` `{version, publisher, bitId,
+  versionId, caption}`. A leftover `differ-post.json` stops every command with
+  `stale_binding` and is never uploaded; an older `.differ/state.json` stops
+  with `stale_state`. Remove them (keep any claim link) and `bind` or publish
+  with `--new`.
+- `check` warns (`missing_preview`) when a bundle has no root `preview.html`,
+  the 390×520 interactive preview the feed shows, and refuses (`reserved_path`)
+  files under `__differ/`, `__dfr/`, `-/`, `v/` and `uploads/` and any
+  reference to Differ's SDK at `/__differ/`.
+- `preview` now serves a player page at `/__differ/` that frames `preview.html`
+  at 390×520 and `index.html` at 390×693, gives every page a stand-in for the
+  SDK Differ injects (`differ.open`, `differ.close`, `differ.on`,
+  `data-differ-open`), follows the player protocol, forwards presses on the
+  preview, and logs open and close.
+- Refresh both distributions from Control's rewritten skills (bits, captions,
+  `preview.html`, the SDK), synced with `npm run sync-skills` once Control
+  deploys them. The sync also brings Control's earlier change to the
+  interactive-content skill (Differ's design principles).
+
 ## 0.6.3
 
 - Update zod, body-parser, hono, fast-uri and ip-address for security advisories.

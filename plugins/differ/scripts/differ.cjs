@@ -37587,7 +37587,7 @@ function inspectVideo(input2) {
 // package.json
 var package_default = {
   name: "differ-plugin",
-  version: "0.6.3",
+  version: "0.7.0",
   private: true,
   type: "module",
   engines: {
@@ -37611,7 +37611,7 @@ var package_default = {
     esbuild: "0.25.12"
   },
   license: "MIT",
-  description: "Differ creation skills and publishing helper",
+  description: "Differ skills for making bits, and the publishing helper",
   repository: {
     type: "git",
     url: "https://github.com/sky-valley/differ-plugin.git"

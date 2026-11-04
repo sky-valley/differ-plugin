@@ -2,7 +2,7 @@
 
 The initial public source was extracted from only `plugins/differ/` at
 apps-to-diff commit `040d6033f64dd24281618828698d978dc9b653b4` (plugin 0.4.0).
-The private repository's history, unrelated posts, local files, and credentials
+The private repository's history, unrelated content, local files, and credentials
 were not imported. Version 0.5.0 starts the standalone distribution.
 
 Helper source and tests moved to the repository root's `helper/` and `test/`

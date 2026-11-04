@@ -1,7 +1,7 @@
 {
   "name": "differ",
-  "version": "0.6.3",
-  "description": "Create, preview, publish and revise interactive social posts.",
+  "version": "0.7.0",
+  "description": "Make, preview and publish interactive bits on Differ.",
   "author": {
     "name": "Sky Valley",
     "url": "https://skyvalley.ac"
