@@ -37639,7 +37639,7 @@ async function mcp() {
     description: "Upload content when the human asks. Works as a guest without sign-in, or as the deliberately connected creator. A new directory creates a bit; its saved identity uploads a new version of that bit. Connected uploads are drafts: when the receipt has draft:true, say it is not published yet and show its url, where the maker previews it, confirms its caption and publishes it. For guests show the url, private claim link, expiry and unclaimed notice; never hide them or block publishing to demand sign-in.",
     inputSchema: {
       directory,
-      caption: external_exports.string().min(1).max(200).optional().describe("The maker's own words shown over the bit: 1\u2013200 characters, at most 3 line breaks. Suggest it and let the maker confirm it; they confirm it again in Differ before the bit goes public. Defaults to the caption differ-bit.json saved for this bit."),
+      caption: external_exports.string().optional().describe("The maker's own words shown over the bit: 1\u2013200 characters, at most 3 line breaks, checked before upload. Suggest it and let the maker confirm it; they confirm it again in Differ before the bit goes public. Defaults to the caption differ-bit.json saved for this bit."),
       newBit: external_exports.boolean().optional(),
       parentBitId: external_exports.string().uuid().optional(),
       parentVersionId: external_exports.string().uuid().optional()

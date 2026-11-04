@@ -21,7 +21,7 @@ async function mcp() {
   server.registerTool('publish_directory', {
     description: 'Upload content when the human asks. Works as a guest without sign-in, or as the deliberately connected creator. A new directory creates a bit; its saved identity uploads a new version of that bit. Connected uploads are drafts: when the receipt has draft:true, say it is not published yet and show its url, where the maker previews it, confirms its caption and publishes it. For guests show the url, private claim link, expiry and unclaimed notice; never hide them or block publishing to demand sign-in.',
     inputSchema: { directory,
-      caption: z.string().min(1).max(200).optional().describe("The maker's own words shown over the bit: 1–200 characters, at most 3 line breaks. Suggest it and let the maker confirm it; they confirm it again in Differ before the bit goes public. Defaults to the caption differ-bit.json saved for this bit."),
+      caption: z.string().optional().describe("The maker's own words shown over the bit: 1–200 characters, at most 3 line breaks, checked before upload. Suggest it and let the maker confirm it; they confirm it again in Differ before the bit goes public. Defaults to the caption differ-bit.json saved for this bit."),
       newBit: z.boolean().optional(), parentBitId: z.string().uuid().optional(), parentVersionId: z.string().uuid().optional() },
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: true },
   }, wrap(({ directory, caption, ...options }) => publish(directory, caption, options)));
