@@ -30,6 +30,7 @@
   work for the connected agent. It validates metadata, preserves empty
   continuation pages, refreshes credentials when needed, and refuses guest
   mode. It does not claim, acknowledge or execute tasks.
+- Task discovery returns no instructions and gives no permission to execute.
 
 ## 0.7.1
 
