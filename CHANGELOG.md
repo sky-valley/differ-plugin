@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.2
+
+- Download the exact task source.
+
 ## 0.8.1
 
 - Save received tasks before acknowledgement.

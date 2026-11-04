@@ -37830,7 +37830,7 @@ function inspectVideo(input2) {
 // package.json
 var package_default = {
   name: "differ-plugin",
-  version: "0.8.1",
+  version: "0.8.2",
   private: true,
   type: "module",
   engines: {
