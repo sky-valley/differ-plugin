@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.6
+
+- Verify Codex execution and handle permanent failures.
+
 ## 0.8.5
 
 - Run continuous local task delivery.
