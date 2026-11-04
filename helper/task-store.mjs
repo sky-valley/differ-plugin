@@ -29,12 +29,13 @@ export function readTask(id) {
   } catch (error) { if (error.code === 'ENOENT') return null; throw taskError(); }
 }
 // Flush the file and its rename before telling Control the prompt is safe here.
-export function saveTask(task) {
-  const directory = taskDirectory(task.id); const temporary = join(directory, `${randomUUID()}.tmp`);
+export function saveTask(task) { savePrivate(join(taskDirectory(task.id), 'task.json'), task); }
+export function savePrivate(path, value) {
+  const directory = dirname(path); privateDirectory(directory); const temporary = join(directory, `${randomUUID()}.tmp`);
   let fd;
   try {
-    fd = openSync(temporary, 'wx', 0o600); writeFileSync(fd, JSON.stringify(task)); fsyncSync(fd); closeSync(fd); fd = undefined;
-    renameSync(temporary, join(directory, 'task.json'));
+    fd = openSync(temporary, 'wx', 0o600); writeFileSync(fd, JSON.stringify(value)); fsyncSync(fd); closeSync(fd); fd = undefined;
+    renameSync(temporary, path);
     fd = openSync(directory, 'r'); fsyncSync(fd);
   } finally { if (fd !== undefined) closeSync(fd); try { unlinkSync(temporary); } catch {} }
 }
