@@ -18,10 +18,10 @@ export function contentDirectory(input) {
 }
 // The caption is the maker's own words over the bit, as Control checks them:
 // 1–200 characters after trimming, at most 800 bytes, no control characters
-// but line breaks, and at most 3 of those.
+// (Go's unicode.IsControl: C0, DEL and C1) but line breaks, and at most 3 of those.
 export function caption(value) {
   const text = typeof value === 'string' ? value.trim() : '';
-  if (!text || [...text].length > 200 || Buffer.byteLength(text) > 800 || /[\u0000-\u0009\u000b-\u001f\u007f]/.test(text) || text.split('\n').length > 4)
+  if (!text || [...text].length > 200 || Buffer.byteLength(text) > 800 || /[\u0000-\u0009\u000b-\u001f\u007f-\u009f]/.test(text) || text.split('\n').length > 4)
     throw problem('invalid_caption', 'Supply a caption of 1–200 characters with at most 3 line breaks.', 'Use the maker\'s own words; they confirm the caption in Differ before the bit goes public.');
   return text;
 }

@@ -92,7 +92,7 @@ export async function fakeControl() {
   // Control's caption rule, checked only when a caption is sent: an upload's
   // caption is optional (the agent's suggestion), as nothing here sets publish.
   const validCaption = caption => typeof caption === 'string' && !!caption.trim() && [...caption].length <= 200 && Buffer.byteLength(caption) <= 800
-    && !/[\u0000-\u0009\u000b-\u001f\u007f]/.test(caption) && caption.split('\n').length <= 4;
+    && !/[\u0000-\u0009\u000b-\u001f\u007f-\u009f]/.test(caption) && caption.split('\n').length <= 4;
   function publish(id, headers, body) {
     const bit = bits.get(id); const as = author(bearerOf(headers), bit);
     strict(headers, body, ['requestId', 'caption', 'expectedVersionId', 'files', 'parentBitId', 'parentVersionId', 'publish']);

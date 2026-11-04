@@ -73,7 +73,8 @@ test('diagnostics distinguish permission, DNS and service failures without echoi
 test('a caption is the maker\'s words as Control checks them', () => {
   assert.equal(caption('  Stack it high.\nThen shake.  '), 'Stack it high.\nThen shake.');
   assert.equal(caption('é'.repeat(200)), 'é'.repeat(200));
-  for (const bad of [undefined, '', '  \n ', 'x'.repeat(201), '😀'.repeat(201), 'a\nb\nc\nd\ne', 'carriage\rreturn', 'bell\u0007']) {
+  assert.equal(caption('no\u00a0break'), 'no\u00a0break', 'just past C1 is not a control character to Go');
+  for (const bad of [undefined, '', '  \n ', 'x'.repeat(201), '😀'.repeat(201), 'a\nb\nc\nd\ne', 'carriage\rreturn', 'bell\u0007', 'null\u0000', 'delete\u007f', 'c1 start\u0080', 'next line\u0085', 'c1 end\u009f']) {
     assert.throws(() => caption(bad), { code: 'invalid_caption' }, JSON.stringify(bad));
   }
 });

@@ -36786,7 +36786,7 @@ function contentDirectory(input2) {
 }
 function caption(value) {
   const text = typeof value === "string" ? value.trim() : "";
-  if (!text || [...text].length > 200 || Buffer.byteLength(text) > 800 || /[\u0000-\u0009\u000b-\u001f\u007f]/.test(text) || text.split("\n").length > 4)
+  if (!text || [...text].length > 200 || Buffer.byteLength(text) > 800 || /[\u0000-\u0009\u000b-\u001f\u007f-\u009f]/.test(text) || text.split("\n").length > 4)
     throw problem("invalid_caption", "Supply a caption of 1\u2013200 characters with at most 3 line breaks.", "Use the maker's own words; they confirm the caption in Differ before the bit goes public.");
   return text;
 }
@@ -36923,6 +36923,10 @@ function sdk() {
     dispatch(current.target, PointerEvent, pointerTypes[phase], x, y, change, buttons, { pointerId: id, pointerType: "touch", isPrimary: true, width: 1, height: 1, pressure: buttons ? 0.5 : 0 });
     if (mouseTypes[phase]) dispatch(current.target, MouseEvent, mouseTypes[phase], x, y, 0, buttons, { detail: phase === "move" ? 0 : 1 });
     if (phase === "up" && !current.moved) dispatch(current.target, MouseEvent, "click", x, y, 0, 0, { detail: 1 });
+    if (phase === "up") {
+      touches++;
+      if (!timer) report();
+    }
     if (phase === "up" || phase === "cancel") gesture = null;
   }
   window.addEventListener("message", function(event) {
@@ -36950,7 +36954,8 @@ function sdk() {
     timer = setTimeout(report, 1e3);
   }
   ["pointerdown", "keydown"].forEach(function(type) {
-    window.addEventListener(type, function() {
+    window.addEventListener(type, function(event) {
+      if (!event.isTrusted) return;
       touches++;
       if (!timer) report();
     }, { capture: true, passive: true });

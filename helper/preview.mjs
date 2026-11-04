@@ -71,6 +71,9 @@ function sdk() {
     dispatch(current.target, PointerEvent, pointerTypes[phase], x, y, change, buttons, { pointerId: id, pointerType: 'touch', isPrimary: true, width: 1, height: 1, pressure: buttons ? 0.5 : 0 });
     if (mouseTypes[phase]) dispatch(current.target, MouseEvent, mouseTypes[phase], x, y, 0, buttons, { detail: phase === 'move' ? 0 : 1 });
     if (phase === 'up' && !current.moved) dispatch(current.target, MouseEvent, 'click', x, y, 0, 0, { detail: 1 });
+    // A forwarded gesture is the bit's only once it stays the bit's: it is
+    // counted on its up, which never follows a cancel.
+    if (phase === 'up') { touches++; if (!timer) report(); }
     if (phase === 'up' || phase === 'cancel') gesture = null;
   }
   window.addEventListener('message', function (event) {
@@ -87,6 +90,9 @@ function sdk() {
       pointer(message);
     }
   });
+  // How often the bit is touched, told at most once a second, the first at
+  // once. Only the browser's own events count; the SDK's dispatched ones are
+  // counted above, once a gesture ends on the bit.
   var touches = 0, timer = 0;
   function report() {
     if (!touches) { timer = 0; return; }
@@ -95,7 +101,7 @@ function sdk() {
     timer = setTimeout(report, 1000);
   }
   ['pointerdown', 'keydown'].forEach(function (type) {
-    window.addEventListener(type, function () { touches++; if (!timer) report(); }, { capture: true, passive: true });
+    window.addEventListener(type, function (event) { if (!event.isTrusted) return; touches++; if (!timer) report(); }, { capture: true, passive: true });
   });
   send({ type: 'differ:ready', v: 1, page: page });
 }
