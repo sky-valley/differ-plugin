@@ -16,5 +16,6 @@
     "publishing",
     "diff"
   ],
-  "displayName": "Differ"
+  "displayName": "Differ",
+  "privacyPolicyUrl": "https://www.getdiffer.com/privacy"
 }
