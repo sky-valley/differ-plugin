@@ -40,7 +40,7 @@ test('the environment chooses the publisher; a saved connection only names its o
   assert.equal(configuration().url, 'http://127.0.0.1:8080');
   // A connection saved for another publisher, such as one made before Control
   // published, stops instead of sending its tokens elsewhere: connect again.
-  const connection = { mode: 'connected', accessToken: 'dfa_a', refreshToken: 'dfr_a', expiresAt: 0, accountUsername: 'maker' };
+  const connection = { mode: 'connected', accessToken: 'dfa_a', refreshToken: 'dfr_a', expiresAt: 0, accountHandle: 'maker' };
   save({ ...connection, url: 'https://apps.example' });
   assert.throws(configuration, { code: 'target_changed' });
   save({ ...connection, url: 'http://127.0.0.1:8080' });

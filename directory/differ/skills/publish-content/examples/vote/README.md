@@ -1,6 +1,6 @@
 # The afternoon question
 
-A complete ordinary HTML/JS post: tea or coffee, with one effective choice per
+A complete ordinary HTML/JS bit: tea or coffee, with one effective choice per
 signed-in identity, changeable over time. Uses the managed identity SDK, with no generated rules or external
 database. Publish only `examples/vote/content/`.
 
@@ -14,7 +14,7 @@ restricts choices. The browser counts the latest remaining choice for each
 trusted identity. Repeated clicks do not increase that identity's effective
 vote. This is one vote per identity, not a guarantee about physical people.
 
-On load, `pagelike.identity()` quietly restores an existing post identity. The
+On load, `pagelike.identity()` quietly restores an existing bit identity. The
 UI then marks its latest remaining choice before any click. A new or signed-out
 visitor stays anonymous. Opening does not append a vote; `participate()` and
 the write remain in the button handler.
@@ -40,4 +40,4 @@ runtime; the platform's separate integration verifies restoration across logins.
 These checks have a specific contract. For a new activity, adapt its checks and
 prove them against deliberately defective variants before trusting green output.
 Browser and Player login checks remain separate. Never point mutation tests at
-production posts.
+production bits.

@@ -35,20 +35,20 @@ writeFileSync(`${local}/THIRD_PARTY_NOTICES.txt`, notices.join('\n\n---\n\n') + 
 
 const identity = {
   name: 'differ', version,
-  description: 'Create, preview, publish and revise interactive social posts.',
+  description: 'Make, preview and publish interactive bits on Differ.',
   author: { name: 'Sky Valley', url: 'https://skyvalley.ac' },
   homepage: 'https://github.com/sky-valley/differ-plugin',
   repository: 'https://github.com/sky-valley/differ-plugin',
   license: 'MIT', keywords: ['differ', 'interactive', 'publishing', 'participation'],
 };
 const interfaceFields = {
-  displayName: 'Differ', shortDescription: 'Make interactive social posts',
-  longDescription: 'Create interactive posts and publish them to Differ. Start as a guest, claim a post later, or connect your account for future publications. Shared participation requires a claimed post and runtime verification. Local file and browser capabilities depend on the host.',
+  displayName: 'Differ', shortDescription: 'Make interactive bits',
+  longDescription: 'Make interactive bits and publish them to Differ. Start as a guest, claim the bit later, or connect your account for future publications. Shared participation requires a claimed bit and runtime verification. Local file and browser capabilities depend on the host.',
   developerName: 'Sky Valley', category: 'Productivity',
-  capabilities: ['Create posts', 'Publish posts'],
+  capabilities: ['Make bits', 'Publish bits'],
   websiteURL: 'https://app.getdiffer.com',
   supportURL: 'https://github.com/sky-valley/differ-plugin/issues',
-  defaultPrompt: ['Create an interactive social post with Differ.'],
+  defaultPrompt: ['Make an interactive bit with Differ.'],
   brandColor: '#1A1A1A', composerIcon: './assets/icon.svg', logo: './assets/icon.svg',
 };
 const json = (path, value) => { mkdirSync(dirname(path), { recursive: true }); writeFileSync(path, JSON.stringify(value, null, 2) + '\n'); };

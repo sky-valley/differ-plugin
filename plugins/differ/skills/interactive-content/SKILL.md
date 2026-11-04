@@ -1,7 +1,7 @@
 ---
 name: interactive-content
 description: >-
-  Create or refine interactive social content, playable posts, and small browser
+  Create or refine interactive social content, playable bits, and small browser
   experiences: hooks, gestures, payoffs, participation, sharing, and diffing.
   Use before choosing architecture. Excludes general SaaS interfaces,
   deployment-only work, and read-only app analysis.
@@ -9,7 +9,7 @@ description: >-
 
 # Interactive content
 
-Author a post people encounter, enjoy, and may pass on. Treat software as the
+Author a bit people encounter, enjoy, and may pass on. Treat software as the
 medium; preserve the creator's specific premise, voice, and requested scope.
 Deliver a runnable interactive webpage unless explicitly asked otherwise.
 Images, copy, and screenshots support it; they are not substitutes.
@@ -50,11 +50,16 @@ Infer from the brief; ask only about consequential gaps.
   Share the actual piece or personal result; recipients need context and a
   meaningful next action without reconstructing the sender's session.
 - Preserve authored moments and saved artifacts. Freeze snapshots when the
-  moment matters; distinguish edits, revisions, and someone else's response.
+  moment matters; distinguish edits, versions, and someone else's response.
 - Design for the actual surface: immediate mobile readability, reachable touch
   targets, intact focal subjects, and deliberate desktop/iframe adaptation.
   Keep authoring controls and implementation details off the consuming surface
   unless needed there; respect the player's existing navigation and sharing.
+- On Differ the open bit fills the phone, so make it responsive and check it
+  at 390×693 CSS px. Its root `preview.html`, when it has one, is the 390×520
+  interactive preview the feed shows, the piece's first impression: give it
+  the hook, and let a tap open the bit. Read the publishing skill's section on
+  the feed and the open bit for its rules and Differ's SDK before building it.
 
 ## Look
 
@@ -91,8 +96,8 @@ compose live documents under `/data/`; `/uploads/` holds participant images.
 Read the publishing skill's participation reference before building shared
 state, including its complete examples and runtime checks. Decide what each
 person may do from the premise; do not treat every board as private contributions
-or every interactive post as shared state. Visitors can explore without signing in; ask them to join only when
-they choose to save a contribution. Keep paid/server model actions out of posts.
+or every interactive bit as shared state. Visitors can explore without signing in; ask them to join only when
+they choose to save a contribution. Keep paid/server model actions out of bits.
 
 Keep publishable files in `content/`; source masters, experiments and recordings
 outside it. Where the Differ helper is available, its content check reports
@@ -104,7 +109,8 @@ alone.
 
 Verify the deliverable is the intended medium and natural participation
 opportunities are implemented, not merely a working interaction.
-Open the actual experience on phone and desktop. Perform the interaction,
+Open the actual experience on phone and desktop, and on Differ its preview
+too. Perform the interaction,
 reach its payoff, and test participation/sharing as a fresh recipient when
 present. Check loading, gestures, framing, and failure states; report what was
 observed versus unverified. Remove friction and generic product chrome. Look

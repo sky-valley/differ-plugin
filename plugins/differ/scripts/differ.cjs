@@ -36689,8 +36689,11 @@ var PublishError = class extends Error {
 function fail(code, message, recovery, status2) {
   throw new PublishError(code, message, recovery, status2);
 }
+var reservedPrefixes = ["__differ/", "__dfr/", "-/", "v/", "uploads/"];
+var reserved = (path) => reservedPrefixes.some((prefix) => path.startsWith(prefix));
+var reservedRecovery = `Rename or move it: Differ serves ${reservedPrefixes.join(", ")} itself.`;
 function safePath(path) {
-  return typeof path === "string" && path.length <= 240 && /^[\w@+ /.-]+$/.test(path) && !/^(?:-|v|uploads)\//.test(path) && path.split("/").every((part) => part && part !== "." && part !== ".." && !part.startsWith(".")) && !path.split("/").some((part) => ["node_modules", "tools", "research"].includes(part)) && !!mimeTypes[(0, import_node_path.extname)(path).toLowerCase()];
+  return typeof path === "string" && path.length <= 240 && /^[\w@+ /.-]+$/.test(path) && !reserved(path) && path.split("/").every((part) => part && part !== "." && part !== ".." && !part.startsWith(".")) && !path.split("/").some((part) => ["node_modules", "tools", "research"].includes(part)) && !!mimeTypes[(0, import_node_path.extname)(path).toLowerCase()];
 }
 function validateArtifact(input2) {
   if (!input2 || !Array.isArray(input2.files) || input2.files.length < 1 || input2.files.length > limits.files)
@@ -36698,12 +36701,14 @@ function validateArtifact(input2) {
   const files = /* @__PURE__ */ new Map();
   let bytes = 0;
   for (const file2 of input2.files) {
+    if (typeof file2.path === "string" && reserved(file2.path))
+      fail("reserved_path", `${file2.path.slice(0, 240)} is under a path Differ reserves.`, reservedRecovery);
     if (!safePath(file2.path) || files.has(file2.path) || typeof file2.content !== "string")
       fail("invalid_file", `Unsupported or duplicate asset path: ${String(file2.path).slice(0, 240)}`, "Use relative static asset paths; exclude hidden files, dependencies and tooling.");
     const content = Buffer.from(file2.content, "base64");
     if (content.toString("base64") !== file2.content) fail("invalid_encoding", `Invalid asset encoding: ${file2.path}`, "Repackage the content directory.");
     bytes += content.length;
-    if (bytes > limits.bytes) fail("artifact_too_large", "Post exceeds 20 MiB.", "Compress media or remove unused files.", 413);
+    if (bytes > limits.bytes) fail("artifact_too_large", "The bit exceeds 20 MiB.", "Compress media or remove unused files.", 413);
     files.set(file2.path, content);
   }
   if (!files.has("index.html")) fail("missing_entrypoint", "No index.html in the selected directory.", "Select or build the static output directory.");
@@ -36727,8 +36732,10 @@ function validateArtifact(input2) {
       } catch {
         fail("invalid_url", `Invalid URL in ${path}.`, "Correct the asset URL.");
       }
-      if (files.has("rules.html") && (decoded === "/-/client.js" || decoded.startsWith("/data/") || decoded.startsWith("/uploads/"))) continue;
       const target = import_node_path.posix.normalize(decoded.startsWith("/") ? decoded.slice(1) : import_node_path.posix.join(import_node_path.posix.dirname(path), decoded));
+      if (target.startsWith("__differ/") || target.startsWith("__dfr/"))
+        fail("reserved_path", `${path} refers to ${ref}, which Differ serves itself.`, "Remove the reference: Differ adds its SDK to every page, so a bit never loads it.");
+      if (files.has("rules.html") && (decoded === "/-/client.js" || decoded.startsWith("/data/") || decoded.startsWith("/uploads/"))) continue;
       if (!files.has(target) && !files.has(import_node_path.posix.join(target, "index.html")))
         fail("missing_asset", `${path} refers to missing ${ref}.`, "Include the asset or correct its relative URL.");
     }
@@ -36760,7 +36767,8 @@ function errorResult(error63) {
 // helper/project.mjs
 var import_node_fs = require("node:fs");
 var import_node_path2 = require("node:path");
-var bindingName = "differ-post.json";
+var bindingName = "differ-bit.json";
+var staleBindingName = "differ-post.json";
 var uuid3 = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 function contentDirectory(input2) {
   if (typeof input2 !== "string" || !input2) throw problem("missing_directory", "Supply an app or content directory.", "Use the app name from the repo root, or an absolute directory.");
@@ -36776,42 +36784,310 @@ function contentDirectory(input2) {
   if (!(0, import_node_fs.lstatSync)(selected).isDirectory() || (0, import_node_fs.lstatSync)(selected).isSymbolicLink()) throw problem("unsafe_input", "Content must be a real directory.", "Select a content-only directory without links.");
   return selected;
 }
+function caption(value) {
+  const text = typeof value === "string" ? value.trim() : "";
+  if (!text || [...text].length > 200 || Buffer.byteLength(text) > 800 || /[\u0000-\u0009\u000b-\u001f\u007f-\u009f]/.test(text) || text.split("\n").length > 4)
+    throw problem("invalid_caption", "Supply a caption of 1\u2013200 characters with at most 3 line breaks.", "Use the maker's own words; they confirm the caption in Differ before the bit goes public.");
+  return text;
+}
 function readBinding(directory) {
+  if ((0, import_node_fs.existsSync)((0, import_node_path2.join)(directory, staleBindingName))) throw problem("stale_binding", "differ-post.json was written by an older Differ helper, which named bits posts.", "Remove differ-post.json; it is never uploaded. To keep updating the bit it names, run bind DIR --bit <its postId> after reviewing get-bit <its postId>.");
   const path = (0, import_node_path2.join)(directory, bindingName);
   if (!(0, import_node_fs.existsSync)(path)) return;
   const stat = (0, import_node_fs.lstatSync)(path);
-  if (!stat.isFile() || stat.isSymbolicLink() || stat.nlink > 1 || stat.size > 4096) throw problem("invalid_binding", "Unsafe publication binding.", "Restore the regular differ-post.json file; never discard pending state.");
+  if (!stat.isFile() || stat.isSymbolicLink() || stat.nlink > 1 || stat.size > 4096) throw problem("invalid_binding", "Unsafe publication binding.", "Restore the regular differ-bit.json file; never discard pending state.");
   let value;
   try {
     value = JSON.parse((0, import_node_fs.readFileSync)(path, "utf8"));
   } catch {
   }
-  if (!value || value.version !== 1 || !uuid3.test(value.postId) || !uuid3.test(value.revisionId) || typeof value.publisher !== "string" || Object.keys(value).some((k) => !["version", "publisher", "postId", "revisionId", "title"].includes(k)) || value.title !== void 0 && (typeof value.title !== "string" || !value.title.trim() || value.title.length > 200))
-    throw problem("invalid_binding", "Invalid differ-post.json.", "Restore its public post/revision identity or deliberately bind after reviewing the remote post.");
+  if (!value || value.version !== 1 || !uuid3.test(value.bitId) || !uuid3.test(value.versionId) || typeof value.publisher !== "string" || typeof value.caption !== "string" || Object.keys(value).some((k) => !["version", "publisher", "bitId", "versionId", "caption"].includes(k)))
+    throw problem("invalid_binding", "Invalid differ-bit.json.", "Restore its public bit/version identity or deliberately bind after reviewing the remote bit.");
+  if (value.caption) caption(value.caption);
   try {
     const url2 = new URL(value.publisher);
     if (url2.origin !== value.publisher || url2.username || url2.password) throw Error();
   } catch {
-    throw problem("invalid_binding", "Invalid publisher origin in differ-post.json.", "Restore the intended public publisher origin.");
+    throw problem("invalid_binding", "Invalid publisher origin in differ-bit.json.", "Restore the intended public publisher origin.");
   }
   return value;
-}
-function contentTitle(directory, supplied) {
-  const title = supplied ?? readBinding(directory)?.title ?? (0, import_node_fs.readFileSync)((0, import_node_path2.join)(directory, "index.html"), "utf8").match(/<title\b[^>]*>([^<]*)<\/title>/i)?.[1];
-  if (typeof title !== "string" || !title.trim() || title.trim().length > 200) throw problem("invalid_title", "Supply a title of 1\u2013200 characters.", "Use --title or add an HTML title; never infer identity from the title.");
-  return title.trim();
 }
 function assetReport(artifact) {
   const assets = artifact.files.map((f) => ({ path: f.path, bytes: Buffer.byteLength(f.content, "base64") })).sort((a, b) => b.bytes - a.bytes || a.path.localeCompare(b.path));
   const stateful = artifact.files.some((f) => f.path === "rules.html");
   const text = artifact.files.filter((f) => /\.(html|css|js|mjs|json|txt|webmanifest)$/.test(f.path)).map((f) => Buffer.from(f.content, "base64").toString()).join("\n");
+  const warnings = assets.filter((f) => /\.(png|jpe?g)$/i.test(f.path) && f.bytes > 512 * 1024).map((f) => ({ code: "large_image", path: f.path, bytes: f.bytes, action: "Compare a compressed candidate visually; retain the original." }));
+  if (!artifact.files.some((f) => f.path === "preview.html")) warnings.push({ code: "missing_preview", path: "preview.html", action: "Add a root preview.html: the 390\xD7520 interactive preview the feed shows. Without it the feed shows index.html scaled into that box." });
   return {
     largestAssets: assets.slice(0, 10),
-    warnings: assets.filter((f) => /\.(png|jpe?g)$/i.test(f.path) && f.bytes > 512 * 1024).map((f) => ({ code: "large_image", path: f.path, bytes: f.bytes, action: "Compare a compressed candidate visually; retain the original." })),
+    warnings,
     // These are consumed by the runtime at installation, not by an HTML link.
-    unreferencedCandidates: assets.filter((f) => f.path !== "index.html" && !(stateful && (f.path === "rules.html" || /^data\/.*\.(html|json|txt)$/.test(f.path))) && !text.includes(f.path.split("/").pop())).map((f) => f.path),
+    unreferencedCandidates: assets.filter((f) => !["index.html", "preview.html"].includes(f.path) && !(stateful && (f.path === "rules.html" || /^data\/.*\.(html|json|txt)$/.test(f.path))) && !text.includes(f.path.split("/").pop())).map((f) => f.path),
     note: "Unreferenced candidates are a text-scan heuristic, not proof of dead assets; dynamic references may be missed. No files changed."
   };
+}
+
+// helper/preview.mjs
+function sdk() {
+  "use strict";
+  var player2 = window.parent;
+  var inPlayer = player2 !== window;
+  var page = /\/preview\.html$/.test(location.pathname) ? "preview" : "index";
+  var hidden = inPlayer;
+  var visibility = inPlayer ? null : "show";
+  var opened = !inPlayer && page === "index" ? { state: null } : null;
+  var subscribers = { open: [], show: [], hide: [] };
+  function send(message) {
+    if (inPlayer) player2.postMessage(message, "*");
+  }
+  function call(fn, value) {
+    try {
+      fn(value);
+    } catch (error63) {
+      setTimeout(function() {
+        throw error63;
+      });
+    }
+  }
+  function emit(name, value) {
+    subscribers[name].slice().forEach(function(entry) {
+      call(entry.fn, value);
+    });
+  }
+  function open2(state) {
+    if (page !== "preview") return console.info("[differ] open ignored: only preview.html opens the bit");
+    if (!inPlayer) return console.info("[differ] open ignored outside a player", state);
+    var text = JSON.stringify(state === void 0 ? null : state);
+    if (text === void 0) throw new TypeError("differ.open takes a JSON value.");
+    if (new TextEncoder().encode(text).length > 4096) throw new RangeError("differ.open state is over 4096 bytes.");
+    console.info("[differ] open", JSON.parse(text));
+    send({ type: "differ:open", v: 1, state: JSON.parse(text) });
+  }
+  function close() {
+    if (page !== "index") return console.info("[differ] close ignored: only index.html closes the bit");
+    console.info("[differ] close" + (inPlayer ? "" : " ignored outside a player"));
+    send({ type: "differ:close", v: 1 });
+  }
+  function on(name, fn) {
+    if (!Object.prototype.hasOwnProperty.call(subscribers, name) || typeof fn !== "function") return function() {
+    };
+    var list = subscribers[name], entry = { fn };
+    list.push(entry);
+    var replay = name === "open" ? opened : visibility === name ? {} : null;
+    if (replay) Promise.resolve().then(function() {
+      if (list.indexOf(entry) >= 0) call(fn, replay.state);
+    });
+    return function() {
+      var at = list.indexOf(entry);
+      if (at >= 0) list.splice(at, 1);
+    };
+  }
+  window.differ = Object.freeze({ page, inPlayer, get hidden() {
+    return hidden;
+  }, open: open2, close, on });
+  document.addEventListener("click", function(event) {
+    var element = event.target instanceof Element ? event.target.closest("[data-differ-open]") : null;
+    if (element) open2(element.getAttribute("data-differ-open") || null);
+  }, true);
+  if (!inPlayer) return;
+  var gesture = null;
+  var nativeCapture = { set: Element.prototype.setPointerCapture, release: Element.prototype.releasePointerCapture, has: Element.prototype.hasPointerCapture };
+  var synthetic = function(id) {
+    return gesture !== null && gesture.id === id;
+  };
+  Element.prototype.setPointerCapture = function(id) {
+    if (!synthetic(id)) return nativeCapture.set.call(this, id);
+  };
+  Element.prototype.releasePointerCapture = function(id) {
+    if (!synthetic(id)) return nativeCapture.release.call(this, id);
+  };
+  Element.prototype.hasPointerCapture = function(id) {
+    return synthetic(id) || nativeCapture.has.call(this, id);
+  };
+  var pointerTypes = { down: "pointerdown", move: "pointermove", up: "pointerup", cancel: "pointercancel" };
+  var mouseTypes = { down: "mousedown", move: "mousemove", up: "mouseup" };
+  function dispatch(target, Kind, type, x, y, button, buttons, extra) {
+    var init = { bubbles: true, cancelable: type !== "pointercancel", composed: true, view: window, clientX: x, clientY: y, screenX: x, screenY: y, button, buttons };
+    for (var key in extra) init[key] = extra[key];
+    target.dispatchEvent(new Kind(type, init));
+  }
+  function pointer(message) {
+    var phase = message.phase, id = message.id, x = message.x, y = message.y;
+    if (!Object.prototype.hasOwnProperty.call(pointerTypes, phase) || !Number.isInteger(id) || typeof x !== "number" || typeof y !== "number" || !isFinite(x) || !isFinite(y)) return;
+    if (phase === "down") gesture = { id, target: document.elementFromPoint(x, y) || document.documentElement, x, y, moved: false };
+    else if (!synthetic(id)) return;
+    var current = gesture;
+    if (Math.hypot(x - current.x, y - current.y) >= 10) current.moved = true;
+    var buttons = phase === "down" || phase === "move" ? 1 : 0;
+    var change = phase === "move" || phase === "cancel" ? -1 : 0;
+    dispatch(current.target, PointerEvent, pointerTypes[phase], x, y, change, buttons, { pointerId: id, pointerType: "touch", isPrimary: true, width: 1, height: 1, pressure: buttons ? 0.5 : 0 });
+    if (mouseTypes[phase]) dispatch(current.target, MouseEvent, mouseTypes[phase], x, y, 0, buttons, { detail: phase === "move" ? 0 : 1 });
+    if (phase === "up" && !current.moved) dispatch(current.target, MouseEvent, "click", x, y, 0, 0, { detail: 1 });
+    if (phase === "up") {
+      touches++;
+      if (!timer) report();
+    }
+    if (phase === "up" || phase === "cancel") gesture = null;
+  }
+  window.addEventListener("message", function(event) {
+    var message = event.data;
+    if (event.source !== window.parent || message === null || typeof message !== "object" || message.v !== 1) return;
+    if (message.type === "differ:show" || message.type === "differ:hide") {
+      hidden = message.type === "differ:hide";
+      visibility = hidden ? "hide" : "show";
+      emit(visibility);
+    } else if (message.type === "differ:open" && page === "index") {
+      opened = { state: message.state === void 0 ? null : message.state };
+      emit("open", opened.state);
+    } else if (message.type === "differ:pointer") {
+      pointer(message);
+    }
+  });
+  var touches = 0, timer = 0;
+  function report() {
+    if (!touches) {
+      timer = 0;
+      return;
+    }
+    send({ type: "differ:activity", v: 1, interactions: touches });
+    touches = 0;
+    timer = setTimeout(report, 1e3);
+  }
+  ["pointerdown", "keydown"].forEach(function(type) {
+    window.addEventListener(type, function(event) {
+      if (!event.isTrusted) return;
+      touches++;
+      if (!timer) report();
+    }, { capture: true, passive: true });
+  });
+  send({ type: "differ:ready", v: 1, page });
+}
+var sdkStandIn = `(${sdk})();
+`;
+function player() {
+  var preview2 = document.getElementById("preview");
+  var box = document.getElementById("open");
+  var frames = { preview: preview2, index: null };
+  var state = null, lastUp = -Infinity;
+  function log(text) {
+    var line = document.createElement("li");
+    line.textContent = (/* @__PURE__ */ new Date()).toLocaleTimeString() + "  " + text;
+    document.getElementById("log").prepend(line);
+    console.info("[player] " + text);
+  }
+  function tell(frame, message) {
+    message.v = 1;
+    frame.contentWindow.postMessage(message, location.origin);
+  }
+  function openIndex(value) {
+    state = value;
+    var frame = document.createElement("iframe");
+    frame.src = "/index.html";
+    frame.title = "index.html";
+    frame.width = 390;
+    frame.height = 693;
+    frames.index = frame;
+    box.replaceChildren(frame);
+  }
+  function closeIndex() {
+    frames.index = null;
+    var again = document.createElement("button");
+    again.className = "reopen";
+    again.textContent = "Closed. Open again";
+    again.onclick = function() {
+      log("player: open");
+      openIndex(null);
+    };
+    box.replaceChildren(again);
+  }
+  window.addEventListener("message", function(event) {
+    var message = event.data;
+    if (event.origin !== location.origin || message === null || typeof message !== "object" || message.v !== 1) return;
+    var page = preview2 && event.source === preview2.contentWindow ? "preview" : frames.index && event.source === frames.index.contentWindow ? "index" : null;
+    if (!page) return;
+    if (message.type === "differ:ready") {
+      log(page + ".html: ready");
+      tell(frames[page], { type: "differ:show" });
+      if (page === "index") tell(frames.index, { type: "differ:open", state });
+    } else if (message.type === "differ:open") {
+      if (page !== "preview") return log("index.html: differ.open ignored, only preview.html opens the bit");
+      if (performance.now() - lastUp > 1e3) return log("preview.html: open " + JSON.stringify(message.state) + " ignored, the feed opens only within 1 s of a tap");
+      log("preview.html: open " + JSON.stringify(message.state));
+      openIndex(message.state);
+    } else if (message.type === "differ:close") {
+      if (page !== "index") return log("preview.html: differ.close ignored, only index.html closes the bit");
+      log("index.html: close");
+      closeIndex();
+    }
+  });
+  var badge = document.getElementById("badge");
+  if (badge) badge.onclick = function() {
+    log("player: open");
+    openIndex(null);
+  };
+  var layer = document.getElementById("layer");
+  var gesture = null, ids = 0;
+  function forward(phase, event) {
+    var rect = preview2.getBoundingClientRect();
+    tell(preview2, { type: "differ:pointer", phase, id: gesture.id, x: event.clientX - rect.left, y: event.clientY - rect.top });
+  }
+  if (layer) {
+    layer.addEventListener("pointerdown", function(event) {
+      if (gesture) return;
+      layer.setPointerCapture(event.pointerId);
+      gesture = { pointer: event.pointerId, id: ++ids, x: event.clientX, y: event.clientY, sideways: false, feed: false };
+      forward("down", event);
+    });
+    layer.addEventListener("pointermove", function(event) {
+      if (!gesture || event.pointerId !== gesture.pointer || gesture.feed) return;
+      var dx = Math.abs(event.clientX - gesture.x), dy = Math.abs(event.clientY - gesture.y);
+      if (!gesture.sideways && dy > 10 && dy > dx) {
+        gesture.feed = true;
+        forward("cancel", event);
+        return log("preview.html: vertical drag, the feed takes it and pages; the preview gets pointercancel");
+      }
+      if (dx > 10) gesture.sideways = true;
+      forward("move", event);
+    });
+    var end = function(phase) {
+      return function(event) {
+        if (!gesture || event.pointerId !== gesture.pointer) return;
+        if (!gesture.feed) forward(phase, event);
+        if (phase === "up") lastUp = performance.now();
+        gesture = null;
+      };
+    };
+    layer.addEventListener("pointerup", end("up"));
+    layer.addEventListener("pointercancel", end("cancel"));
+  }
+  openIndex(null);
+}
+var style = `
+:root { color-scheme: light; --ground: #ece7dd; --ink: #1b1a17; --soft: rgba(27,26,23,.56); }
+* { box-sizing: border-box; }
+body { margin: 0; padding: 24px 16px; background: var(--ground); color: var(--ink); font: 14px/1.4 system-ui, sans-serif; }
+main { display: flex; flex-wrap: wrap; gap: 32px; justify-content: center; align-items: flex-start; }
+h2 { margin: 0 0 8px; font-size: 14px; font-weight: 600; }
+h2 span, .note, footer { color: var(--soft); font-weight: 400; }
+.box, .open { position: relative; overflow: hidden; background: #fbf8f2; box-shadow: 0 1px 2px rgba(27,26,23,.08), 0 12px 32px rgba(27,26,23,.12); }
+.box { width: 390px; height: 520px; border-radius: 18px; }
+.open { width: 390px; height: 693px; border-radius: 22px; display: grid; place-items: center; }
+iframe { display: block; border: 0; background: #fff; }
+#layer { position: absolute; inset: 0; touch-action: none; }
+#badge { position: absolute; top: 10px; right: 10px; width: 30px; height: 30px; border: 0; border-radius: 50%; padding: 0; background: rgba(27,26,23,.42); backdrop-filter: blur(8px); color: #fff; font-size: 14px; cursor: pointer; }
+#badge::before { content: ''; position: absolute; inset: -7px; }
+.note { width: 390px; height: 520px; border: 1px dashed var(--soft); border-radius: 18px; padding: 24px; margin: 0; }
+.reopen { font: inherit; padding: 10px 16px; border-radius: 999px; border: 1px solid var(--ink); background: none; cursor: pointer; }
+footer { max-width: 812px; margin: 24px auto 0; }
+#log { font: 12px/1.6 ui-monospace, monospace; padding-left: 0; list-style: none; color: var(--ink); }
+`;
+function previewPage({ preview: preview2 }) {
+  const box = preview2 ? '<div class="box"><iframe id="preview" src="/preview.html" title="preview.html" allow="" width="390" height="520"></iframe><div id="layer"></div><button id="badge" aria-label="Open">\u2922</button></div>' : '<p class="note">No preview.html. The feed shows index.html laid out at 390\xD7693 and scaled into this 390\xD7520 box, and a tap there opens the bit. Add preview.html to make the box interactive.</p>';
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Differ preview</title><style>${style}</style></head><body>
+<main><section><h2>preview.html <span>390\xD7520, the feed's box</span></h2>${box}</section>
+<section><h2>index.html <span>390\xD7693, the open bit</span></h2><div class="open" id="open"></div></section></main>
+<footer><p>A local stand-in for Differ's player and SDK. Presses on the preview are forwarded as a player forwards them; vertical drags belong to the feed. Restart preview after editing. Nothing is uploaded.</p><ol id="log"></ol></footer>
+<script>(${player})();</script></body></html>`;
 }
 
 // helper/connection.mjs
@@ -36852,9 +37128,9 @@ function configuration() {
 }
 var recoveries = {
   reconnect_required: reconnect,
-  owner_conflict: "Connect the account that owns this post, or publish your own version as a diff.",
-  revision_conflict: "Compare get-post ID with your files, then deliberately bind DIR --post ID and publish again.",
-  creation_expired: "Unclaimed guest posts expire after 24 hours. Publish again with --new to start a new post."
+  owner_conflict: "Connect the account that owns this bit, or publish your own as a diff.",
+  version_conflict: "Compare get-bit ID with your files, then deliberately bind DIR --bit ID and publish again.",
+  bit_expired: "Unclaimed guest bits expire after 24 hours. Publish again with --new to start a new bit."
 };
 async function request(url2, path, { bearer, body } = {}) {
   let response;
@@ -36917,7 +37193,7 @@ async function activeConfiguration() {
       if (error63.code === "invalid_grant") throw problem("reconnect_required", "Your Differ connection expired or was revoked.", reconnect);
       throw error63;
     }
-    atomic(configPath(), { ...connection(config2.url, tokens), accountUsername: config2.accountUsername });
+    atomic(configPath(), { ...connection(config2.url, tokens), accountHandle: config2.accountHandle });
     return configuration();
   } finally {
     unlock();
@@ -36928,14 +37204,14 @@ async function connect() {
   const unlock = connectionLock();
   try {
     const config2 = saved();
-    const device = await request(url2, "/oauth/device", { body: { client_id: client, resource: `${url2}/mcp`, scope: "profile posts:write" } });
+    const device = await request(url2, "/oauth/device", { body: { client_id: client, resource: `${url2}/mcp`, scope: "profile bits:write" } });
     atomic(configPath(), { ...config2, pendingConnection: { url: url2, deviceCode: device.device_code, expiresAt: Date.now() + device.expires_in * 1e3, nextPollAt: Date.now() + device.interval * 1e3 } });
     return {
       state: "awaiting_approval",
       url: device.verification_uri_complete,
       code: device.user_code,
       expiresIn: device.expires_in,
-      instruction: "Open this private link, check the code, sign in and approve. Then run connection-status. This connects future publishing; it does not claim earlier posts."
+      instruction: "Open this private link, check the code, sign in and approve. Then run connection-status. This connects future publishing; it does not claim earlier guest bits."
     };
   } finally {
     unlock();
@@ -36946,7 +37222,7 @@ async function connectionStatus() {
   try {
     const config2 = saved();
     const pending = config2.pendingConnection;
-    if (!pending) return config2.mode === "connected" ? { state: "connected", username: config2.accountUsername } : { state: "guest" };
+    if (!pending) return config2.mode === "connected" ? { state: "connected", handle: config2.accountHandle } : { state: "guest" };
     if (pending.expiresAt <= Date.now()) throw problem("connection_expired", "This connection request expired.", "Run connect again.");
     if (pending.nextPollAt > Date.now()) return { state: "awaiting_approval", retryAfter: Math.ceil((pending.nextPollAt - Date.now()) / 1e3) };
     pending.nextPollAt = Date.now() + 5e3;
@@ -36961,8 +37237,8 @@ async function connectionStatus() {
     const connected = connection(pending.url, tokens);
     atomic(configPath(), connected);
     const account2 = await request(pending.url, "/v1/publishing/account", { bearer: connected.accessToken });
-    atomic(configPath(), { ...connected, accountUsername: account2.username });
-    return { state: "connected", username: account2.username, notice: "Future posts are yours. Earlier guest posts still need their own claim link." };
+    atomic(configPath(), { ...connected, accountHandle: account2.handle });
+    return { state: "connected", handle: account2.handle, notice: "Future bits are yours. Earlier guest bits still need their own claim link." };
   } finally {
     unlock();
   }
@@ -36973,7 +37249,7 @@ async function disconnect() {
     const config2 = saved();
     if (config2.mode === "connected") await request(config2.url, "/oauth/revoke", { body: { client_id: client, token: config2.refreshToken } });
     atomic(configPath(), { mode: "guest" });
-    return { state: "guest", notice: "Disconnected. New posts are guest posts until you connect again. Your existing posts keep their ownership." };
+    return { state: "guest", notice: "Disconnected. New bits are guest bits until you connect again. Your existing bits keep their ownership." };
   } finally {
     unlock();
   }
@@ -36982,7 +37258,7 @@ async function disconnect() {
 // helper/client.mjs
 var read = (path) => JSON.parse((0, import_node_fs3.readFileSync)(path, "utf8"));
 var account = (config2) => config2.mode === "connected" ? request(config2.url, "/v1/publishing/account", { bearer: config2.token }) : null;
-var publicState = (config2, postId) => request(config2.url, `/v1/publishing/posts/${postId}`);
+var publicState = (config2, bitId) => request(config2.url, `/v1/publishing/bits/${bitId}`);
 async function doctor() {
   const config2 = await activeConfiguration();
   const capabilities = await request(config2.url, "/v1/publishing/capabilities");
@@ -36992,7 +37268,7 @@ async function doctor() {
     url: config2.url,
     ...await account(config2),
     limits: capabilities.limits,
-    notice: config2.mode === "guest" ? "Ready without sign-in. Posts are live by link for 24 hours; show the private claim link and deadline after publishing. Run connect to publish as yourself." : "New posts are automatically yours. Earlier guest posts need their own claim link."
+    notice: config2.mode === "guest" ? "Ready without sign-in. Guest bits are live by link for 24 hours; show the private claim link and deadline after publishing. Run connect to publish as yourself." : "New bits are automatically yours. Earlier guest bits need their own claim link."
   };
 }
 function pack(directory) {
@@ -37009,13 +37285,14 @@ function pack(directory) {
       const stat = (0, import_node_fs3.lstatSync)(full);
       const reason = entry.isSymbolicLink() ? "symbolic link" : stat.isFile() && stat.nlink > 1 ? "hard-linked file" : entry.name.startsWith(".") ? "hidden entry" : ["node_modules", "tools", "research", "artifacts", "recordings"].includes(entry.name) ? "tooling/scratch directory" : null;
       if (reason) throw problem("unsafe_input", `Refusing ${name}: ${reason}.`, "Select a content-only directory; keep originals, experiments and recordings outside it.");
+      if (reserved(entry.isDirectory() ? `${name}/` : name)) throw problem("reserved_path", `Refusing ${name}: Differ reserves ${reservedPrefixes.join(", ")}.`, "Rename or move it; Differ serves those paths itself.");
       if (entry.isDirectory()) {
         walk(full);
         continue;
       }
       if (!stat.isFile() || !safePath(name)) throw problem("unsupported_file", `Unsupported static asset: ${name}.`, "Select the built content output, not source or server code.");
       bytes += stat.size;
-      if (bytes > limits.bytes || files.length >= limits.files) throw problem("artifact_too_large", "Post exceeds 20 MiB or 256 files.", "Compress media or remove unused assets.");
+      if (bytes > limits.bytes || files.length >= limits.files) throw problem("artifact_too_large", "The bit exceeds 20 MiB or 256 files.", "Compress media or remove unused assets.");
       files.push({ path: name, content: (0, import_node_fs3.readFileSync)(full).toString("base64") });
     }
   }
@@ -37033,28 +37310,24 @@ function check2(directory) {
   return { valid: true, validation: "static", participation, directory: artifact.root, files: artifact.files.length, bytes: artifact.bytes, artifactId: artifact.artifactId, ...assetReport(artifact), checks: "Static paths and obvious secrets checked; browser interaction and visual quality still need review." };
 }
 var statePath = (directory) => (0, import_node_path4.join)((0, import_node_path4.resolve)(directory), ".differ", "state.json");
+var stateVersion = 2;
 function stateFor(directory, config2, rebinding = false) {
   const binding = readBinding(directory);
-  if (binding && binding.publisher !== config2.url) throw problem("target_changed", "The portable binding names another publisher.", "Use the intended publisher configuration; never silently retarget this post.");
+  if (binding && binding.publisher !== config2.url) throw problem("target_changed", "The portable binding names another publisher.", "Use the intended publisher configuration; never silently retarget this bit.");
   const path = statePath(directory);
   const state = (0, import_node_fs3.existsSync)(path) ? read(path) : {
-    version: 1,
+    version: stateVersion,
     url: config2.url,
-    ...binding ? { receipt: { postId: binding.postId, revisionId: binding.revisionId } } : {}
+    ...binding ? { receipt: { bitId: binding.bitId, versionId: binding.versionId } } : {}
   };
+  if (state.version !== stateVersion) throw problem("stale_state", ".differ/state.json was written by an older Differ helper.", "Move .differ out of the content directory, keeping any claim link it holds, then bind DIR --bit ID or publish with --new.");
   if (state.url !== config2.url) throw problem("target_changed", "This content is bound to another publisher.", "Keep its receipt. Use a separate directory for a different destination.");
-  if (!rebinding && !state.pending && binding && state.receipt && (binding.postId !== state.receipt.postId || binding.revisionId !== state.receipt.revisionId)) throw problem("binding_conflict", "Portable and local state name different posts/revisions.", "Review both identities; deliberately bind only after reconciling pending work.");
+  if (!rebinding && !state.pending && binding && state.receipt && (binding.bitId !== state.receipt.bitId || binding.versionId !== state.receipt.versionId)) throw problem("binding_conflict", "Portable and local state name different bits/versions.", "Review both identities; deliberately bind only after reconciling pending work.");
   return state;
 }
-function saveBinding(directory, state, title) {
+function saveBinding(directory, state, caption2) {
   const receipt = state.receipt;
-  atomic((0, import_node_path4.join)(directory, bindingName), {
-    version: 1,
-    publisher: state.url,
-    postId: receipt.postId,
-    revisionId: receipt.revisionId,
-    ...title ? { title } : {}
-  });
+  atomic((0, import_node_path4.join)(directory, bindingName), { version: 1, publisher: state.url, bitId: receipt.bitId, versionId: receipt.versionId, caption: caption2 ?? "" });
 }
 function lock(directory) {
   const path = (0, import_node_path4.join)((0, import_node_path4.resolve)(directory), ".differ", "lock");
@@ -37088,126 +37361,126 @@ async function status(directory) {
     unlock();
   }
 }
-async function publish(directory, title, { newPost = false, parentPostId, parentRevisionId } = {}) {
+async function publish(directory, caption2, { newBit = false, parentBitId, parentVersionId } = {}) {
   directory = contentDirectory(directory);
-  title = contentTitle(directory, title);
-  if (!!parentPostId !== !!parentRevisionId) throw problem("invalid_diff", "A diff requires source post and revision IDs.", "Read the source post first.");
+  if (!!parentBitId !== !!parentVersionId) throw problem("invalid_diff", "A diff requires the source bit and version IDs.", "Read the source bit first.");
+  const words = caption2 !== void 0 ? caption(caption2) : newBit || parentBitId ? "" : readBinding(directory)?.caption || "";
   const config2 = await activeConfiguration();
   const artifact = pack(directory);
   const unlock = lock(directory);
   try {
-    return await publishCreator(config2, stateFor(directory, config2), directory, artifact, title, { newPost, parentPostId, parentRevisionId });
+    return await publishCreator(config2, stateFor(directory, config2), directory, artifact, words, { newBit, parentBitId, parentVersionId });
   } finally {
     unlock();
   }
 }
-async function getPost(postId) {
-  const state = await publicState(configuration(), postId);
-  if (!state.post) throw problem("post_not_ready", "This post has not been published.", "Finish the first upload.");
-  return state.post;
+async function getBit(bitId) {
+  const state = await publicState(configuration(), bitId);
+  if (!state.bit) throw problem("bit_not_ready", "This bit has not been published.", "Finish the first upload.");
+  return state.bit;
 }
-async function bind(directory, postId) {
+async function bind(directory, bitId) {
   directory = contentDirectory(directory);
   const config2 = await activeConfiguration();
   const unlock = lock(directory);
   try {
     const state = stateFor(directory, config2, true);
     if (state.pending) throw problem("pending_publication", "Reconcile the pending publication first.", "Run status.");
-    const post = await getPost(postId);
-    if (state.creation && state.creation.id !== post.id) {
-      state.previous = [...state.previous ?? [], { creation: state.creation, receipt: state.receipt, lastInput: state.lastInput }];
-      delete state.creation;
+    const bit = await getBit(bitId);
+    if (state.bit && state.bit.id !== bit.id) {
+      state.previous = [...state.previous ?? [], { bit: state.bit, receipt: state.receipt, lastInput: state.lastInput }];
+      delete state.bit;
     }
-    state.receipt = { postId: post.id, revisionId: post.currentRevisionId };
+    state.receipt = { bitId: bit.id, versionId: bit.currentVersionId };
     delete state.lastInput;
     atomic(statePath(directory), state);
-    saveBinding(directory, state, post.revisions.find((r) => r.id === post.currentRevisionId)?.title);
-    return { bound: true, postId: post.id, expectedRevisionId: post.currentRevisionId, recovery: "Local files were not changed. Publish only after deliberately reconciling this draft with the current post." };
+    saveBinding(directory, state, bit.versions.find((v) => v.id === bit.currentVersionId)?.caption);
+    return { bound: true, bitId: bit.id, expectedVersionId: bit.currentVersionId, recovery: "Local files were not changed. Publish only after deliberately reconciling this draft with the current bit." };
   } finally {
     unlock();
   }
 }
 async function bearerFor(config2, state, me) {
-  const creation = state.creation;
+  const bit = state.bit;
   if (me === void 0) me = await account(config2);
-  if (creation.mode === "connected") {
-    if (me?.username !== creation.accountUsername) throw problem("account_changed", "This draft belongs to a different connected creator.", "Reconnect that account, or deliberately create a separate diff.");
+  if (bit.mode === "connected") {
+    if (me?.handle !== bit.accountHandle) throw problem("account_changed", "This draft belongs to a different connected creator.", "Reconnect that account, or deliberately create a separate diff.");
     return config2.token;
   }
   if (me) {
-    const current = await publicState(config2, creation.id);
+    const current = await publicState(config2, bit.id);
     if (current.claimed) {
-      if (current.post?.username !== me.username) throw problem("owner_conflict", "This claimed post belongs to another creator.", "Connect its owner or create a diff.");
-      creation.mode = "connected";
-      creation.accountUsername = me.username;
+      if (current.bit?.handle !== me.handle) throw problem("owner_conflict", "This claimed bit belongs to another creator.", "Connect its owner or create a diff.");
+      bit.mode = "connected";
+      bit.accountHandle = me.handle;
       return config2.token;
     }
   }
-  return creation.uploadToken;
+  return bit.uploadToken;
 }
 function claimReceipt(receipt, state) {
-  if (receipt.draft) return { ...receipt, contentVerified: false, notice: "Saved as a draft, not published yet. Open the returned url to preview and publish it." };
-  return receipt.state === "succeeded" && !receipt.claimed && state.creation?.claimUrl ? { ...receipt, claimUrl: state.creation.claimUrl, claimLinkPrivate: true } : receipt;
+  if (receipt.draft) return { ...receipt, contentVerified: false, notice: "Saved as a draft, not published yet. Open the returned url to preview it, confirm its caption and publish it." };
+  return receipt.state === "succeeded" && !receipt.claimed && state.bit?.claimUrl ? { ...receipt, claimUrl: state.bit.claimUrl, claimLinkPrivate: true } : receipt;
 }
-var draft = ({ requestId, title, expectedRevisionId, parentPostId, parentRevisionId }, files) => ({ requestId, title, expectedRevisionId, files, ...parentPostId ? { parentPostId, parentRevisionId } : {} });
+var draft = ({ requestId, caption: caption2, expectedVersionId, parentBitId, parentVersionId }, files) => ({ requestId, ...caption2 ? { caption: caption2 } : {}, expectedVersionId, files, ...parentBitId ? { parentBitId, parentVersionId } : {} });
 var outcomeUnknown = (error63) => !(error63.status >= 400 && error63.status < 500) || ["reconnect_required", "upload_busy"].includes(error63.code);
 async function creatorStatus(config2, state, directory, me) {
-  if (state.pending && !state.creation) throw problem("invalid_state", "The pending publication has no saved publishing identity.", "Keep the private journal and recover its publishing identity before retrying.");
-  if (!state.creation) return state.receipt ? { state: "bound", ...await getPost(state.receipt.postId) } : { state: "local", mode: config2.mode };
+  if (state.pending && !state.bit) throw problem("invalid_state", "The pending publication has no saved publishing identity.", "Keep the private journal and recover its publishing identity before retrying.");
+  if (!state.bit) return state.receipt ? { state: "bound", ...await getBit(state.receipt.bitId) } : { state: "local", mode: config2.mode };
   const input2 = state.pending ?? state.lastInput;
-  if (!input2) return { state: "reserved", postId: state.creation.id };
-  const receipt = await request(config2.url, `/v1/publishing/posts/${state.creation.id}/operations/${input2.requestId}`, { bearer: await bearerFor(config2, state, me) });
+  if (!input2) return { state: "reserved", bitId: state.bit.id };
+  const receipt = await request(config2.url, `/v1/publishing/bits/${state.bit.id}/operations/${input2.requestId}`, { bearer: await bearerFor(config2, state, me) });
   if (receipt.state === "succeeded") {
     state.receipt = receipt;
     state.lastInput = input2;
     delete state.pending;
-    saveBinding(directory, state, input2.title);
+    saveBinding(directory, state, input2.caption);
     atomic(statePath(directory), state);
   }
   return claimReceipt(receipt, state);
 }
-async function publishCreator(config2, state, directory, artifact, title, { newPost, parentPostId, parentRevisionId }) {
+async function publishCreator(config2, state, directory, artifact, caption2, { newBit, parentBitId, parentVersionId }) {
   const me = await account(config2);
   if (state.pending) {
     const recovered = await creatorStatus(config2, state, directory, me);
     if (recovered.state === "succeeded") return { ...recovered, recovered: true, recovery: "Recovered the previous upload. Run publish again only if more edits were requested." };
-    if (state.pending.artifactId !== artifact.artifactId || state.pending.title !== title) throw problem("pending_changed", "Pending publication belongs to different content.", "Restore the pending content/title and retry; never discard uncertain state.");
+    if (state.pending.artifactId !== artifact.artifactId || state.pending.caption !== caption2) throw problem("pending_changed", "Pending publication belongs to different content.", "Restore the pending content/caption and retry; never discard uncertain state.");
   }
-  if (!state.pending && (newPost || parentPostId)) {
-    state.previous = [...state.previous ?? [], { creation: state.creation, receipt: state.receipt, lastInput: state.lastInput }];
-    delete state.creation;
+  if (!state.pending && (newBit || parentBitId)) {
+    state.previous = [...state.previous ?? [], { bit: state.bit, receipt: state.receipt, lastInput: state.lastInput }];
+    delete state.bit;
     delete state.receipt;
     delete state.lastInput;
   }
-  if (!state.creation) {
-    if (state.receipt && !me) throw problem("ownership_required", "A public post binding does not grant editing rights.", "Use the original private workspace or connect the owner. To make your own version, create a diff.");
-    state.creation = {
-      id: state.receipt?.postId ?? (0, import_node_crypto3.randomUUID)(),
+  if (!state.bit) {
+    if (state.receipt && !me) throw problem("ownership_required", "A public bit binding does not grant editing rights.", "Use the original private workspace or connect the owner. To make your own, create a diff.");
+    state.bit = {
+      id: state.receipt?.bitId ?? (0, import_node_crypto3.randomUUID)(),
       mode: me ? "connected" : "guest",
-      ...me ? { accountUsername: me.username } : { ownerProof: (0, import_node_crypto3.randomBytes)(32).toString("hex") }
+      ...me ? { accountHandle: me.handle } : { ownerProof: (0, import_node_crypto3.randomBytes)(32).toString("hex") }
     };
     atomic(statePath(directory), state);
   }
-  if (state.creation.mode === "guest" && !state.creation.uploadToken) {
-    const reserved = await request(config2.url, `/v1/publishing/posts/${state.creation.id}/reservation`, { body: { ownerProof: state.creation.ownerProof } });
-    state.creation.uploadToken = reserved.uploadToken;
-    state.creation.claimUrl = reserved.claimUrl;
+  if (state.bit.mode === "guest" && !state.bit.uploadToken) {
+    const reserved2 = await request(config2.url, `/v1/publishing/bits/${state.bit.id}/reservation`, { body: { ownerProof: state.bit.ownerProof } });
+    state.bit.uploadToken = reserved2.uploadToken;
+    state.bit.claimUrl = reserved2.claimUrl;
     atomic(statePath(directory), state);
   }
-  if (!state.pending && state.receipt?.artifactId === artifact.artifactId && state.lastInput?.title === title) return creatorStatus(config2, state, directory, me);
+  if (!state.pending && state.receipt?.artifactId === artifact.artifactId && state.lastInput?.caption === caption2) return creatorStatus(config2, state, directory, me);
   const bearer = await bearerFor(config2, state, me);
   const input2 = state.pending ?? {
     requestId: (0, import_node_crypto3.randomUUID)(),
     artifactId: artifact.artifactId,
-    title,
-    expectedRevisionId: state.receipt?.revisionId ?? null,
-    ...parentPostId ? { parentPostId, parentRevisionId } : {}
+    caption: caption2,
+    expectedVersionId: state.receipt?.versionId ?? null,
+    ...parentBitId ? { parentBitId, parentVersionId } : {}
   };
   state.pending = input2;
   atomic(statePath(directory), state);
   let receipt;
   try {
-    receipt = await request(config2.url, `/v1/publishing/posts/${state.creation.id}/versions`, { bearer, body: draft(input2, artifact.files) });
+    receipt = await request(config2.url, `/v1/publishing/bits/${state.bit.id}/versions`, { bearer, body: draft(input2, artifact.files) });
   } catch (error63) {
     if (!outcomeUnknown(error63)) {
       state.rejected = { input: input2, code: error63.code };
@@ -37219,7 +37492,7 @@ async function publishCreator(config2, state, directory, artifact, title, { newP
   state.receipt = receipt;
   state.lastInput = input2;
   delete state.pending;
-  saveBinding(directory, state, title);
+  saveBinding(directory, state, caption2);
   atomic(statePath(directory), state);
   if (receipt.draft) return claimReceipt(receipt, state);
   const live = await fetch(receipt.runtimeUrl, { redirect: "error", signal: AbortSignal.timeout(15e3) }).then((r) => r.ok).catch(() => false);
@@ -37228,27 +37501,40 @@ async function publishCreator(config2, state, directory, artifact, title, { newP
 function preview(directory, port = 0) {
   const artifact = pack(directory);
   const files = new Map(artifact.files.map((f) => [f.path, Buffer.from(f.content, "base64")]));
-  if (files.has("rules.html")) throw problem("runtime_preview_required", "This post uses shared document state.", "Use a pagelike runtime preview; this local file server cannot verify shared writes or participation.");
-  const mount = "/";
+  if (files.has("rules.html")) throw problem("runtime_preview_required", "This bit uses shared document state.", "Use a pagelike runtime preview; this local file server cannot verify shared writes or participation.");
+  const page = previewPage({ preview: files.has("preview.html") });
   const server = (0, import_node_http.createServer)((request2, response) => {
     const url2 = new URL(request2.url, "http://localhost");
+    const send = (type, body) => {
+      response.writeHead(200, { "Content-Type": type, "Cache-Control": "no-store" });
+      response.end(request2.method === "HEAD" ? void 0 : body);
+    };
     let path;
     try {
-      path = decodeURIComponent(url2.pathname.slice(mount.length)) || "index.html";
+      path = decodeURIComponent(url2.pathname.slice(1)) || "index.html";
     } catch {
       path = "";
     }
-    if (!["GET", "HEAD"].includes(request2.method) || !url2.pathname.startsWith(mount) || !files.has(path)) {
+    if (!["GET", "HEAD"].includes(request2.method)) path = "";
+    if (path === "__differ/") return send(mimeTypes[".html"], page);
+    if (path === "__differ/sdk.js") return send(mimeTypes[".js"], sdkStandIn);
+    if (!files.has(path)) {
       response.writeHead(404);
       response.end("Not found");
       return;
     }
     const ext = "." + path.split(".").pop().toLowerCase();
-    response.writeHead(200, { "Content-Type": mimeTypes[ext], "Cache-Control": "no-store" });
-    response.end(request2.method === "HEAD" ? void 0 : files.get(path));
+    const framed = ext === ".html" && ["document", "iframe"].includes(request2.headers["sec-fetch-dest"]);
+    send(mimeTypes[ext], framed ? withSDK(files.get(path)) : files.get(path));
   });
   server.listen(port, "127.0.0.1");
-  return { server, mount };
+  return { server, mount: "/__differ/", pages: files.has("preview.html") ? ["index.html", "preview.html"] : ["index.html"] };
+}
+var sdkTag = '<script src="/__differ/sdk.js"></script>';
+function withSDK(bytes) {
+  const html = bytes.toString("utf8");
+  const head = /<head\b[^>]*>/i.exec(html);
+  return head ? html.slice(0, head.index + head[0].length) + sdkTag + html.slice(head.index + head[0].length) : sdkTag + html;
 }
 
 // helper/media.mjs
@@ -37306,7 +37592,7 @@ function inspectVideo(input2) {
 // package.json
 var package_default = {
   name: "differ-plugin",
-  version: "0.6.4",
+  version: "0.7.0",
   private: true,
   type: "module",
   engines: {
@@ -37330,7 +37616,7 @@ var package_default = {
     esbuild: "0.25.12"
   },
   license: "MIT",
-  description: "Differ creation skills and publishing helper",
+  description: "Differ skills for making bits, and the publishing helper",
   repository: {
     type: "git",
     url: "https://github.com/sky-valley/differ-plugin.git"
@@ -37355,15 +37641,21 @@ async function mcp() {
   server.registerTool("publisher_status", { description: "Check publishing service access, account, and limits. No publication.", inputSchema: {}, annotations }, wrap(doctor));
   server.registerTool("check_content", { description: "Validate local static files without uploading or publishing. Reports shared participation as unverified: read the participation reference and examples and rehearse with the real runtime. Does not test authorization, live updates or browser behavior.", inputSchema: { directory }, annotations }, wrap(({ directory: directory2 }) => check2(directory2)));
   server.registerTool("publish_directory", {
-    description: "Upload content when the human asks. Works as a guest without sign-in, or as the deliberately connected creator. New directory creates a post; saved identity revises it. Connected uploads are drafts: when the receipt has draft:true, say it is not published yet and show its url to preview and publish. For guests show the public URL, private claim link, expiry and unclaimed notice; never hide them or block publishing to demand sign-in.",
-    inputSchema: { directory, title: external_exports.string().min(1).max(200).optional().describe("Defaults to saved title or HTML title."), newPost: external_exports.boolean().optional(), parentPostId: external_exports.string().uuid().optional(), parentRevisionId: external_exports.string().uuid().optional() },
+    description: "Upload content when the human asks. Works as a guest without sign-in, or as the deliberately connected creator. A new directory creates a bit; its saved identity uploads a new version of that bit. Connected uploads are drafts: when the receipt has draft:true, say it is not published yet and show its url, where the maker previews it, confirms its caption and publishes it. For guests show the url, private claim link, expiry and unclaimed notice; never hide them or block publishing to demand sign-in.",
+    inputSchema: {
+      directory,
+      caption: external_exports.string().optional().describe("The maker's own words shown over the bit: 1\u2013200 characters, at most 3 line breaks, checked before upload. Suggest it and let the maker confirm it; they confirm it again in Differ before the bit goes public. Defaults to the caption differ-bit.json saved for this bit."),
+      newBit: external_exports.boolean().optional(),
+      parentBitId: external_exports.string().uuid().optional(),
+      parentVersionId: external_exports.string().uuid().optional()
+    },
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: true }
-  }, wrap(({ directory: directory2, title, ...options }) => publish(directory2, title, options)));
-  server.registerTool("connect_account", { description: "When the human asks to sign in/connect, start browser approval and return its private link and verification code. Do not approve it on their behalf. This authorizes future posts, not claims of earlier guest posts.", inputSchema: {}, annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false } }, wrap(connect));
+  }, wrap(({ directory: directory2, caption: caption2, ...options }) => publish(directory2, caption2, options)));
+  server.registerTool("connect_account", { description: "When the human asks to sign in/connect, start browser approval and return its private link and verification code. Do not approve it on their behalf. This authorizes future bits, not claims of earlier guest bits.", inputSchema: {}, annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false } }, wrap(connect));
   server.registerTool("connection_status", { description: "After the human approves the connection link, finish connecting. Respect retryAfter; do not poll in a tight loop.", inputSchema: {}, annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false } }, wrap(connectionStatus));
-  server.registerTool("disconnect_account", { description: "Only when the human requests it, revoke this agent connection and explicitly return future publishing to guest mode. Existing posts keep ownership.", inputSchema: {}, annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false } }, wrap(disconnect));
+  server.registerTool("disconnect_account", { description: "Only when the human requests it, revoke this agent connection and explicitly return future publishing to guest mode. Existing bits keep their ownership.", inputSchema: {}, annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false } }, wrap(disconnect));
   server.registerTool("publication_status", { description: "Recover a pending publication or verify the saved receipt for a local directory.", inputSchema: { directory }, annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false } }, wrap(({ directory: directory2 }) => status(directory2)));
-  server.registerTool("get_post", { description: "Inspect a remote post before conflict recovery or diffing.", inputSchema: { postId: external_exports.string().uuid() }, annotations }, wrap(({ postId }) => getPost(postId)));
+  server.registerTool("get_bit", { description: "Inspect a remote bit and its versions before conflict recovery or diffing.", inputSchema: { bitId: external_exports.string().uuid() }, annotations }, wrap(({ bitId }) => getBit(bitId)));
   server.registerTool("image_candidate", { description: "Create a separate WebP candidate using installed cwebp. Never replaces source or adopts visual quality automatically.", inputSchema: { source: external_exports.string(), output: external_exports.string(), quality: external_exports.number().min(0).max(100).optional() }, annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false } }, wrap(({ source, output: output3, quality }) => imageCandidate(source, output3, quality)));
   server.registerTool("inspect_video", { description: "Read recording dimensions, codec, duration and encoded frame rate using installed ffprobe. Not proof of smooth motion or good composition.", inputSchema: { file: external_exports.string() }, annotations }, wrap(({ file: file2 }) => inspectVideo(file2)));
   await server.connect(new StdioServerTransport());
@@ -37389,27 +37681,35 @@ async function main() {
       return output2(check2(args[0]));
     case "status":
       return output2(await status(args[0]));
-    case "get-post":
-      return output2(await getPost(args[0]));
+    case "get-bit":
+      return output2(await getBit(args[0]));
     case "bind":
-      return output2(await bind(args[0], option("post")));
+      return output2(await bind(args[0], option("bit")));
     case "image-candidate":
       return output2(imageCandidate(args[0], option("output"), option("quality") === void 0 ? 85 : Number(option("quality"))));
     case "inspect-video":
       return output2(inspectVideo(args[0]));
     case "publish":
-      return output2(await publish(args[0], option("title"), { newPost: args.includes("--new"), parentPostId: option("parent-post"), parentRevisionId: option("parent-revision") }));
+      return output2(await publish(args[0], option("caption"), { newBit: args.includes("--new"), parentBitId: option("parent-bit"), parentVersionId: option("parent-version") }));
     case "preview": {
-      const { server, mount } = preview(args[0], Number(option("port") || 0));
+      const { server, mount, pages } = preview(args[0], Number(option("port") || 0));
       server.on("error", (error63) => {
         output2({ code: "preview_unavailable", message: `Local preview could not listen (${error63.code}).`, recovery: "Use an available loopback port or authorize local listening in this environment, then retry. No content was uploaded." });
         process.exitCode = 1;
       });
-      server.on("listening", () => output2({ url: `http://127.0.0.1:${server.address().port}${mount}`, snapshot: true, note: "Restart preview after editing. Nothing uploaded." }));
+      server.on("listening", () => {
+        const origin2 = `http://127.0.0.1:${server.address().port}`;
+        output2({
+          url: origin2 + mount,
+          pages: Object.fromEntries(pages.map((page) => [page, `${origin2}/${page}`])),
+          snapshot: true,
+          note: "Open url to see preview.html at 390\xD7520 and index.html open at 390\xD7693, framed as Differ frames them, with a stand-in for the SDK Differ adds to every page. differ.open and differ.close are logged on that page and in the console. Restart preview after editing. Nothing uploaded."
+        });
+      });
       return;
     }
     default:
-      output2({ commands: ["doctor", "connect", "connection-status", "disconnect", "check APP_OR_CONTENT", "preview APP_OR_CONTENT [--port N]", "publish APP_OR_CONTENT [--title TITLE] [--new]", "status APP_OR_CONTENT", "get-post UUID", "bind APP_OR_CONTENT --post UUID", "image-candidate FILE --output NEW.webp [--quality 85]", "inspect-video FILE", "mcp"], note: "Node 24+. App roots resolve content/. Keep differ-post.json with source for team handoff; keep .differ state locally for retries. Guest publishing needs no setup. Connect optionally to publish as yourself. Never pass tokens in chat." });
+      output2({ commands: ["doctor", "connect", "connection-status", "disconnect", "check APP_OR_CONTENT", "preview APP_OR_CONTENT [--port N]", "publish APP_OR_CONTENT [--caption CAPTION] [--new] [--parent-bit UUID --parent-version UUID]", "status APP_OR_CONTENT", "get-bit UUID", "bind APP_OR_CONTENT --bit UUID", "image-candidate FILE --output NEW.webp [--quality 85]", "inspect-video FILE", "mcp"], note: "Node 24+. App roots resolve content/. Keep differ-bit.json with source for team handoff; keep .differ state locally for retries. Guest publishing needs no setup. Connect optionally to publish as yourself. Never pass tokens in chat." });
   }
 }
 main().catch((e) => {

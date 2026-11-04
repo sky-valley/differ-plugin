@@ -1,4 +1,4 @@
-// Explicit opt-in, read-only inspection of the public service. No creation or login.
+// Explicit opt-in, read-only inspection of the public service. No publication or login.
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 const origin = 'https://publish.getdiffer.com';
@@ -11,8 +11,8 @@ try {
     for (const field of ['readOnlyHint', 'destructiveHint', 'openWorldHint']) {
       if (typeof tool.annotations?.[field] !== 'boolean') findings.push(`${tool.name}: missing explicit ${field}`);
     }
-    if (['publish_creation', 'publish_as_me'].includes(tool.name)) {
-      if (tool.annotations?.destructiveHint !== true) findings.push(`${tool.name}: revisions and public publication require destructiveHint review`);
+    if (['publish_bit', 'publish_as_me'].includes(tool.name)) {
+      if (tool.annotations?.destructiveHint !== true) findings.push(`${tool.name}: new versions and public publication require destructiveHint review`);
       if (tool.annotations?.openWorldHint !== true) findings.push(`${tool.name}: public publication requires openWorldHint review`);
     }
   }

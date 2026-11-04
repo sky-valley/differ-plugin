@@ -34,7 +34,7 @@ git push origin vX.Y.Z
 The release workflow checks that the tag matches `package.json` and is on main,
 rebuilds and tests, and publishes the ZIPs plus `SHA256SUMS` as a GitHub release.
 Never move a published tag. Verify the release workflow and downloadable assets.
-This publishes open-source distribution files, not a post or directory listing.
+This publishes open-source distribution files, not a bit or directory listing.
 
 ## Refresh skills through GitHub
 

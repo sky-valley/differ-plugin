@@ -1,24 +1,24 @@
 # Shared participation
 
-Keep posts passive unless shared state serves the experience. For participation,
-ship ordinary HTML/CSS/JS plus a root `rules.html`. This opts the post into
+Keep bits passive unless shared state serves the experience. For participation,
+ship ordinary HTML/CSS/JS plus a root `rules.html`. This opts the bit into
 pagelike: HTML documents, selectors, HTTP mutations, composition and live SSE.
 No Node process or external database is needed. Runtime paths are reserved:
 `/-/` is the participation bridge and management surface, `/v/` selects an
 authored version, `/data/` is live data and `/uploads/` is participant media.
 
-Keep app code and rules outside `data/`. A `data/*.html`, `.json` or `.txt`
+Keep the bit's code and rules outside `data/`. A `data/*.html`, `.json` or `.txt`
 file in the bundle is a seed, applied once to that path. Seeds need the root
 `rules.html`: a bundle with files under `data/` and no `rules.html` is refused
-(`data_without_rules`). Revisions keep existing
+(`data_without_rules`). New versions keep existing
 participation, including deleted seeds. A diff starts fresh from the selected
 authored files, rules and seeds. Never download live visitor data into a diff.
 Use relative authored asset URLs to stay on the selected version; root URLs
-address the current post. Live data always uses root `/data/...` URLs.
+address the current bit. Live data always uses root `/data/...` URLs.
 
 Load `<script src="/-/client.js"></script>`. On load, call
 `await pagelike.identity()` to quietly restore a returning participant's opaque
-post identity, including on another device signed into the same account. It
+bit identity, including on another device signed into the same account. It
 returns `null` for first-time or signed-out visitors and when identity is
 unavailable, without a popup. Use the returned identity to read and mark their
 existing entries; restoration never adds a contribution. Keep public reads and
@@ -27,8 +27,8 @@ local play usable while it resolves. Do not infer ownership from localStorage.
 When someone explicitly chooses
 to contribute, call `await pagelike.participate()`. Player handles sign-in and
 participation, and the runtime sets its host-only HttpOnly partitioned cookie. The
-result is an opaque identity string stable within this post. No email,
-handle or cross-post identity is disclosed. Then use same-origin `fetch`:
+result is an opaque identity string stable within this bit. No email,
+handle or cross-bit identity is disclosed. Then use same-origin `fetch`:
 
 ```js
 await pagelike.participate();
@@ -66,14 +66,14 @@ GET grant above enables anonymous `EventSource('/data/answers.html')`. Fetch a
 snapshot initially and again on `open`, `mutation`, `reset` and browser `online`.
 Refresh the writer after a successful write; its own event may be suppressed.
 Serialize/coalesce refreshes so an older response cannot replace a newer one.
-Show read/write failures. A participant never gets permission to rewrite app
+Show read/write failures. A participant never gets permission to rewrite the bit's
 code or rules. Removing the POST grant closes new participation without deleting
 existing answers. Include `data/` documents using `p:include`, or fetch them.
 
 Permissions follow the brief. A collection usually permits adding and built-in
 own-removal; a deliberately collaborative board can permit selector-scoped
 PUT/DELETE over others' entries. Whole-resource replacement is broader authority.
-POST alone does not prove ownership: application-supplied identity fields must
+POST alone does not prove ownership: bit-supplied identity fields must
 be checked against the trusted request identity on the server. A browser's
 localStorage ID, disabled button or ownership-looking selector is insufficient.
 
@@ -85,7 +85,7 @@ elements because the platform adds it before shape validation; submitted markers
 remain forbidden. JSON and plain text replace complete resources. Images in
 `/uploads/` must be JPEG, PNG or GIF: at most 10 MiB and 16 megapixels. They are
 decoded and re-encoded without metadata; GIF uploads become a still first frame.
-Other uploads are rejected. Data requests are at most 512 KiB. Each post is
+Other uploads are rejected. Data requests are at most 512 KiB. Each bit is
 limited to 10,000 live documents, 256 MiB of live data and 100,000 recorded
 contributions. These are initial operating limits, not a scaling promise.
 
@@ -103,8 +103,8 @@ resource ends the earlier contribution's removal authority over that path.
 
 Browse and local interaction continue during an identity outage; shared writes
 fail with an actionable error. Logging out revokes the runtime sessions created
-by that browser login. Browser copies may survive post removal, but the platform
-stops delivering the removed post and accepting its writes.
+by that browser login. Browser copies may survive bit removal, but the platform
+stops delivering the removed bit and accepting its writes.
 
 ## Complete example and rehearsal
 
@@ -120,8 +120,10 @@ The skill also serves `scripts/runtime.mjs`, a dependency-free Node rehearsal
 fixture. Set `PAGELIKE_BINARY` to a built pagelike executable, then run
 `node <skill-directory>/examples/vote/check.mjs`. It starts a fresh loopback runtime
 with separate anonymous, Alice, Bob and creator identities and removes its data
-afterward. Adapt the example's checks to your post's real payloads and promises;
-a passing vote check does not certify an unrelated post. Run browser checks too.
+afterward. Its browser transport serves the Differ SDK at `/__differ/sdk.js` and
+puts it first in every page, as the content Worker does, so the global `differ`
+is there. Adapt the example's checks to your bit's real payloads and promises;
+a passing vote check does not certify an unrelated bit. Run browser checks too.
 The collection and board each provide `check.mjs` with actual browser interactions;
 install Playwright in the checking workspace, or set `PLAYWRIGHT_MODULE` to its
 absolute `index.mjs`, and run the chosen example's check with `PAGELIKE_BINARY`.
@@ -132,8 +134,8 @@ If `PAGELIKE_BINARY` or browser tooling is unavailable, stop that verification
 step and report the missing dependency. Do not search unrelated projects or
 substitute a mock runtime as authorization evidence.
 
-Analysis and diff previews use disposable one-hour origins, but all visitors there
-share one authenticated preview identity. They cannot prove anonymous access or
+Analysis and diff stages use disposable one-hour origins, but all visitors there
+share one authenticated stage identity. They cannot prove anonymous access or
 cross-person authorization. The rehearsal tests the runtime with fixture identity;
 Player sign-in, consent and browser cookie behavior need separate verification.
 Publication means the bundle was accepted, not that these checks passed.

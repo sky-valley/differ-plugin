@@ -18,8 +18,13 @@ test('stateful bundles allow runtime URLs and reserve platform namespaces', () =
   const pack = obj => ({ files: Object.entries(obj).map(([path, text]) => ({ path, content: Buffer.from(text).toString('base64') })) });
   const input = { 'index.html': '<script src="/-/client.js"></script><link rel="stylesheet" href="/style.css"><img src="/uploads/photo.jpg">', 'rules.html': '<p>rules</p>', 'style.css': 'body{}' };
   assert.equal(validateArtifact(pack(input)).files.size, 3);
-  for (const path of ['-/client.js', 'uploads/photo.jpg', 'v/example/index.html']) {
-    assert.throws(() => validateArtifact(pack({ ...input, [path]: 'reserved' })), { code: 'invalid_file' });
+  for (const path of ['-/client.js', 'uploads/photo.jpg', 'v/example/index.html', '__differ/sdk.js', '__dfr/bridge.js']) {
+    assert.throws(() => validateArtifact(pack({ ...input, [path]: 'reserved' })), { code: 'reserved_path' }, path);
   }
   assert.throws(() => validateArtifact(pack({ 'index.html': '<script src="/-/client.js"></script>' })), { code: 'missing_asset' });
+  for (const reference of ['/__differ/sdk.js', '__differ/sdk.js', './__dfr/bridge.js']) {
+    assert.throws(() => validateArtifact(pack({ ...input, 'preview.html': `<script src="${reference}"></script>` })), { code: 'reserved_path' }, reference);
+  }
+  assert.equal(validateArtifact(pack({ 'index.html': '<a href="preview.html">', 'preview.html': '<img src="pic.png">', 'pic.png': 'png' })).files.size, 3, 'preview.html is checked like any page');
+  assert.throws(() => validateArtifact(pack({ 'index.html': '<p>', 'preview.html': '<img src="gone.png">' })), { code: 'missing_asset' });
 });
