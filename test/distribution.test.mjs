@@ -13,6 +13,10 @@ test('directory package connects remotely and preserves every verified skill', (
   const directory = join(root, 'directory/differ');
   assert.ok(existsSync(directory), 'build must produce the directory submission folder');
   assert.deepEqual(json(join(directory, '.mcp.json')).mcpServers, {
+    differ: { type: 'http', url: 'https://publish.getdiffer.com/mcp/account' },
+  });
+  assert.equal(json(join(directory, '.codex-plugin/plugin.json')).mcpServers, './.codex-mcp.json');
+  assert.deepEqual(json(join(directory, '.codex-mcp.json')).mcpServers, {
     differ: { type: 'http', url: 'https://publish.getdiffer.com/mcp' },
   });
   assert.deepEqual(json(join(directory, 'mcp.json')).mcpServers, {

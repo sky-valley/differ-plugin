@@ -68,11 +68,18 @@ for (const plugin of [local, remote]) {
   // The older compatibility validator predates the support, privacy and terms
   // links; current hosts read the complete inline extension above.
   const { supportURL, privacyPolicyURL, termsOfServiceURL, ...legacyInterface } = interfaceFields;
-  json(`${plugin}/.codex-plugin/plugin.json`, { ...identity, skills: './skills/', mcpServers: './.mcp.json', interface: legacyInterface });
+  // The remote package gives Codex its own copy of the connector: Claude's,
+  // in .mcp.json, uses the URL that asks for sign-in on connect.
+  const codexServers = plugin === remote ? './.codex-mcp.json' : './.mcp.json';
+  json(`${plugin}/.codex-plugin/plugin.json`, { ...identity, skills: './skills/', mcpServers: codexServers, interface: legacyInterface });
   json(`${plugin}/.claude-plugin/plugin.json`, { ...identity, displayName: 'Differ' });
 }
 json(`${local}/mcp.json`, { $schema: 'https://agent-plugins.org/schemas/1.0.0/mcp.schema.json', mcpServers: { differ: { type: 'stdio', command: 'node', args: ['${PLUGIN_ROOT}/scripts/differ.cjs', 'mcp'] } } });
 json(`${local}/.mcp.json`, { mcpServers: { differ: { command: 'node', args: ['${CLAUDE_PLUGIN_ROOT}/scripts/differ.cjs', 'mcp'] } } });
 json(`${remote}/mcp.json`, { $schema: 'https://agent-plugins.org/schemas/1.0.0/mcp.schema.json', mcpServers: { differ: { type: 'streamable-http', url: 'https://publish.getdiffer.com/mcp' } } });
-json(`${remote}/.mcp.json`, { mcpServers: { differ: { type: 'http', url: 'https://publish.getdiffer.com/mcp' } } });
+// Claude signs in only when a server refuses it while connecting, so its
+// connector uses /mcp/account, which refuses a call without a token. ChatGPT
+// and Codex read the challenge inside a tool result and keep guest tools.
+json(`${remote}/.mcp.json`, { mcpServers: { differ: { type: 'http', url: 'https://publish.getdiffer.com/mcp/account' } } });
+json(`${remote}/.codex-mcp.json`, { mcpServers: { differ: { type: 'http', url: 'https://publish.getdiffer.com/mcp' } } });
 console.log(`Built Differ ${version}: local helper and remote directory package.`);

@@ -2,7 +2,7 @@
   "mcpServers": {
     "differ": {
       "type": "http",
-      "url": "https://publish.getdiffer.com/mcp"
+      "url": "https://publish.getdiffer.com/mcp/account"
     }
   }
 }

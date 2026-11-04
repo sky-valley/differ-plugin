@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.7.2
+
+- Claude can connect a Differ account. The directory package's Claude connector
+  uses `https://publish.getdiffer.com/mcp/account`, which asks for sign-in when
+  Claude connects. Codex keeps `https://publish.getdiffer.com/mcp`, with guest
+  tools and sign-in from inside a tool result.
+
 ## 0.7.1
 
 - Prepare the directory listings: describe what Differ does (make, publish and

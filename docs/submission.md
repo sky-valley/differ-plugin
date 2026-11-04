@@ -36,7 +36,10 @@ access. The repository must be public before publication. Validate the exact
 commit, inspect the listing, answer data-handling questions, supply a reachable
 contact, and accept the directory terms as an authorized publisher. Submit
 Control's remote MCP endpoint separately as an **MCP connector**, as Anthropic
-requires for a plugin that references its own server.
+requires for a plugin that references its own server. Submit
+`https://publish.getdiffer.com/mcp/account`, the URL in the package's
+`.mcp.json`: Claude signs in only when a server refuses it while connecting,
+and `/mcp` lets guests in, so a connector on `/mcp` never signs in.
 
 Use a push webhook or scheduled directory checks for new commits. Bump the
 plugin version for every release. Passing validation does not automatically
