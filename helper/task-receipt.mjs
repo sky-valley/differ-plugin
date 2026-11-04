@@ -28,7 +28,12 @@ export async function receiveTask(id, version) {
       if (!deliveryValid(delivery, task)) throw taskError('invalid_task_response');
       task.delivery = delivery; task.state = 'saved'; saveTask(task);
     }
-    const receipt = await taskRequest(`/${id}/receipt`, { body: { claimId: task.claimId } });
+    let receipt;
+    try { receipt = await taskRequest(`/${id}/receipt`, { body: { claimId: task.claimId } }); }
+    catch(error) {
+      if(error.status===409){task.state='claiming';delete task.delivery;saveTask(task);}
+      throw error;
+    }
     if (receipt?.id !== id || receipt.state !== 'received' || receipt.version !== task.delivery.version + 1) throw taskError('invalid_task_response');
     task.state = 'received'; saveTask(task);
     return taskSummary(task);

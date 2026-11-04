@@ -41,3 +41,30 @@ session, give the agent the missing information, then select Continue in Diff.
 The receiver consumes that continuation once and resumes the same session.
 It does not repeat an uncertain turn automatically. Control needs the session
 and continuation API changes from the linked gdiffer stack for this command.
+
+## Start and stop delivery
+
+After installing the **local** plugin and connecting its account, run:
+
+```sh
+node /absolute/path/to/plugins/differ/scripts/differ.cjs doctor
+node /absolute/path/to/plugins/differ/scripts/differ.cjs tasks-watch
+```
+
+Keep that process running, or supervise it with your user service manager. It
+polls every five seconds. Delivery continues while an agent works. One task
+executes at a time; the receiver lock prevents a second watcher for this config.
+Ctrl+C stops the receiver and interrupts its active turn. The task keeps its
+workspace and session. Restarting does not replay an uncertain turn.
+
+On macOS, `tasks-install` explicitly installs and starts a LaunchAgent for the
+current connected account. It copies the bundled helper into a private stable
+folder beside the task journals and uses the current Node binary and PATH.
+It starts again at login. Run it again after updating the plugin or Node.
+`tasks-uninstall` stops it and removes the LaunchAgent, retaining task files.
+The release does not install or start this service automatically.
+
+Status logs contain fixed error codes, IDs and local status only. Prompts,
+transcripts and source bytes remain in private task files. The directory-only
+plugin cannot run this receiver. Remote browser users must have a receiver
+running on the machine whose Codex interface they intend to open.

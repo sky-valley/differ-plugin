@@ -447,9 +447,9 @@ var require_codegen = __commonJS({
       }
     };
     var Label = class extends Node {
-      constructor(label) {
+      constructor(label2) {
         super();
-        this.label = label;
+        this.label = label2;
         this.names = {};
       }
       render({ _n }) {
@@ -457,14 +457,14 @@ var require_codegen = __commonJS({
       }
     };
     var Break = class extends Node {
-      constructor(label) {
+      constructor(label2) {
         super();
-        this.label = label;
+        this.label = label2;
         this.names = {};
       }
       render({ _n }) {
-        const label = this.label ? ` ${this.label}` : "";
-        return `break${label};` + _n;
+        const label2 = this.label ? ` ${this.label}` : "";
+        return `break${label2};` + _n;
       }
     };
     var Throw = class extends Node {
@@ -876,12 +876,12 @@ var require_codegen = __commonJS({
         return this._endBlockNode(For);
       }
       // `label` statement
-      label(label) {
-        return this._leafNode(new Label(label));
+      label(label2) {
+        return this._leafNode(new Label(label2));
       }
       // `break` statement
-      break(label) {
-        return this._leafNode(new Break(label));
+      break(label2) {
+        return this._leafNode(new Break(label2));
       }
       // `return` statement
       return(value) {
@@ -2979,7 +2979,7 @@ var require_compile = __commonJS({
       const schOrFunc = root.refs[ref];
       if (schOrFunc)
         return schOrFunc;
-      let _sch = resolve4.call(this, root, ref);
+      let _sch = resolve5.call(this, root, ref);
       if (_sch === void 0) {
         const schema = (_a3 = root.localRefs) === null || _a3 === void 0 ? void 0 : _a3[ref];
         const { schemaId } = this.opts;
@@ -3006,7 +3006,7 @@ var require_compile = __commonJS({
     function sameSchemaEnv(s1, s2) {
       return s1.schema === s2.schema && s1.root === s2.root && s1.baseId === s2.baseId;
     }
-    function resolve4(root, ref) {
+    function resolve5(root, ref) {
       let sch;
       while (typeof (sch = this.refs[ref]) == "string")
         ref = sch;
@@ -3870,7 +3870,7 @@ var require_fast_uri = __commonJS({
       }
       return uri;
     }
-    function resolve4(baseURI, relativeURI, options) {
+    function resolve5(baseURI, relativeURI, options) {
       const schemelessOptions = options ? Object.assign({ scheme: "null" }, options) : { scheme: "null" };
       const {
         parsed: baseParsed,
@@ -4261,7 +4261,7 @@ var require_fast_uri = __commonJS({
     var fastUri = {
       SCHEMES,
       normalize,
-      resolve: resolve4,
+      resolve: resolve5,
       resolveComponent,
       equal,
       serialize,
@@ -15950,7 +15950,7 @@ var recursive = /* @__PURE__ */ new WeakMap();
 var NONE = 0;
 var ASSUMED = 1;
 var PROVEN = 2;
-function isRecursive(inst, stack, resolve4) {
+function isRecursive(inst, stack, resolve5) {
   const cached2 = recursive.get(inst);
   if (cached2 !== void 0)
     return cached2 ? PROVEN : NONE;
@@ -15960,7 +15960,7 @@ function isRecursive(inst, stack, resolve4) {
   let result = NONE;
   const check3 = (child) => {
     if (result !== PROVEN && child?._zod) {
-      const answer = isRecursive(child, stack, resolve4);
+      const answer = isRecursive(child, stack, resolve5);
       if (answer > result)
         result = answer;
     }
@@ -15971,7 +15971,7 @@ function isRecursive(inst, stack, resolve4) {
       const desc = Object.getOwnPropertyDescriptor(sh, key);
       if (spread && !desc.enumerable)
         continue;
-      const child = desc.get ? ASSUMED : desc.value?._zod ? isRecursive(desc.value, stack, resolve4) : NONE;
+      const child = desc.get ? ASSUMED : desc.value?._zod ? isRecursive(desc.value, stack, resolve5) : NONE;
       if (child > answer)
         answer = child;
     }
@@ -16035,7 +16035,7 @@ function isRecursive(inst, stack, resolve4) {
       break;
     // `$ZodLazy` caches its inner on the def, so a resolved edge is followed exactly
     case "lazy": {
-      const inner = def._cachedInner ?? (resolve4 ? inst._zod.innerType : void 0);
+      const inner = def._cachedInner ?? (resolve5 ? inst._zod.innerType : void 0);
       merge2(inner ? isRecursive(inner, stack, false) : ASSUMED);
       break;
     }
@@ -24104,9 +24104,9 @@ function codePointLengthVar(doc, ctx, accessor, inDoubt) {
   doc.write(`const ${v} = typeof ${accessor} === "string" && ${inDoubt} ? ${cpLen}(${accessor}) : ${accessor}.length;`);
   return v;
 }
-function numericOperand(value, label) {
+function numericOperand(value, label2) {
   if (typeof value !== "number" || !Number.isFinite(value)) {
-    throw new ZodCompileUnsupportedError(`${label} bound of type ${typeof value}`);
+    throw new ZodCompileUnsupportedError(`${label2} bound of type ${typeof value}`);
   }
   return `${value}`;
 }
@@ -34473,7 +34473,7 @@ var Protocol = class {
           return;
         }
         const pollInterval = task2.pollInterval ?? this._options?.defaultTaskPollInterval ?? 1e3;
-        await new Promise((resolve4) => setTimeout(resolve4, pollInterval));
+        await new Promise((resolve5) => setTimeout(resolve5, pollInterval));
         options?.signal?.throwIfAborted();
       }
     } catch (error63) {
@@ -34490,7 +34490,7 @@ var Protocol = class {
    */
   request(request2, resultSchema, options) {
     const { relatedRequestId, resumptionToken, onresumptiontoken, task, relatedTask } = options ?? {};
-    return new Promise((resolve4, reject) => {
+    return new Promise((resolve5, reject) => {
       const earlyReject = (error63) => {
         reject(error63);
       };
@@ -34568,7 +34568,7 @@ var Protocol = class {
           if (!parseResult.success) {
             reject(parseResult.error);
           } else {
-            resolve4(parseResult.data);
+            resolve5(parseResult.data);
           }
         } catch (error63) {
           reject(error63);
@@ -34830,12 +34830,12 @@ var Protocol = class {
       }
     } catch {
     }
-    return new Promise((resolve4, reject) => {
+    return new Promise((resolve5, reject) => {
       if (signal.aborted) {
         reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
         return;
       }
-      const timeoutId = setTimeout(resolve4, interval);
+      const timeoutId = setTimeout(resolve5, interval);
       signal.addEventListener("abort", () => {
         clearTimeout(timeoutId);
         reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
@@ -35966,7 +35966,7 @@ var McpServer = class {
     let task = createTaskResult.task;
     const pollInterval = task.pollInterval ?? 5e3;
     while (task.status !== "completed" && task.status !== "failed" && task.status !== "cancelled") {
-      await new Promise((resolve4) => setTimeout(resolve4, pollInterval));
+      await new Promise((resolve5) => setTimeout(resolve5, pollInterval));
       const updatedTask = await extra.taskStore.getTask(taskId);
       if (!updatedTask) {
         throw new McpError(ErrorCode.InternalError, `Task ${taskId} not found during polling`);
@@ -36630,12 +36630,12 @@ var StdioServerTransport = class {
     this.onclose?.();
   }
   send(message) {
-    return new Promise((resolve4) => {
+    return new Promise((resolve5) => {
       const json2 = serializeMessage(message);
       if (this._stdout.write(json2)) {
-        resolve4();
+        resolve5();
       } else {
-        this._stdout.once("drain", resolve4);
+        this._stdout.once("drain", resolve5);
       }
     });
   }
@@ -37537,6 +37537,47 @@ function withSDK(bytes) {
   return head ? html.slice(0, head.index + head[0].length) + sdkTag + html.slice(head.index + head[0].length) : sdkTag + html;
 }
 
+// helper/task-watch.mjs
+var import_node_fs7 = require("node:fs");
+var import_node_path8 = require("node:path");
+
+// helper/tasks.mjs
+var invalidCursor = () => problem("invalid_task_cursor", "The task cursor must be a nonnegative safe integer.", "Use tasks, or tasks --after with the next value from the previous page.");
+function taskCursor(args) {
+  if (args.length === 0) return 0;
+  if (args.length !== 2 || args[0] !== "--after" || !/^(0|[1-9]\d*)$/.test(args[1])) throw invalidCursor();
+  const after = Number(args[1]);
+  if (!Number.isSafeInteger(after)) throw invalidCursor();
+  return after;
+}
+var fields = (value, names) => value !== null && typeof value === "object" && !Array.isArray(value) && Object.keys(value).length === names.length && names.every((name) => Object.hasOwn(value, name));
+var taskID = /^agt_[a-f0-9]{64}$/;
+var invalidResponse = () => problem("invalid_task_response", "Control returned an invalid task page.", "Keep existing local task state and check that the plugin and Control versions agree.");
+async function pollTasks(after = 0) {
+  if (!Number.isSafeInteger(after) || after < 0) throw invalidCursor();
+  const config2 = await activeConfiguration();
+  if (config2.mode !== "connected") throw problem("account_connection_required", "Task polling requires a connected Differ account.", "Run connect and complete browser approval first.");
+  let page;
+  try {
+    page = await request(config2.url, `/v1/publishing/agent-tasks?after=${after}`, { bearer: config2.token });
+  } catch (error63) {
+    if (error63.status === 401) throw problem("reconnect_required", "The agent connection is no longer authorized.", "Reconnect this account before polling again.");
+    if (error63.status === 404) throw problem("task_delivery_unavailable", "Task delivery is not available on this Control service.", "Ask the service operator to enable task delivery.");
+    if (!error63.status && error63.code === "network_permission_required") throw problem("network_permission_required", "Network access to Control was refused.", "Allow access to the configured publisher, then retry.", { retryable: true });
+    throw problem("task_poll_failed", "Control could not list pending tasks.", "Retry later. Keep existing local task state.", { retryable: true });
+  }
+  if (!fields(page, ["tasks", "next"]) || !Array.isArray(page.tasks) || page.tasks.length > 50 || !Number.isSafeInteger(page.next) || page.next < 0 || page.next !== 0 && page.next <= after) throw invalidResponse();
+  const seen = /* @__PURE__ */ new Set();
+  for (const task of page.tasks) {
+    if (!fields(task, ["id", "version"]) || typeof task.id !== "string" || !taskID.test(task.id) || !Number.isSafeInteger(task.version) || task.version < 1 || seen.has(task.id)) throw invalidResponse();
+    seen.add(task.id);
+  }
+  return page;
+}
+
+// helper/task-receipt.mjs
+var import_node_crypto5 = require("node:crypto");
+
 // helper/task-store.mjs
 var import_node_fs4 = require("node:fs");
 var import_node_path5 = require("node:path");
@@ -37595,6 +37636,10 @@ function savePrivate(path, value) {
     }
   }
 }
+function localTasks() {
+  privateDirectory(taskRoot());
+  return (0, import_node_fs4.readdirSync)(taskRoot()).filter(validTaskID).map(readTask).filter(Boolean);
+}
 async function withTask(id, operation) {
   const path = (0, import_node_path5.join)(taskDirectory(id), "lock");
   try {
@@ -37649,6 +37694,47 @@ async function taskRequest(path, { body, maxBytes = 512 * 1024 } = {}) {
     if (error63.recovery) throw error63;
     throw taskError("task_request_failed");
   }
+}
+
+// helper/task-receipt.mjs
+function deliveryValid(delivery, task) {
+  return delivery && delivery.id === task.id && delivery.claimId === task.claimId && delivery.version === task.offerVersion + 1 && uuid5(delivery.parentBitId) && uuid5(delivery.parentVersionId) && Number.isFinite(Date.parse(delivery.expiresAt)) && typeof delivery.prompt === "string" && delivery.prompt.trim().length > 0 && Buffer.byteLength(delivery.prompt) <= 64 * 1024;
+}
+var taskSummary = (task) => ({ id: task.id, state: task.state });
+async function receiveTask(id, version2) {
+  if (!Number.isSafeInteger(version2) || version2 < 1) throw taskError("invalid_task_version");
+  const config2 = configuration();
+  if (config2.mode !== "connected") throw taskError("account_connection_required");
+  return withTask(id, async (task) => {
+    if (task && task.publisher !== config2.url) throw taskError("target_changed");
+    if (task && !["claiming", "saved"].includes(task.state)) return taskSummary(task);
+    if (!task || task.state === "claiming" && version2 > task.offerVersion) {
+      task = { schema: 1, id, publisher: config2.url, claimId: (0, import_node_crypto5.randomUUID)(), offerVersion: version2, state: "claiming" };
+      saveTask(task);
+    }
+    if (!task.delivery) {
+      const delivery = await taskRequest(`/${id}/claim`, { body: { claimId: task.claimId, version: task.offerVersion } });
+      if (!deliveryValid(delivery, task)) throw taskError("invalid_task_response");
+      task.delivery = delivery;
+      task.state = "saved";
+      saveTask(task);
+    }
+    let receipt;
+    try {
+      receipt = await taskRequest(`/${id}/receipt`, { body: { claimId: task.claimId } });
+    } catch (error63) {
+      if (error63.status === 409) {
+        task.state = "claiming";
+        delete task.delivery;
+        saveTask(task);
+      }
+      throw error63;
+    }
+    if (receipt?.id !== id || receipt.state !== "received" || receipt.version !== task.delivery.version + 1) throw taskError("invalid_task_response");
+    task.state = "received";
+    saveTask(task);
+    return taskSummary(task);
+  });
 }
 
 // helper/task-source.mjs
@@ -37714,7 +37800,7 @@ async function prepareTask(id) {
 // helper/task-publication.mjs
 var import_node_fs6 = require("node:fs");
 var import_node_path7 = require("node:path");
-var import_node_crypto5 = require("node:crypto");
+var import_node_crypto6 = require("node:crypto");
 function taskInput(task) {
   let value;
   try {
@@ -37734,8 +37820,8 @@ async function publishTask(task) {
   if ((0, import_node_fs6.existsSync)(path)) saved2 = JSON.parse((0, import_node_fs6.readFileSync)(path, "utf8"));
   else {
     const input2 = taskInput(task), artifact = pack((0, import_node_path7.join)(workspaceFor(task), "content"));
-    saved2 = { bitId: (0, import_node_crypto5.randomUUID)(), body: {
-      requestId: (0, import_node_crypto5.randomUUID)(),
+    saved2 = { bitId: (0, import_node_crypto6.randomUUID)(), body: {
+      requestId: (0, import_node_crypto6.randomUUID)(),
       publish: true,
       caption: input2.caption,
       expectedVersionId: null,
@@ -37771,8 +37857,8 @@ async function runCodex({
   let serial = 0, buffer = "", threadId = sessionId, turnId, text = "", ended = false, inputNeeded = false;
   const pending = /* @__PURE__ */ new Map(), completed = [];
   let finish, fail2;
-  const done = new Promise((resolve4, reject) => {
-    finish = resolve4;
+  const done = new Promise((resolve5, reject) => {
+    finish = resolve5;
     fail2 = reject;
   });
   done.catch(() => {
@@ -37789,10 +37875,10 @@ async function runCodex({
       fail2(error63);
     }
   };
-  const call = (method, params) => new Promise((resolve4, reject) => {
+  const call = (method, params) => new Promise((resolve5, reject) => {
     const id = ++serial;
     const timer = setTimeout(() => stop(taskError("codex_timeout")), 45e3);
-    pending.set(id, { resolve: resolve4, reject, timer });
+    pending.set(id, { resolve: resolve5, reject, timer });
     send({ id, method, params });
   });
   const acceptCompletion = (params) => {
@@ -37988,98 +38074,186 @@ async function advanceTask(id, { signal, execute = runCodex } = {}) {
   });
 }
 
-// helper/task-receipt.mjs
-var import_node_crypto6 = require("node:crypto");
-function deliveryValid(delivery, task) {
-  return delivery && delivery.id === task.id && delivery.claimId === task.claimId && delivery.version === task.offerVersion + 1 && uuid5(delivery.parentBitId) && uuid5(delivery.parentVersionId) && Number.isFinite(Date.parse(delivery.expiresAt)) && typeof delivery.prompt === "string" && delivery.prompt.trim().length > 0 && Buffer.byteLength(delivery.prompt) <= 64 * 1024;
-}
-var taskSummary = (task) => ({ id: task.id, state: task.state });
-async function receiveTask(id, version2) {
-  if (!Number.isSafeInteger(version2) || version2 < 1) throw taskError("invalid_task_version");
-  const config2 = configuration();
-  if (config2.mode !== "connected") throw taskError("account_connection_required");
-  return withTask(id, async (task) => {
-    if (task && task.publisher !== config2.url) throw taskError("target_changed");
-    if (task && !["claiming", "saved"].includes(task.state)) return taskSummary(task);
-    if (!task || task.state === "claiming" && version2 > task.offerVersion) {
-      task = { schema: 1, id, publisher: config2.url, claimId: (0, import_node_crypto6.randomUUID)(), offerVersion: version2, state: "claiming" };
-      saveTask(task);
-    }
-    if (!task.delivery) {
-      const delivery = await taskRequest(`/${id}/claim`, { body: { claimId: task.claimId, version: task.offerVersion } });
-      if (!deliveryValid(delivery, task)) throw taskError("invalid_task_response");
-      task.delivery = delivery;
-      task.state = "saved";
-      saveTask(task);
-    }
-    const receipt = await taskRequest(`/${id}/receipt`, { body: { claimId: task.claimId } });
-    if (receipt?.id !== id || receipt.state !== "received" || receipt.version !== task.delivery.version + 1) throw taskError("invalid_task_response");
-    task.state = "received";
-    saveTask(task);
-    return taskSummary(task);
+// helper/task-watch.mjs
+function pause(ms, signal) {
+  return new Promise((resolve5) => {
+    const finish = () => {
+      clearTimeout(timer);
+      signal?.removeEventListener("abort", finish);
+      resolve5();
+    };
+    const timer = setTimeout(finish, ms);
+    signal?.addEventListener("abort", finish, { once: true });
+    if (signal?.aborted) finish();
   });
 }
-
-// helper/tasks.mjs
-var invalidCursor = () => problem("invalid_task_cursor", "The task cursor must be a nonnegative safe integer.", "Use tasks, or tasks --after with the next value from the previous page.");
-function taskCursor(args) {
-  if (args.length === 0) return 0;
-  if (args.length !== 2 || args[0] !== "--after" || !/^(0|[1-9]\d*)$/.test(args[1])) throw invalidCursor();
-  const after = Number(args[1]);
-  if (!Number.isSafeInteger(after)) throw invalidCursor();
-  return after;
-}
-var fields = (value, names) => value !== null && typeof value === "object" && !Array.isArray(value) && Object.keys(value).length === names.length && names.every((name) => Object.hasOwn(value, name));
-var taskID = /^agt_[a-f0-9]{64}$/;
-var invalidResponse = () => problem("invalid_task_response", "Control returned an invalid task page.", "Keep existing local task state and check that the plugin and Control versions agree.");
-async function pollTasks(after = 0) {
-  if (!Number.isSafeInteger(after) || after < 0) throw invalidCursor();
-  const config2 = await activeConfiguration();
-  if (config2.mode !== "connected") throw problem("account_connection_required", "Task polling requires a connected Differ account.", "Run connect and complete browser approval first.");
-  let page;
+function receiverLock() {
+  privateDirectory(taskRoot());
+  const path = (0, import_node_path8.join)(taskRoot(), "receiver.lock");
   try {
-    page = await request(config2.url, `/v1/publishing/agent-tasks?after=${after}`, { bearer: config2.token });
+    (0, import_node_fs7.writeFileSync)(path, String(process.pid), { flag: "wx", mode: 384 });
   } catch (error63) {
-    if (error63.status === 401) throw problem("reconnect_required", "The agent connection is no longer authorized.", "Reconnect this account before polling again.");
-    if (error63.status === 404) throw problem("task_delivery_unavailable", "Task delivery is not available on this Control service.", "Ask the service operator to enable task delivery.");
-    if (!error63.status && error63.code === "network_permission_required") throw problem("network_permission_required", "Network access to Control was refused.", "Allow access to the configured publisher, then retry.", { retryable: true });
-    throw problem("task_poll_failed", "Control could not list pending tasks.", "Retry later. Keep existing local task state.", { retryable: true });
+    if (error63.code !== "EEXIST") throw error63;
+    const pid = Number((0, import_node_fs7.readFileSync)(path, "utf8"));
+    if (!Number.isSafeInteger(pid) || pid < 1) throw taskError("receiver_busy");
+    try {
+      process.kill(pid, 0);
+    } catch (e) {
+      if (e.code === "ESRCH") {
+        (0, import_node_fs7.unlinkSync)(path);
+        return receiverLock();
+      }
+    }
+    throw taskError("receiver_busy");
   }
-  if (!fields(page, ["tasks", "next"]) || !Array.isArray(page.tasks) || page.tasks.length > 50 || !Number.isSafeInteger(page.next) || page.next < 0 || page.next !== 0 && page.next <= after) throw invalidResponse();
-  const seen = /* @__PURE__ */ new Set();
-  for (const task of page.tasks) {
-    if (!fields(task, ["id", "version"]) || typeof task.id !== "string" || !taskID.test(task.id) || !Number.isSafeInteger(task.version) || task.version < 1 || seen.has(task.id)) throw invalidResponse();
-    seen.add(task.id);
+  return () => (0, import_node_fs7.unlinkSync)(path);
+}
+async function watchTasks({ signal, intervalMs = 5e3, report = () => {
+}, execute = advanceTask } = {}) {
+  const unlock = receiverLock(), reported = /* @__PURE__ */ new Map();
+  const emit = (key, value) => {
+    const text = JSON.stringify(value);
+    if (reported.get(key) !== text) {
+      reported.set(key, text);
+      report(value);
+    }
+  };
+  const failure2 = (key, error63) => emit(key, { id: key, code: /^[a-z_]+$/.test(error63.code || "") ? error63.code : "task_unavailable" });
+  async function deliver() {
+    while (!signal?.aborted) {
+      try {
+        for (const task of localTasks().filter((t) => ["claiming", "saved"].includes(t.state))) {
+          if (signal?.aborted) break;
+          try {
+            await receiveTask(task.id, task.offerVersion);
+          } catch (error63) {
+            failure2(task.id, error63);
+          }
+        }
+        let after = 0;
+        do {
+          const page = await pollTasks(after);
+          for (const offer of page.tasks) {
+            if (signal?.aborted) break;
+            try {
+              emit(offer.id, await receiveTask(offer.id, offer.version));
+            } catch (error63) {
+              failure2(offer.id, error63);
+            }
+          }
+          after = page.next;
+        } while (after && !signal?.aborted);
+      } catch (error63) {
+        failure2("receiver", error63);
+      }
+      await pause(intervalMs, signal);
+    }
   }
-  return page;
+  async function work() {
+    while (!signal?.aborted) {
+      try {
+        for (const task of localTasks().filter((t) => !["claiming", "saved", "completed", "failed"].includes(t.state))) {
+          if (signal?.aborted) break;
+          try {
+            emit(task.id, await execute(task.id, { signal }));
+          } catch (error63) {
+            failure2(task.id, error63);
+          }
+        }
+      } catch (error63) {
+        failure2("worker", error63);
+      }
+      await pause(intervalMs, signal);
+    }
+  }
+  try {
+    await Promise.all([deliver(), work()]);
+  } finally {
+    unlock();
+  }
+}
+
+// helper/task-service.mjs
+var import_node_fs8 = require("node:fs");
+var import_node_os2 = require("node:os");
+var import_node_path9 = require("node:path");
+var import_node_child_process2 = require("node:child_process");
+var label = "com.getdiffer.tasks";
+var xml = (value) => String(value).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
+function receiverPlist({ node: node2, helper, config: config2, publisher: publisher2, path, log }) {
+  return `<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd"><plist version="1.0"><dict>
+<key>Label</key><string>${label}</string><key>ProgramArguments</key><array><string>${xml(node2)}</string><string>${xml(helper)}</string><string>tasks-watch</string></array>
+<key>RunAtLoad</key><true/><key>KeepAlive</key><true/><key>ThrottleInterval</key><integer>15</integer>
+<key>EnvironmentVariables</key><dict><key>DIFFER_CONFIG</key><string>${xml(config2)}</string><key>DIFFER_PUBLISH_URL</key><string>${xml(publisher2)}</string><key>PATH</key><string>${xml(path)}</string></dict>
+<key>StandardOutPath</key><string>${xml(log)}</string><key>StandardErrorPath</key><string>${xml(log)}</string>
+</dict></plist>
+`;
+}
+function installReceiver(remove = false) {
+  if (process.platform !== "darwin") throw taskError("use_tasks_watch");
+  const file2 = (0, import_node_path9.join)((0, import_node_os2.homedir)(), "Library", "LaunchAgents", `${label}.plist`), domain2 = `gui/${process.getuid()}`;
+  if (remove) {
+    try {
+      (0, import_node_child_process2.execFileSync)("/bin/launchctl", ["bootout", `${domain2}/${label}`], { stdio: "ignore" });
+    } catch {
+    }
+    try {
+      (0, import_node_fs8.unlinkSync)(file2);
+    } catch (error63) {
+      if (error63.code !== "ENOENT") throw error63;
+    }
+    return { state: "stopped", notice: "Task files are retained. No received task was cancelled in Control." };
+  }
+  const config2 = configuration();
+  if (config2.mode !== "connected") throw taskError("account_connection_required");
+  const root = (0, import_node_path9.join)(taskRoot(), "receiver");
+  privateDirectory(taskRoot());
+  privateDirectory(root);
+  const helper = (0, import_node_path9.join)(root, "differ.cjs"), log = (0, import_node_path9.join)(root, "receiver.log");
+  (0, import_node_fs8.copyFileSync)((0, import_node_path9.resolve)(process.argv[1]), helper);
+  (0, import_node_fs8.chmodSync)(helper, 384);
+  (0, import_node_fs8.writeFileSync)(log, "", { flag: "a", mode: 384 });
+  (0, import_node_fs8.chmodSync)(log, 384);
+  (0, import_node_fs8.mkdirSync)((0, import_node_path9.join)((0, import_node_os2.homedir)(), "Library", "LaunchAgents"), { recursive: true });
+  (0, import_node_fs8.writeFileSync)(file2, receiverPlist({ node: process.execPath, helper, config: (0, import_node_path9.resolve)(configPath()), publisher: config2.url, path: process.env.PATH || "", log }), { mode: 384 });
+  try {
+    (0, import_node_child_process2.execFileSync)("/bin/launchctl", ["bootout", `${domain2}/${label}`], { stdio: "ignore" });
+  } catch {
+  }
+  try {
+    (0, import_node_child_process2.execFileSync)("/bin/launchctl", ["bootstrap", domain2, file2], { stdio: "ignore" });
+  } catch {
+    throw taskError("receiver_install_failed");
+  }
+  return { state: "started", notice: "The receiver will run tasks sent to this connection. Use tasks-uninstall to stop it." };
 }
 
 // helper/media.mjs
-var import_node_child_process2 = require("node:child_process");
-var import_node_fs7 = require("node:fs");
-var import_node_path8 = require("node:path");
+var import_node_child_process3 = require("node:child_process");
+var import_node_fs9 = require("node:fs");
+var import_node_path10 = require("node:path");
 function command(name, args, options = {}) {
   try {
-    return (0, import_node_child_process2.execFileSync)(name, args, { timeout: 6e4, maxBuffer: 32 * 1024 * 1024, ...options });
+    return (0, import_node_child_process3.execFileSync)(name, args, { timeout: 6e4, maxBuffer: 32 * 1024 * 1024, ...options });
   } catch (error63) {
     throw problem(error63.code === "ENOENT" ? "missing_media_tool" : "media_tool_failed", `${name} ${error63.code === "ENOENT" ? "is not installed" : "could not process this file"}.`, `Use the official ${name === "cwebp" ? "WebP" : "FFmpeg"} tools when this optional operation is needed. Originals are unchanged.`);
   }
 }
 function inputFile(path) {
   if (typeof path !== "string") throw problem("missing_file", "Supply a local media file.", "Select the exact source file.");
-  const full = (0, import_node_path8.resolve)(path);
-  const stat = (0, import_node_fs7.lstatSync)(full);
+  const full = (0, import_node_path10.resolve)(path);
+  const stat = (0, import_node_fs9.lstatSync)(full);
   if (!stat.isFile() || stat.isSymbolicLink()) throw problem("unsafe_input", "Media input must be a regular file.", "Select the original file, not a link.");
   return full;
 }
 function imageCandidate(input2, output3, quality = 85) {
   const source = inputFile(input2);
   if (!/\.(png|jpe?g)$/i.test(source)) throw problem("unsupported_image", "Candidates support still PNG/JPEG sources.", "Do not flatten animation; use an appropriate format-specific workflow.");
-  if (typeof output3 !== "string" || (0, import_node_path8.extname)(output3).toLowerCase() !== ".webp" || !Number.isFinite(quality) || quality < 0 || quality > 100) throw problem("invalid_candidate", "Specify a new .webp output and quality 0\u2013100.", "Write candidates outside publishable content; review before adopting.");
-  const target = (0, import_node_path8.resolve)(output3);
-  (0, import_node_fs7.realpathSync)((0, import_node_path8.dirname)(target));
-  if ((0, import_node_fs7.existsSync)(target)) throw problem("output_exists", "Candidate output already exists.", "Choose a new path; originals and previous candidates are never overwritten.");
-  const original = (0, import_node_fs7.readFileSync)(source);
+  if (typeof output3 !== "string" || (0, import_node_path10.extname)(output3).toLowerCase() !== ".webp" || !Number.isFinite(quality) || quality < 0 || quality > 100) throw problem("invalid_candidate", "Specify a new .webp output and quality 0\u2013100.", "Write candidates outside publishable content; review before adopting.");
+  const target = (0, import_node_path10.resolve)(output3);
+  (0, import_node_fs9.realpathSync)((0, import_node_path10.dirname)(target));
+  if ((0, import_node_fs9.existsSync)(target)) throw problem("output_exists", "Candidate output already exists.", "Choose a new path; originals and previous candidates are never overwritten.");
+  const original = (0, import_node_fs9.readFileSync)(source);
   if (/\.png$/i.test(source)) {
     for (let offset = 8; offset + 12 <= original.length; ) {
       if (original.toString("ascii", offset + 4, offset + 8) === "acTL") throw problem("animated_image", "Animated PNG requires a different encoder.", "Keep animation intact; do not convert it as a still image.");
@@ -38087,7 +38261,7 @@ function imageCandidate(input2, output3, quality = 85) {
     }
   }
   const candidate = command("cwebp", ["-preset", "photo", "-q", String(quality), "-m", "6", "-sharp_yuv", "-metadata", "icc", "-quiet", source, "-o", "-"], { stdio: ["ignore", "pipe", "pipe"] });
-  (0, import_node_fs7.writeFileSync)(target, candidate, { flag: "wx" });
+  (0, import_node_fs9.writeFileSync)(target, candidate, { flag: "wx" });
   return {
     source,
     candidate: target,
@@ -38188,6 +38362,22 @@ async function main() {
       return mcp();
     case "doctor":
       return output2(await doctor());
+    case "tasks-install":
+      return output2(installReceiver());
+    case "tasks-uninstall":
+      return output2(installReceiver(true));
+    case "tasks-watch": {
+      const controller = new AbortController();
+      const stop = () => controller.abort();
+      process.once("SIGINT", stop);
+      process.once("SIGTERM", stop);
+      try {
+        return await watchTasks({ signal: controller.signal, report: output2 });
+      } finally {
+        process.removeListener("SIGINT", stop);
+        process.removeListener("SIGTERM", stop);
+      }
+    }
     case "task-run":
       return output2(await advanceTask(args[0]));
     case "task-status":
@@ -38236,7 +38426,7 @@ async function main() {
       return;
     }
     default:
-      output2({ commands: ["doctor", "tasks [--after SEQUENCE]", "task-receive ID VERSION", "task-source ID", "task-run ID", "task-status ID", "connect", "connection-status", "disconnect", "check APP_OR_CONTENT", "preview APP_OR_CONTENT [--port N]", "publish APP_OR_CONTENT [--caption CAPTION] [--new] [--parent-bit UUID --parent-version UUID]", "status APP_OR_CONTENT", "get-bit UUID", "bind APP_OR_CONTENT --bit UUID", "image-candidate FILE --output NEW.webp [--quality 85]", "inspect-video FILE", "mcp"], note: "Node 24+. App roots resolve content/. Keep differ-bit.json with source for team handoff; keep .differ state locally for retries. Guest publishing needs no setup. Connect optionally to publish as yourself. Never pass tokens in chat." });
+      output2({ commands: ["doctor", "tasks [--after SEQUENCE]", "task-receive ID VERSION", "task-source ID", "task-run ID", "task-status ID", "tasks-watch", "tasks-install", "tasks-uninstall", "connect", "connection-status", "disconnect", "check APP_OR_CONTENT", "preview APP_OR_CONTENT [--port N]", "publish APP_OR_CONTENT [--caption CAPTION] [--new] [--parent-bit UUID --parent-version UUID]", "status APP_OR_CONTENT", "get-bit UUID", "bind APP_OR_CONTENT --bit UUID", "image-candidate FILE --output NEW.webp [--quality 85]", "inspect-video FILE", "mcp"], note: "Node 24+. App roots resolve content/. Keep differ-bit.json with source for team handoff; keep .differ state locally for retries. Guest publishing needs no setup. Connect optionally to publish as yourself. Never pass tokens in chat." });
   }
 }
 main().catch((e) => {
