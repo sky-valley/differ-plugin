@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.8.3
+
+- Add the persistent Codex protocol adapter.
+
+## 0.8.2
+
+- Download the exact task source.
+
+## 0.8.1
+
+- Save received tasks before acknowledgement.
+
 ## 0.8.0
 
 - Add the local `tasks [--after SEQUENCE]` command to read one page of pending
