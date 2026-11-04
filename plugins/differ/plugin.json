@@ -28,7 +28,7 @@
           "Make bits",
           "Publish bits"
         ],
-        "websiteURL": "https://player.getdiffer.com",
+        "websiteURL": "https://app.getdiffer.com",
         "supportURL": "https://github.com/sky-valley/differ-plugin/issues",
         "defaultPrompt": [
           "Make an interactive bit with Differ."

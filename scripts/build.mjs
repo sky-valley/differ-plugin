@@ -46,7 +46,7 @@ const interfaceFields = {
   longDescription: 'Make interactive bits and publish them to Differ. Start as a guest, claim the bit later, or connect your account for future publications. Shared participation requires a claimed bit and runtime verification. Local file and browser capabilities depend on the host.',
   developerName: 'Sky Valley', category: 'Productivity',
   capabilities: ['Make bits', 'Publish bits'],
-  websiteURL: 'https://player.getdiffer.com',
+  websiteURL: 'https://app.getdiffer.com',
   supportURL: 'https://github.com/sky-valley/differ-plugin/issues',
   defaultPrompt: ['Make an interactive bit with Differ.'],
   brandColor: '#1A1A1A', composerIcon: './assets/icon.svg', logo: './assets/icon.svg',

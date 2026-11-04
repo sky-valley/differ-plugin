@@ -30,7 +30,7 @@ no credential belongs in chat, Git, command arguments or public bindings.
 A claimed post refuses its guest upload pass: connect its owner to revise it
 from the same directory. `disconnect_account` / `disconnect` is an explicit
 user choice; it revokes this connection before returning future publishing to
-guest mode. Manage other connections at https://player.getdiffer.com/connect.
+guest mode. Manage other connections at https://app.getdiffer.com/connect.
 
 Unrecognized configurations fail closed: `connect` to publish as yourself, or
 deliberately `disconnect` for guest mode. A connection saved for another

@@ -40,10 +40,18 @@ working against it; update the plugin and reconnect.
   SDK Differ injects (`differ.open`, `differ.close`, `differ.on`,
   `data-differ-open`), follows the player protocol, forwards presses on the
   preview, and logs open and close.
+- Carry 0.6.4's move of the website and connection links to
+  `https://app.getdiffer.com`.
 - Refresh both distributions from Control's rewritten skills (bits, captions,
   `preview.html`, the SDK), synced with `npm run sync-skills` once Control
-  deploys them. The sync also brings Control's earlier change to the
-  interactive-content skill (Differ's design principles).
+  deploys them. Until then they carry 0.6.4's verified snapshot.
+
+## 0.6.4
+
+- Point the plugin's website and connection links at `https://app.getdiffer.com`;
+  `player.getdiffer.com` links redirect there.
+- Refresh both distributions from Control's verified public skill snapshot,
+  including the interactive-content skill's guidance on ease, gestures and look.
 
 ## 0.6.3
 
