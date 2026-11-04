@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.5
+
+- Prepare the directory listings: describe Differ in bits, with no assistant
+  named, list Create, Publish and Diff bits, and add the privacy policy and
+  terms links that OpenAI's directory requires.
+
 ## 0.6.4
 
 - Point the plugin's website and connection links at `https://app.getdiffer.com`;
