@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.3
+
+- Add the persistent Codex protocol adapter.
+
 ## 0.8.2
 
 - Download the exact task source.
