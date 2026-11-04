@@ -132,3 +132,8 @@ The skills remain authored in Control and are fetched from its public MCP
 endpoint with digest and size verification. See [contributing](CONTRIBUTING.md),
 [release maintenance](docs/releases.md), and the dated
 [directory submission guide](docs/submission.md).
+
+`task-receive ID VERSION` claims one offer and saves its instructions privately
+before acknowledging receipt. It returns only the task ID and local state.
+Repeat the same command after a network failure. Receipt alone does not run an
+agent. Task journals are kept beside the publisher configuration under `tasks/`.

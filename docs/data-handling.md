@@ -45,3 +45,11 @@ Maintenance commands fetch skills from Control; dependency installation uses
 npm's registry. GitHub distribution and the user's AI host have their own data
 handling policies. Do not send secrets to support or include reviewer
 credentials in public submission metadata.
+
+Task receipt uses a private `tasks/<task-id>/task.json` beside the publisher
+configuration. It contains the prompt, exact parent IDs and delivery claim.
+Files are mode 600 and directories mode 700. The helper flushes the journal to
+disk before acknowledging receipt. It never prints the prompt. Keep this folder
+for retry and recovery; deleting it after receipt loses the only local copy of
+work whose prompt Control has removed. A per-task process lock prevents two
+local helper invocations from receiving the same task concurrently.

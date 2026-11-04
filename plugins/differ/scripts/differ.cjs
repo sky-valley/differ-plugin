@@ -37537,6 +37537,150 @@ function withSDK(bytes) {
   return head ? html.slice(0, head.index + head[0].length) + sdkTag + html.slice(head.index + head[0].length) : sdkTag + html;
 }
 
+// helper/task-receipt.mjs
+var import_node_crypto5 = require("node:crypto");
+
+// helper/task-store.mjs
+var import_node_fs4 = require("node:fs");
+var import_node_path5 = require("node:path");
+var import_node_crypto4 = require("node:crypto");
+var validTaskID = (id) => typeof id === "string" && /^agt_[a-f0-9]{64}$/.test(id);
+var uuid5 = (value) => typeof value === "string" && /^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(value);
+var taskError = (code = "invalid_task_state") => problem(code, "The task could not proceed.", "Keep its local files. Check the account and task status before retrying.");
+var taskRoot = () => (0, import_node_path5.join)((0, import_node_path5.dirname)(configPath()), "tasks");
+function privateDirectory(path) {
+  (0, import_node_fs4.mkdirSync)(path, { recursive: true, mode: 448 });
+  const stat = (0, import_node_fs4.lstatSync)(path);
+  if (!stat.isDirectory() || stat.isSymbolicLink() || stat.mode & 63) throw taskError("unsafe_task_directory");
+}
+function taskDirectory(id) {
+  if (!validTaskID(id)) throw taskError("invalid_task_id");
+  privateDirectory(taskRoot());
+  const path = (0, import_node_path5.join)(taskRoot(), id);
+  privateDirectory(path);
+  return path;
+}
+function readTask(id) {
+  const path = (0, import_node_path5.join)(taskDirectory(id), "task.json");
+  try {
+    const stat = (0, import_node_fs4.lstatSync)(path);
+    if (!stat.isFile() || stat.nlink !== 1 || stat.mode & 63) throw taskError();
+    const value = JSON.parse((0, import_node_fs4.readFileSync)(path, "utf8"));
+    if (value.schema !== 1 || value.id !== id || !uuid5(value.claimId)) throw taskError();
+    return value;
+  } catch (error63) {
+    if (error63.code === "ENOENT") return null;
+    throw taskError();
+  }
+}
+function saveTask(task) {
+  const directory = taskDirectory(task.id);
+  const temporary = (0, import_node_path5.join)(directory, `${(0, import_node_crypto4.randomUUID)()}.tmp`);
+  let fd;
+  try {
+    fd = (0, import_node_fs4.openSync)(temporary, "wx", 384);
+    (0, import_node_fs4.writeFileSync)(fd, JSON.stringify(task));
+    (0, import_node_fs4.fsyncSync)(fd);
+    (0, import_node_fs4.closeSync)(fd);
+    fd = void 0;
+    (0, import_node_fs4.renameSync)(temporary, (0, import_node_path5.join)(directory, "task.json"));
+    fd = (0, import_node_fs4.openSync)(directory, "r");
+    (0, import_node_fs4.fsyncSync)(fd);
+  } finally {
+    if (fd !== void 0) (0, import_node_fs4.closeSync)(fd);
+    try {
+      (0, import_node_fs4.unlinkSync)(temporary);
+    } catch {
+    }
+  }
+}
+async function withTask(id, operation) {
+  const path = (0, import_node_path5.join)(taskDirectory(id), "lock");
+  try {
+    (0, import_node_fs4.writeFileSync)(path, String(process.pid), { flag: "wx", mode: 384 });
+  } catch (error63) {
+    if (error63.code !== "EEXIST") throw error63;
+    const pid = Number((0, import_node_fs4.readFileSync)(path, "utf8"));
+    if (!Number.isSafeInteger(pid) || pid < 1) throw taskError("task_busy");
+    try {
+      process.kill(pid, 0);
+    } catch (e) {
+      if (e.code === "ESRCH") {
+        (0, import_node_fs4.unlinkSync)(path);
+        return withTask(id, operation);
+      }
+    }
+    throw taskError("task_busy");
+  }
+  try {
+    return await operation(readTask(id));
+  } finally {
+    (0, import_node_fs4.unlinkSync)(path);
+  }
+}
+
+// helper/task-api.mjs
+async function taskRequest(path, { body, maxBytes = 512 * 1024 } = {}) {
+  const config2 = await activeConfiguration();
+  if (config2.mode !== "connected") throw taskError("account_connection_required");
+  let response;
+  try {
+    response = await fetch(config2.url + "/v1/publishing/agent-tasks" + path, {
+      method: body === void 0 ? "GET" : "POST",
+      redirect: "error",
+      signal: AbortSignal.timeout(45e3),
+      headers: { authorization: `Bearer ${config2.token}`, ...body === void 0 ? {} : { "content-type": "application/json" } },
+      body: body === void 0 ? void 0 : JSON.stringify(body)
+    });
+    if (!response.ok) {
+      await response.body?.cancel();
+      throw Object.assign(taskError(response.status === 401 ? "reconnect_required" : response.status === 409 ? "task_conflict" : response.status === 404 ? "task_unavailable" : "task_request_failed"), { status: response.status });
+    }
+    const chunks = [];
+    let size = 0;
+    for await (const chunk of response.body) {
+      size += chunk.length;
+      if (size > maxBytes) throw taskError("invalid_task_response");
+      chunks.push(chunk);
+    }
+    return JSON.parse(Buffer.concat(chunks).toString("utf8"));
+  } catch (error63) {
+    if (error63.recovery) throw error63;
+    throw taskError("task_request_failed");
+  }
+}
+
+// helper/task-receipt.mjs
+function deliveryValid(delivery, task) {
+  return delivery && delivery.id === task.id && delivery.claimId === task.claimId && delivery.version === task.offerVersion + 1 && uuid5(delivery.parentBitId) && uuid5(delivery.parentVersionId) && Number.isFinite(Date.parse(delivery.expiresAt)) && typeof delivery.prompt === "string" && delivery.prompt.trim().length > 0 && Buffer.byteLength(delivery.prompt) <= 64 * 1024;
+}
+var taskSummary = (task) => ({ id: task.id, state: task.state });
+async function receiveTask(id, version2) {
+  if (!Number.isSafeInteger(version2) || version2 < 1) throw taskError("invalid_task_version");
+  const config2 = configuration();
+  if (config2.mode !== "connected") throw taskError("account_connection_required");
+  return withTask(id, async (task) => {
+    if (task && task.publisher !== config2.url) throw taskError("target_changed");
+    if (task && !["claiming", "saved"].includes(task.state)) return taskSummary(task);
+    if (!task || task.state === "claiming" && version2 > task.offerVersion) {
+      task = { schema: 1, id, publisher: config2.url, claimId: (0, import_node_crypto5.randomUUID)(), offerVersion: version2, state: "claiming" };
+      saveTask(task);
+    }
+    if (!task.delivery) {
+      const delivery = await taskRequest(`/${id}/claim`, { body: { claimId: task.claimId, version: task.offerVersion } });
+      if (!deliveryValid(delivery, task)) throw taskError("invalid_task_response");
+      task.delivery = delivery;
+      task.state = "saved";
+      saveTask(task);
+    }
+    const receipt = await taskRequest(`/${id}/receipt`, { body: { claimId: task.claimId } });
+    if (receipt?.id !== id || receipt.state !== "received" || receipt.version !== task.delivery.version + 1) throw taskError("invalid_task_response");
+    task.state = "received";
+    saveTask(task);
+    return taskSummary(task);
+  });
+}
+
 // helper/tasks.mjs
 var invalidCursor = () => problem("invalid_task_cursor", "The task cursor must be a nonnegative safe integer.", "Use tasks, or tasks --after with the next value from the previous page.");
 function taskCursor(args) {
@@ -37573,8 +37717,8 @@ async function pollTasks(after = 0) {
 
 // helper/media.mjs
 var import_node_child_process = require("node:child_process");
-var import_node_fs4 = require("node:fs");
-var import_node_path5 = require("node:path");
+var import_node_fs5 = require("node:fs");
+var import_node_path6 = require("node:path");
 function command(name, args, options = {}) {
   try {
     return (0, import_node_child_process.execFileSync)(name, args, { timeout: 6e4, maxBuffer: 32 * 1024 * 1024, ...options });
@@ -37584,19 +37728,19 @@ function command(name, args, options = {}) {
 }
 function inputFile(path) {
   if (typeof path !== "string") throw problem("missing_file", "Supply a local media file.", "Select the exact source file.");
-  const full = (0, import_node_path5.resolve)(path);
-  const stat = (0, import_node_fs4.lstatSync)(full);
+  const full = (0, import_node_path6.resolve)(path);
+  const stat = (0, import_node_fs5.lstatSync)(full);
   if (!stat.isFile() || stat.isSymbolicLink()) throw problem("unsafe_input", "Media input must be a regular file.", "Select the original file, not a link.");
   return full;
 }
 function imageCandidate(input2, output3, quality = 85) {
   const source = inputFile(input2);
   if (!/\.(png|jpe?g)$/i.test(source)) throw problem("unsupported_image", "Candidates support still PNG/JPEG sources.", "Do not flatten animation; use an appropriate format-specific workflow.");
-  if (typeof output3 !== "string" || (0, import_node_path5.extname)(output3).toLowerCase() !== ".webp" || !Number.isFinite(quality) || quality < 0 || quality > 100) throw problem("invalid_candidate", "Specify a new .webp output and quality 0\u2013100.", "Write candidates outside publishable content; review before adopting.");
-  const target = (0, import_node_path5.resolve)(output3);
-  (0, import_node_fs4.realpathSync)((0, import_node_path5.dirname)(target));
-  if ((0, import_node_fs4.existsSync)(target)) throw problem("output_exists", "Candidate output already exists.", "Choose a new path; originals and previous candidates are never overwritten.");
-  const original = (0, import_node_fs4.readFileSync)(source);
+  if (typeof output3 !== "string" || (0, import_node_path6.extname)(output3).toLowerCase() !== ".webp" || !Number.isFinite(quality) || quality < 0 || quality > 100) throw problem("invalid_candidate", "Specify a new .webp output and quality 0\u2013100.", "Write candidates outside publishable content; review before adopting.");
+  const target = (0, import_node_path6.resolve)(output3);
+  (0, import_node_fs5.realpathSync)((0, import_node_path6.dirname)(target));
+  if ((0, import_node_fs5.existsSync)(target)) throw problem("output_exists", "Candidate output already exists.", "Choose a new path; originals and previous candidates are never overwritten.");
+  const original = (0, import_node_fs5.readFileSync)(source);
   if (/\.png$/i.test(source)) {
     for (let offset = 8; offset + 12 <= original.length; ) {
       if (original.toString("ascii", offset + 4, offset + 8) === "acTL") throw problem("animated_image", "Animated PNG requires a different encoder.", "Keep animation intact; do not convert it as a still image.");
@@ -37604,7 +37748,7 @@ function imageCandidate(input2, output3, quality = 85) {
     }
   }
   const candidate = command("cwebp", ["-preset", "photo", "-q", String(quality), "-m", "6", "-sharp_yuv", "-metadata", "icc", "-quiet", source, "-o", "-"], { stdio: ["ignore", "pipe", "pipe"] });
-  (0, import_node_fs4.writeFileSync)(target, candidate, { flag: "wx" });
+  (0, import_node_fs5.writeFileSync)(target, candidate, { flag: "wx" });
   return {
     source,
     candidate: target,
@@ -37705,6 +37849,8 @@ async function main() {
       return mcp();
     case "doctor":
       return output2(await doctor());
+    case "task-receive":
+      return output2(await receiveTask(args[0], args.length === 2 ? Number(args[1]) : NaN));
     case "tasks":
       return output2(await pollTasks(taskCursor(args)));
     case "connect":
@@ -37745,7 +37891,7 @@ async function main() {
       return;
     }
     default:
-      output2({ commands: ["doctor", "tasks [--after SEQUENCE]", "connect", "connection-status", "disconnect", "check APP_OR_CONTENT", "preview APP_OR_CONTENT [--port N]", "publish APP_OR_CONTENT [--caption CAPTION] [--new] [--parent-bit UUID --parent-version UUID]", "status APP_OR_CONTENT", "get-bit UUID", "bind APP_OR_CONTENT --bit UUID", "image-candidate FILE --output NEW.webp [--quality 85]", "inspect-video FILE", "mcp"], note: "Node 24+. App roots resolve content/. Keep differ-bit.json with source for team handoff; keep .differ state locally for retries. Guest publishing needs no setup. Connect optionally to publish as yourself. Never pass tokens in chat." });
+      output2({ commands: ["doctor", "tasks [--after SEQUENCE]", "task-receive ID VERSION", "connect", "connection-status", "disconnect", "check APP_OR_CONTENT", "preview APP_OR_CONTENT [--port N]", "publish APP_OR_CONTENT [--caption CAPTION] [--new] [--parent-bit UUID --parent-version UUID]", "status APP_OR_CONTENT", "get-bit UUID", "bind APP_OR_CONTENT --bit UUID", "image-candidate FILE --output NEW.webp [--quality 85]", "inspect-video FILE", "mcp"], note: "Node 24+. App roots resolve content/. Keep differ-bit.json with source for team handoff; keep .differ state locally for retries. Guest publishing needs no setup. Connect optionally to publish as yourself. Never pass tokens in chat." });
   }
 }
 main().catch((e) => {
