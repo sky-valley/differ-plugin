@@ -14,6 +14,19 @@ const listen = async server => {
   await once(server, 'listening');
   return server.address().port;
 };
+// The Differ SDK as the content Worker serves it: differ.js beside this file
+// is a copy of the Worker's, answered at /__differ/sdk.js, and its tag goes
+// right after the opening <head> of every page that opens (after the doctype,
+// or at the top, when a <body> or nothing comes first). A bit's own fetch of a
+// page gets its bytes exactly.
+const sdkPath = '/__differ/sdk.js';
+export function withSdk(page) {
+  const text = page.toString('latin1');
+  const tag = /<(head|body)[\t-\r />]/i.exec(text);
+  let at = tag?.[1].toLowerCase() === 'head' ? text.indexOf('>', tag.index) + 1 : 0;
+  if (at === 0) at = /^(?:\u00EF\u00BB\u00BF)?[\t-\r ]*<!doctype[^>]*>/i.exec(text)?.[0].length ?? 0;
+  return Buffer.concat([page.subarray(0, at), Buffer.from(`<script src="${sdkPath}"></script>`), page.subarray(at)]);
+}
 export async function readBundle(directory) {
   const files = {};
   let bytes = 0;
@@ -141,11 +154,20 @@ export async function runtime() {
           const controller = new AbortController();
           res.on('close', () => controller.abort());
           try {
+            if (new URL(req.url, 'http://loopback').pathname === sdkPath) {
+              res.writeHead(200, { 'Content-Type': 'text/javascript; charset=utf-8' });
+              return res.end(await readFile(new URL('./differ.js', import.meta.url)));
+            }
             const chunks = []; for await (const chunk of req) chunks.push(chunk);
             const headers = { ...req.headers }; delete headers.host; delete headers.connection; delete headers['content-length'];
             const response = await request(req.url, { method: req.method, headers,
               ...(!['GET', 'HEAD'].includes(req.method) ? { body: Buffer.concat(chunks) } : {}), signal: controller.signal }, cookie);
             const output = Object.fromEntries(response.headers); delete output['content-length']; delete output['content-encoding']; delete output['transfer-encoding'];
+            if (['document', 'iframe'].includes(req.headers['sec-fetch-dest']) && output['content-type']?.startsWith('text/html') && response.body) {
+              const page = withSdk(Buffer.from(await response.arrayBuffer()));
+              res.writeHead(response.status, output);
+              return res.end(page);
+            }
             res.writeHead(response.status, output);
             if (response.body) Readable.fromWeb(response.body).on('error', () => res.destroy()).pipe(res);
             else res.end();

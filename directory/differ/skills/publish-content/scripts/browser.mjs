@@ -5,11 +5,22 @@ export async function launchBrowser() {
   const { chromium } = await import(module);
   return chromium.launch({ headless: true });
 }
-export async function viewer(site, browser, subject, width = 390) {
+// The frames Differ shows a bit in: the open bit fills the phone, checked at
+// 390×693 CSS px; the feed's interactive preview.html is 390×520.
+export const frames = { index: { width: 390, height: 693 }, preview: { width: 390, height: 520 } };
+async function open(site, browser, subject, page, viewport) {
   const cookie = subject ? await site.participate(subject) : undefined;
-  const context = await browser.newContext({ viewport: { width, height: 800 } });
-  const page = await context.newPage();
-  page.setDefaultTimeout(8000);
-  await page.goto(await site.browserURL(cookie));
-  return { page, context, cookie };
+  const context = await browser.newContext({ viewport });
+  const tab = await context.newPage();
+  tab.setDefaultTimeout(8000);
+  await tab.goto(new URL(page, await site.browserURL(cookie)).href);
+  return { page: tab, context, cookie };
+}
+// The open bit, at 390×693 unless a check asks for a narrower phone.
+export function viewer(site, browser, subject, width = frames.index.width) {
+  return open(site, browser, subject, '', { ...frames.index, width });
+}
+// The bit's preview.html at the feed's 390×520.
+export function previewer(site, browser, subject) {
+  return open(site, browser, subject, 'preview.html', frames.preview);
 }

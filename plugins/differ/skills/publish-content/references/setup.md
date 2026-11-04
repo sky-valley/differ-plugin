@@ -38,4 +38,4 @@ sessions. It needs either the files in its calls or outbound HTTPS to upload
 them. A host whose code sandbox reaches only allowed domains needs
 `publish.getdiffer.com` allowed, once per environment (in Claude Code on the
 web: the environment menu, then Edit, then Network access); without it, only a
-post small enough to send in the calls can publish.
+bit small enough to send in the calls can publish.
