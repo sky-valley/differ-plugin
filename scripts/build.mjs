@@ -69,7 +69,7 @@ for (const plugin of [local, remote]) {
   // links; current hosts read the complete inline extension above.
   const { supportURL, privacyPolicyURL, termsOfServiceURL, ...legacyInterface } = interfaceFields;
   json(`${plugin}/.codex-plugin/plugin.json`, { ...identity, skills: './skills/', mcpServers: './.mcp.json', interface: legacyInterface });
-  json(`${plugin}/.claude-plugin/plugin.json`, { ...identity, displayName: 'Differ' });
+  json(`${plugin}/.claude-plugin/plugin.json`, { ...identity, displayName: 'Differ', privacyPolicyUrl: interfaceFields.privacyPolicyURL });
 }
 json(`${local}/mcp.json`, { $schema: 'https://agent-plugins.org/schemas/1.0.0/mcp.schema.json', mcpServers: { differ: { type: 'stdio', command: 'node', args: ['${PLUGIN_ROOT}/scripts/differ.cjs', 'mcp'] } } });
 json(`${local}/.mcp.json`, { mcpServers: { differ: { command: 'node', args: ['${CLAUDE_PLUGIN_ROOT}/scripts/differ.cjs', 'mcp'] } } });
