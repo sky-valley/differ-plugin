@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.6.4
+
+- Point the plugin's website and connection links at `https://app.getdiffer.com`;
+  `player.getdiffer.com` links redirect there.
+- Refresh both distributions from Control's verified public skill snapshot,
+  including the interactive-content skill's guidance on ease, gestures and look.
+
 ## 0.6.3
 
 - Update zod, body-parser, hono, fast-uri and ip-address for security advisories.

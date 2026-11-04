@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "differ",
-  "version": "0.6.3",
+  "version": "0.6.4",
   "description": "Create, preview, publish and revise interactive social posts.",
   "author": {
     "name": "Sky Valley",
@@ -28,7 +28,7 @@
           "Create posts",
           "Publish posts"
         ],
-        "websiteURL": "https://player.getdiffer.com",
+        "websiteURL": "https://app.getdiffer.com",
         "supportURL": "https://github.com/sky-valley/differ-plugin/issues",
         "defaultPrompt": [
           "Create an interactive social post with Differ."

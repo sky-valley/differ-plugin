@@ -2,8 +2,8 @@
   "files": [
     {
       "uri": "skill://interactive-content/SKILL.md",
-      "digest": "sha256:e7dd43cc3e032c535973986c02f523a707044d2c8d690aa7afe077e1a6a17e39",
-      "size": 5068
+      "digest": "sha256:211fa99b698009e96ecf6432b7ab2a0d3dd0f338f621f4173131ab9bde570adb",
+      "size": 6856
     },
     {
       "uri": "skill://interactive-content/references/recording.md",
@@ -122,8 +122,8 @@
     },
     {
       "uri": "skill://publish-content/references/helper.md",
-      "digest": "sha256:26c83cc3d53a69bd08b10f4e003abc3f45565cdee20e97bfadbd22c31beef6eb",
-      "size": 2747
+      "digest": "sha256:5cd75f087bd155378c41f2cf26723a4e8f9ca4e73fa1c8cfa268f0eca2ec99ca",
+      "size": 2744
     },
     {
       "uri": "skill://publish-content/references/participation.md",
