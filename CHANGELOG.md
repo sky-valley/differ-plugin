@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.7.3
+
+- Carry the five positive and three negative review cases in the directory
+  package's OpenAI metadata, so the dashboard imports them from the ZIP.
+
 ## 0.7.2
 
 - Name the privacy policy in the Claude plugin manifest (`privacyPolicyUrl`),
