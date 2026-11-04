@@ -53,6 +53,10 @@ const interfaceFields = {
   defaultPrompt: ['Make an interactive bit with Differ.'],
   brandColor: '#1A1A1A', composerIcon: './assets/icon.svg', logo: './assets/icon.svg',
 };
+const cases = JSON.parse(readFileSync('submission/review-cases.json', 'utf8'));
+assert.equal(cases.positive.length, 5, 'OpenAI review needs exactly five positive cases.');
+assert.equal(cases.negative.length, 3, 'OpenAI review needs exactly three negative cases.');
+const review = { test_cases: { positive: cases.positive, negative: cases.negative } };
 const json = (path, value) => { mkdirSync(dirname(path), { recursive: true }); writeFileSync(path, JSON.stringify(value, null, 2) + '\n'); };
 
 rmSync(remote, { recursive: true, force: true });
@@ -64,7 +68,10 @@ for (const plugin of [local, remote]) {
   mkdirSync(`${plugin}/assets`, { recursive: true });
   cpSync('assets/icon.svg', `${plugin}/assets/icon.svg`);
   cpSync('LICENSE', `${plugin}/LICENSE`);
-  json(`${plugin}/plugin.json`, { $schema: 'https://agent-plugins.org/schemas/1.0.0/plugin.schema.json', ...identity, extensions: { 'com.openai': { interface: interfaceFields } } });
+  // The directory package carries the OpenAI review cases, which the dashboard
+  // imports from the ZIP and shows read-only.
+  const openai = plugin === remote ? { interface: interfaceFields, review } : { interface: interfaceFields };
+  json(`${plugin}/plugin.json`, { $schema: 'https://agent-plugins.org/schemas/1.0.0/plugin.schema.json', ...identity, extensions: { 'com.openai': openai } });
   // The older compatibility validator predates the support, privacy and terms
   // links; current hosts read the complete inline extension above.
   const { supportURL, privacyPolicyURL, termsOfServiceURL, ...legacyInterface } = interfaceFields;
