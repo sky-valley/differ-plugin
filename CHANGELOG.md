@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.1
+
+- Save received tasks before acknowledgement.
+
 ## 0.8.0
 
 - Add the local `tasks [--after SEQUENCE]` command to read one page of pending
