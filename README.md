@@ -55,6 +55,19 @@ remote tools. File creation, outbound HTTPS, and browser capabilities vary by ho
 You can independently connect `https://publish.getdiffer.com/mcp`. That installs
 the connector only, not this plugin's bundled skill files.
 
+## Pending tasks (local helper)
+
+After connecting an account, `node plugins/differ/scripts/differ.cjs tasks`
+reads one page of pending task offers from Control. It returns
+`{tasks:[{id,version}],next}`. When `next` is nonzero, call `tasks --after NEXT`,
+even if the page is empty. When `next` is zero, that polling cycle is complete;
+start a later cycle without `--after`. Do not save the cursor as a durable
+checkpoint: new prompts and expired claims can make earlier tasks available.
+
+This command reads metadata only. It does not claim tasks, download prompts,
+start an agent, or publish. There is no background polling process yet. Control
+must have task delivery enabled. The remote directory package has no local CLI.
+
 ## Use
 
 Ask for an interactive bit, preview it, and ask to publish when ready. Or run:

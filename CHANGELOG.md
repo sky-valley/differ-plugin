@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.8.0
+
+- Add the local `tasks [--after SEQUENCE]` command to read one page of pending
+  work for the connected agent. It validates metadata, preserves empty
+  continuation pages, refreshes credentials when needed, and refuses guest
+  mode. It does not claim, acknowledge or execute tasks.
+
 ## 0.7.1
 
 - Prepare the directory listings: describe what Differ does (make, publish and

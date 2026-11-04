@@ -37537,6 +37537,40 @@ function withSDK(bytes) {
   return head ? html.slice(0, head.index + head[0].length) + sdkTag + html.slice(head.index + head[0].length) : sdkTag + html;
 }
 
+// helper/tasks.mjs
+var invalidCursor = () => problem("invalid_task_cursor", "The task cursor must be a nonnegative safe integer.", "Use tasks, or tasks --after with the next value from the previous page.");
+function taskCursor(args) {
+  if (args.length === 0) return 0;
+  if (args.length !== 2 || args[0] !== "--after" || !/^(0|[1-9]\d*)$/.test(args[1])) throw invalidCursor();
+  const after = Number(args[1]);
+  if (!Number.isSafeInteger(after)) throw invalidCursor();
+  return after;
+}
+var fields = (value, names) => value !== null && typeof value === "object" && !Array.isArray(value) && Object.keys(value).length === names.length && names.every((name) => Object.hasOwn(value, name));
+var taskID = /^agt_[a-f0-9]{64}$/;
+var invalidResponse = () => problem("invalid_task_response", "Control returned an invalid task page.", "Keep existing local task state and check that the plugin and Control versions agree.");
+async function pollTasks(after = 0) {
+  if (!Number.isSafeInteger(after) || after < 0) throw invalidCursor();
+  const config2 = await activeConfiguration();
+  if (config2.mode !== "connected") throw problem("account_connection_required", "Task polling requires a connected Differ account.", "Run connect and complete browser approval first.");
+  let page;
+  try {
+    page = await request(config2.url, `/v1/publishing/agent-tasks?after=${after}`, { bearer: config2.token });
+  } catch (error63) {
+    if (error63.status === 401) throw problem("reconnect_required", "The agent connection is no longer authorized.", "Reconnect this account before polling again.");
+    if (error63.status === 404) throw problem("task_delivery_unavailable", "Task delivery is not available on this Control service.", "Ask the service operator to enable task delivery.");
+    if (!error63.status && error63.code === "network_permission_required") throw problem("network_permission_required", "Network access to Control was refused.", "Allow access to the configured publisher, then retry.", { retryable: true });
+    throw problem("task_poll_failed", "Control could not list pending tasks.", "Retry later. Keep existing local task state.", { retryable: true });
+  }
+  if (!fields(page, ["tasks", "next"]) || !Array.isArray(page.tasks) || page.tasks.length > 50 || !Number.isSafeInteger(page.next) || page.next < 0 || page.next !== 0 && page.next <= after) throw invalidResponse();
+  const seen = /* @__PURE__ */ new Set();
+  for (const task of page.tasks) {
+    if (!fields(task, ["id", "version"]) || typeof task.id !== "string" || !taskID.test(task.id) || !Number.isSafeInteger(task.version) || task.version < 1 || seen.has(task.id)) throw invalidResponse();
+    seen.add(task.id);
+  }
+  return page;
+}
+
 // helper/media.mjs
 var import_node_child_process = require("node:child_process");
 var import_node_fs4 = require("node:fs");
@@ -37592,7 +37626,7 @@ function inspectVideo(input2) {
 // package.json
 var package_default = {
   name: "differ-plugin",
-  version: "0.7.1",
+  version: "0.8.0",
   private: true,
   type: "module",
   engines: {
@@ -37671,6 +37705,8 @@ async function main() {
       return mcp();
     case "doctor":
       return output2(await doctor());
+    case "tasks":
+      return output2(await pollTasks(taskCursor(args)));
     case "connect":
       return output2(await connect());
     case "connection-status":
@@ -37709,7 +37745,7 @@ async function main() {
       return;
     }
     default:
-      output2({ commands: ["doctor", "connect", "connection-status", "disconnect", "check APP_OR_CONTENT", "preview APP_OR_CONTENT [--port N]", "publish APP_OR_CONTENT [--caption CAPTION] [--new] [--parent-bit UUID --parent-version UUID]", "status APP_OR_CONTENT", "get-bit UUID", "bind APP_OR_CONTENT --bit UUID", "image-candidate FILE --output NEW.webp [--quality 85]", "inspect-video FILE", "mcp"], note: "Node 24+. App roots resolve content/. Keep differ-bit.json with source for team handoff; keep .differ state locally for retries. Guest publishing needs no setup. Connect optionally to publish as yourself. Never pass tokens in chat." });
+      output2({ commands: ["doctor", "tasks [--after SEQUENCE]", "connect", "connection-status", "disconnect", "check APP_OR_CONTENT", "preview APP_OR_CONTENT [--port N]", "publish APP_OR_CONTENT [--caption CAPTION] [--new] [--parent-bit UUID --parent-version UUID]", "status APP_OR_CONTENT", "get-bit UUID", "bind APP_OR_CONTENT --bit UUID", "image-candidate FILE --output NEW.webp [--quality 85]", "inspect-video FILE", "mcp"], note: "Node 24+. App roots resolve content/. Keep differ-bit.json with source for team handoff; keep .differ state locally for retries. Guest publishing needs no setup. Connect optionally to publish as yourself. Never pass tokens in chat." });
   }
 }
 main().catch((e) => {

@@ -35,6 +35,12 @@ browser; they must not be pointed at production bits. Local preview serves the s
 files on loopback only, with a stand-in SDK and player page written by the helper;
 it loads nothing from the network itself.
 
+The local `tasks` command reads pending task IDs, versions and a pagination
+cursor through the connected account. It uses the saved access token and the
+existing token-refresh flow. It neither downloads prompts nor saves a local task
+journal, and it does not claim, acknowledge or execute work. Task API errors use
+fixed messages rather than server-provided text.
+
 Maintenance commands fetch skills from Control; dependency installation uses
 npm's registry. GitHub distribution and the user's AI host have their own data
 handling policies. Do not send secrets to support or include reviewer
