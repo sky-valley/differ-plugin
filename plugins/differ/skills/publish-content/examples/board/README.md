@@ -3,12 +3,12 @@
 Publish `examples/board/content/`: `index.html`, `app.mjs`, `rules.html` and
 `data/notes.html`. This is intentionally collaborative: every signed-in visitor
 may add, rewrite or remove anyone's note. The UI says so before participation.
-Anonymous visitors watch live. App code, rules and whole-document replacement
+Anonymous visitors watch live. The bit's code, rules and whole-document replacement
 remain outside the participant grant.
 
 Selector-scoped PUT/DELETE is correct for this brief. It would be incorrect for
 a private-contribution collection. Concurrent replacements use last accepted
-write; the post does not promise merge or edit-conflict preservation. If your
+write; the bit does not promise merge or edit-conflict preservation. If your
 brief needs those, implement and verify conditional writes deliberately.
 
 Use `scripts/runtime.mjs` with fresh sites: Alice adds, Bob rewrites and removes

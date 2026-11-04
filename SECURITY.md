@@ -6,7 +6,7 @@ GitHub **Security → Report a vulnerability** private reporting channel.
 
 Report which version, distribution, and host you used, the affected operation,
 and a minimal reproduction with synthetic files. Ordinary tests must target a
-local fixture, never someone else's published post.
+local fixture, never someone else's published bit.
 
 The helper sends explicitly selected publication files to Differ. Guest proofs,
 upload passes, connection tokens and pending requests remain private local

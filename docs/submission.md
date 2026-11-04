@@ -87,7 +87,7 @@ Sources: [packaging](https://developers.openai.com/plugins/build/plugins),
 
 These gates require product/account work beyond an installable open-source repo:
 
-1. **Service privacy policy and terms.** Done in 0.6.5:
+1. **Service privacy policy and terms.** Done in 0.7.1:
    `https://www.getdiffer.com/privacy` and `https://www.getdiffer.com/terms` are
    in `interfaceFields` in `scripts/build.mjs` and linked from the directory
    README. OpenAI requires website, support, privacy and terms URLs. Anthropic's
@@ -106,7 +106,7 @@ These gates require product/account work beyond an installable open-source repo:
    for that recording. Do not expose claim links or credentials in it.
 5. **MCP effects and authentication.** `npm run check-service` audits live tool
    annotations and OAuth discovery without writes. Public publishing and
-   revisions must be labeled accurately. Metadata discovery alone does not prove
+   new versions must be labeled accurately. Metadata discovery alone does not prove
    a host can complete account consent, refresh, or file upload.
 6. **Final portal validation and attestations.** Name availability, automated
    scan results, plan eligibility and legal attestations are determined there.
@@ -120,5 +120,5 @@ read tools and incorrect public-write annotations on the two publishing tools.
 The extraction includes a Control correction and a repeatable read-only audit.
 Review the current command output rather than assuming an old audit is current.
 
-No account was connected, no review credentials were created, no test post was
+No account was connected, no review credentials were created, no test bit was
 published, and no portal attestation was accepted during package extraction.

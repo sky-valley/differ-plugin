@@ -37,7 +37,7 @@ test('the skills name only tools and commands the helper has', async () => {
   for (const tool of listed) {
     for (const field of ['readOnlyHint', 'destructiveHint', 'openWorldHint']) assert.equal(typeof tool.annotations[field], 'boolean', `${tool.name}: ${field}`);
     if (tool.name === 'publish_directory') {
-      assert.equal(tool.annotations.destructiveHint, true, 'publication can replace the current public post');
+      assert.equal(tool.annotations.destructiveHint, true, 'publication can replace the current public version of a bit');
       assert.equal(tool.annotations.openWorldHint, true, 'publication exposes content to the public');
     }
   }

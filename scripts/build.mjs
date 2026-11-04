@@ -35,17 +35,17 @@ writeFileSync(`${local}/THIRD_PARTY_NOTICES.txt`, notices.join('\n\n---\n\n') + 
 
 const identity = {
   name: 'differ', version,
-  description: 'Create, publish and diff bits: small interactive pieces on Differ.',
+  description: 'Make, publish and diff interactive bits on Differ.',
   author: { name: 'Sky Valley', url: 'https://skyvalley.ac' },
   homepage: 'https://github.com/sky-valley/differ-plugin',
   repository: 'https://github.com/sky-valley/differ-plugin',
   license: 'MIT', keywords: ['differ', 'interactive', 'bits', 'publishing', 'diff'],
 };
 const interfaceFields = {
-  displayName: 'Differ', shortDescription: 'Create, publish and diff bits',
+  displayName: 'Differ', shortDescription: 'Make, publish and diff bits',
   longDescription: "Differ helps you make bits: small interactive pieces people open, join in on and diff. Describe an idea and your assistant builds it, previews it and publishes it to Differ. You can revise it later or diff someone else's bit into your own version. Publish as a guest with no account, or connect your Differ account to publish as you.",
   developerName: 'Sky Valley', category: 'Productivity',
-  capabilities: ['Create bits', 'Publish bits', 'Diff bits'],
+  capabilities: ['Make bits', 'Publish bits', 'Diff bits'],
   websiteURL: 'https://app.getdiffer.com',
   supportURL: 'https://github.com/sky-valley/differ-plugin/issues',
   privacyPolicyURL: 'https://www.getdiffer.com/privacy',

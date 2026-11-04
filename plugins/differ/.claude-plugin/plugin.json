@@ -1,7 +1,7 @@
 {
   "name": "differ",
-  "version": "0.6.5",
-  "description": "Create, publish and diff bits: small interactive pieces on Differ.",
+  "version": "0.7.1",
+  "description": "Make, publish and diff interactive bits on Differ.",
   "author": {
     "name": "Sky Valley",
     "url": "https://skyvalley.ac"

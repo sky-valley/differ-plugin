@@ -1,7 +1,7 @@
 # Differ plugin
 
-Create, preview, publish, and revise small interactive social posts with Claude
-Code or Codex. Start as a guest, then claim a post or connect your Differ account.
+Make, preview and publish small interactive bits for Differ with Claude Code or
+Codex. Start as a guest, then claim the bit or connect your Differ account.
 
 This is the public home of Differ's creator plugin, extracted from apps-to-diff.
 The plugin is MIT licensed. The hosted publishing service remains separate.
@@ -57,19 +57,24 @@ the connector only, not this plugin's bundled skill files.
 
 ## Use
 
-Ask for an interactive post, preview it, and ask to publish when ready. Or run:
+Ask for an interactive bit, preview it, and ask to publish when ready. Or run:
 
 ```sh
 node plugins/differ/scripts/differ.cjs doctor
-node plugins/differ/scripts/differ.cjs check /absolute/path/to/my-post
-node plugins/differ/scripts/differ.cjs publish /absolute/path/to/my-post
+node plugins/differ/scripts/differ.cjs check /absolute/path/to/my-bit
+node plugins/differ/scripts/differ.cjs preview /absolute/path/to/my-bit
+node plugins/differ/scripts/differ.cjs publish /absolute/path/to/my-bit --caption "Stack it high, then shake."
 ```
 
-Guest posts expire after 24 hours unless claimed. Keep the private claim link.
+A bit is `index.html`, the bit as it opens on a phone, and optionally
+`preview.html`, the 390×520 interactive preview the feed shows. The caption is
+the maker's own words over the bit; Differ names the bit itself. Guest bits
+expire after 24 hours unless claimed. Keep the private claim link.
 Connecting your account authorizes future publications; it does not claim old
-guest posts. Connected helper uploads are saved as drafts: follow the returned
-link to preview and publish them. Shared participation requires a claimed post and tested rules.
-The checker validates static files; it does not prove live behavior.
+guest bits. Connected helper uploads are saved as drafts: follow the returned
+link to preview, confirm the caption and publish. Shared participation requires
+a claimed bit and tested rules. The checker validates static files; it does not
+prove live behavior.
 
 See [local helper instructions](plugins/differ/README.md),
 [participation examples](plugins/differ/skills/publish-content/references/participation.md),
@@ -108,7 +113,7 @@ npm run release
 local package. `npm run build` generates its bundle, dependency notices,
 manifests, and the complete `directory/differ/` remote package. CI rebuilds both
 and rejects drift. Release ZIPs contain only the plugin folders, never this
-repository's history, development dependencies, tests, or unrelated posts.
+repository's history, development dependencies, tests, or unrelated content.
 
 The skills remain authored in Control and are fetched from its public MCP
 endpoint with digest and size verification. See [contributing](CONTRIBUTING.md),

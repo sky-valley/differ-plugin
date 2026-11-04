@@ -18,9 +18,14 @@ export class PublishError extends Error {
   }
 }
 export function fail(code, message, recovery, status) { throw new PublishError(code, message, recovery, status); }
+// Differ serves these paths on every bit itself: its SDK (__differ/), its
+// editor bridge (__dfr/), the participation runtime (-/, uploads/) and versions (v/).
+export const reservedPrefixes = ['__differ/', '__dfr/', '-/', 'v/', 'uploads/'];
+export const reserved = path => reservedPrefixes.some(prefix => path.startsWith(prefix));
+const reservedRecovery = `Rename or move it: Differ serves ${reservedPrefixes.join(', ')} itself.`;
 export function safePath(path) {
   return typeof path === 'string' && path.length <= 240 && /^[\w@+ /.-]+$/.test(path)
-    && !/^(?:-|v|uploads)\//.test(path)
+    && !reserved(path)
     && path.split('/').every(part => part && part !== '.' && part !== '..' && !part.startsWith('.'))
     && !path.split('/').some(part => ['node_modules', 'tools', 'research'].includes(part))
     && !!mimeTypes[extname(path).toLowerCase()];
@@ -30,12 +35,14 @@ export function validateArtifact(input) {
     fail('invalid_artifact', `Supply 1–${limits.files} static files.`, 'Select the built content directory, not the repository.');
   const files = new Map(); let bytes = 0;
   for (const file of input.files) {
+    if (typeof file.path === 'string' && reserved(file.path))
+      fail('reserved_path', `${file.path.slice(0, 240)} is under a path Differ reserves.`, reservedRecovery);
     if (!safePath(file.path) || files.has(file.path) || typeof file.content !== 'string')
       fail('invalid_file', `Unsupported or duplicate asset path: ${String(file.path).slice(0, 240)}`, 'Use relative static asset paths; exclude hidden files, dependencies and tooling.');
     const content = Buffer.from(file.content, 'base64');
     if (content.toString('base64') !== file.content) fail('invalid_encoding', `Invalid asset encoding: ${file.path}`, 'Repackage the content directory.');
     bytes += content.length;
-    if (bytes > limits.bytes) fail('artifact_too_large', 'Post exceeds 20 MiB.', 'Compress media or remove unused files.', 413);
+    if (bytes > limits.bytes) fail('artifact_too_large', 'The bit exceeds 20 MiB.', 'Compress media or remove unused files.', 413);
     files.set(file.path, content);
   }
   if (!files.has('index.html')) fail('missing_entrypoint', 'No index.html in the selected directory.', 'Select or build the static output directory.');
@@ -57,8 +64,10 @@ export function validateArtifact(input) {
       if (/^(?:[a-z][a-z0-9+.-]*:|#|\?|\/\/)/i.test(ref)) continue;
       let decoded;
       try { decoded = decodeURIComponent(ref.split(/[?#]/)[0]); } catch { fail('invalid_url', `Invalid URL in ${path}.`, 'Correct the asset URL.'); }
-      if (files.has('rules.html') && (decoded === '/-/client.js' || decoded.startsWith('/data/') || decoded.startsWith('/uploads/'))) continue;
       const target = posix.normalize(decoded.startsWith('/') ? decoded.slice(1) : posix.join(posix.dirname(path), decoded));
+      if (target.startsWith('__differ/') || target.startsWith('__dfr/'))
+        fail('reserved_path', `${path} refers to ${ref}, which Differ serves itself.`, 'Remove the reference: Differ adds its SDK to every page, so a bit never loads it.');
+      if (files.has('rules.html') && (decoded === '/-/client.js' || decoded.startsWith('/data/') || decoded.startsWith('/uploads/'))) continue;
       if (!files.has(target) && !files.has(posix.join(target, 'index.html')))
         fail('missing_asset', `${path} refers to missing ${ref}.`, 'Include the asset or correct its relative URL.');
     }

@@ -17,9 +17,9 @@ the Differ creator plugin. It does not own the hosted publisher or pagelike.
   They intentionally use different MCP transports and must not be co-installed.
 - Every released change needs a version bump. See `docs/releases.md`.
 - Use temporary directories and a local HTTP server for tests. Do not publish
-  posts, connect a real account, or mutate production during ordinary tests.
+  bits, connect a real account, or mutate production during ordinary tests.
 - Do not commit tokens, guest journals, private claim links, reviewer credentials,
-  or generated content. `differ-post.json` is public identity, not edit authority.
+  or generated content. `differ-bit.json` is public identity, not edit authority.
 - Do not claim portal acceptance, account OAuth, or live behavior from package
   validation. Keep `docs/submission.md` explicit about external requirements.
 - Commit and push completed, verified work. Never force-push shared history.

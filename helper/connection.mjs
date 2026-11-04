@@ -37,9 +37,9 @@ export function configuration() {
 // Control reports stable codes. The helper owns what a creator does next.
 const recoveries = {
   reconnect_required: reconnect,
-  owner_conflict: 'Connect the account that owns this post, or publish your own version as a diff.',
-  revision_conflict: 'Compare get-post ID with your files, then deliberately bind DIR --post ID and publish again.',
-  creation_expired: 'Unclaimed guest posts expire after 24 hours. Publish again with --new to start a new post.',
+  owner_conflict: 'Connect the account that owns this bit, or publish your own as a diff.',
+  version_conflict: 'Compare get-bit ID with your files, then deliberately bind DIR --bit ID and publish again.',
+  bit_expired: 'Unclaimed guest bits expire after 24 hours. Publish again with --new to start a new bit.',
 };
 // Publishing errors are {code, message}; OAuth errors are {error, error_description}.
 // A bearer travels only in the Authorization header, never in a URL or body.
@@ -85,7 +85,7 @@ export async function activeConfiguration() {
       if (error.code === 'invalid_grant') throw problem('reconnect_required', 'Your Differ connection expired or was revoked.', reconnect);
       throw error;
     }
-    atomic(configPath(), { ...connection(config.url, tokens), accountUsername: config.accountUsername });
+    atomic(configPath(), { ...connection(config.url, tokens), accountHandle: config.accountHandle });
     return configuration();
   } finally { unlock(); }
 }
@@ -93,18 +93,18 @@ export async function connect() {
   const url = publisher(); const unlock = connectionLock();
   try {
     const config = saved();
-    const device = await request(url, '/oauth/device', { body: { client_id: client, resource: `${url}/mcp`, scope: 'profile posts:write' } });
+    const device = await request(url, '/oauth/device', { body: { client_id: client, resource: `${url}/mcp`, scope: 'profile bits:write' } });
     // The request remembers its publisher; any current connection stays usable until approval.
     atomic(configPath(), { ...config, pendingConnection: { url, deviceCode: device.device_code, expiresAt: Date.now() + device.expires_in * 1000, nextPollAt: Date.now() + device.interval * 1000 } });
     return { state: 'awaiting_approval', url: device.verification_uri_complete, code: device.user_code, expiresIn: device.expires_in,
-      instruction: 'Open this private link, check the code, sign in and approve. Then run connection-status. This connects future publishing; it does not claim earlier posts.' };
+      instruction: 'Open this private link, check the code, sign in and approve. Then run connection-status. This connects future publishing; it does not claim earlier guest bits.' };
   } finally { unlock(); }
 }
 export async function connectionStatus() {
   const unlock = connectionLock();
   try {
     const config = saved(); const pending = config.pendingConnection;
-    if (!pending) return config.mode === 'connected' ? { state: 'connected', username: config.accountUsername } : { state: 'guest' };
+    if (!pending) return config.mode === 'connected' ? { state: 'connected', handle: config.accountHandle } : { state: 'guest' };
     if (pending.expiresAt <= Date.now()) throw problem('connection_expired', 'This connection request expired.', 'Run connect again.');
     if (pending.nextPollAt > Date.now()) return { state: 'awaiting_approval', retryAfter: Math.ceil((pending.nextPollAt - Date.now()) / 1000) };
     pending.nextPollAt = Date.now() + 5000; atomic(configPath(), config);
@@ -115,8 +115,8 @@ export async function connectionStatus() {
     const connected = connection(pending.url, tokens);
     atomic(configPath(), connected);
     const account = await request(pending.url, '/v1/publishing/account', { bearer: connected.accessToken });
-    atomic(configPath(), { ...connected, accountUsername: account.username });
-    return { state: 'connected', username: account.username, notice: 'Future posts are yours. Earlier guest posts still need their own claim link.' };
+    atomic(configPath(), { ...connected, accountHandle: account.handle });
+    return { state: 'connected', handle: account.handle, notice: 'Future bits are yours. Earlier guest bits still need their own claim link.' };
   } finally { unlock(); }
 }
 export async function disconnect() {
@@ -125,6 +125,6 @@ export async function disconnect() {
     const config = saved();
     if (config.mode === 'connected') await request(config.url, '/oauth/revoke', { body: { client_id: client, token: config.refreshToken } });
     atomic(configPath(), { mode: 'guest' });
-    return { state: 'guest', notice: 'Disconnected. New posts are guest posts until you connect again. Your existing posts keep their ownership.' };
+    return { state: 'guest', notice: 'Disconnected. New bits are guest bits until you connect again. Your existing bits keep their ownership.' };
   } finally { unlock(); }
 }

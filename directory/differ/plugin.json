@@ -1,8 +1,8 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "differ",
-  "version": "0.6.5",
-  "description": "Create, publish and diff bits: small interactive pieces on Differ.",
+  "version": "0.7.1",
+  "description": "Make, publish and diff interactive bits on Differ.",
   "author": {
     "name": "Sky Valley",
     "url": "https://skyvalley.ac"
@@ -21,12 +21,12 @@
     "com.openai": {
       "interface": {
         "displayName": "Differ",
-        "shortDescription": "Create, publish and diff bits",
+        "shortDescription": "Make, publish and diff bits",
         "longDescription": "Differ helps you make bits: small interactive pieces people open, join in on and diff. Describe an idea and your assistant builds it, previews it and publishes it to Differ. You can revise it later or diff someone else's bit into your own version. Publish as a guest with no account, or connect your Differ account to publish as you.",
         "developerName": "Sky Valley",
         "category": "Productivity",
         "capabilities": [
-          "Create bits",
+          "Make bits",
           "Publish bits",
           "Diff bits"
         ],

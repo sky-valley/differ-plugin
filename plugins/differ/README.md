@@ -1,45 +1,61 @@
 # Differ
 
-Create playable posts, preview them, publish and revise. Node 24+; the bundled
-local bridge needs no npm install. Start as a guest without credentials. Posts
-are live by link for 24 hours; a private claim link lets the human sign in,
-choose a handle and keep the same post in the feed.
+Make playable bits, preview them and publish them to Differ. Node 24+; the
+bundled local bridge needs no npm install. Start as a guest without credentials.
+Guest bits are live by link for 24 hours; a private claim link lets the human
+sign in, choose a handle, confirm the caption and keep the same bit.
 
 ## Create and publish
 
-Ask “make an interactive post”, “preview it”, then “post it”. Shell fallback:
+Ask “make an interactive bit”, “preview it”, then “publish it”. Shell fallback:
 
 ```sh
 node plugins/differ/scripts/differ.cjs doctor
 node plugins/differ/scripts/differ.cjs check my-app
 node plugins/differ/scripts/differ.cjs preview my-app
-node plugins/differ/scripts/differ.cjs publish my-app
+node plugins/differ/scripts/differ.cjs publish my-app --caption "The maker's own words"
 node plugins/differ/scripts/differ.cjs status my-app
 ```
 
-App roots resolve `content/`; explicit static directories work too. Preview
+App roots resolve `content/`; explicit static directories work too. `index.html`
+is the bit as it opens, checked at 390×693 and responsive on every phone;
+an optional `preview.html` is the 390×520 interactive preview the feed shows,
+and `check` warns without one. Differ adds its SDK to every page; bundles never
+include or reference `__differ/`, and `__dfr/`, `-/`, `v/` and `uploads/` are
+reserved too. `preview` serves a player page that frames `preview.html` at
+390×520 and `index.html` at 390×693 with a stand-in for the SDK, forwarding
+presses on the preview and logging `differ.open` and `differ.close`. It
 uploads nothing. Restart it after edits. Publishing requires human intent.
-Guest receipts include the public URL, private claim link and real deadline;
-the agent must show all three. Claiming and connecting an agent are separate.
 
-To publish future posts as yourself, ask “connect my Differ account”, or run
+`--caption` (tool input `caption`) is the maker's own words over the bit, 1–200
+characters with at most 3 line breaks: the agent suggests it and the maker
+confirms it, again in Differ before the bit goes public. Differ generates the
+bit's title. Guest receipts include the `url`, private claim link and real
+deadline; the agent must show all three. Claiming and connecting an agent are
+separate.
+
+To publish future bits as yourself, ask “connect my Differ account”, or run
 `connect`, approve the browser link, then `connection-status`. No repeated claim
-is needed for new account posts. Earlier guest posts still need their claim
-links; once claimed, they are revised as you from their original directory.
+is needed for new account bits. Earlier guest bits still need their claim
+links; once claimed, new versions go up as you from their original directory.
 Connected uploads are saved as drafts. The receipt has `draft: true` and a `url`
-to preview and publish; the helper reports that nothing has been published yet.
+where the maker previews, confirms the caption and publishes; the helper reports
+that nothing has been published yet.
 This helper always keeps that preview step. A remote connector can set `publish`
 when the human explicitly asks to skip it, as described in the connector skill.
 `disconnect` revokes this agent and explicitly returns to guest mode.
 Expired/revoked credentials stop publishing rather than silently changing identity.
 
-Keep public `differ-post.json` with source and private `.differ/state.json` locally.
-Public bindings identify posts; they grant no editing rights. Private state holds
-guest proof and retry requests and must stay out of Git. Uncertain publication
-is reconciled with `status`, never by deleting state. Stale revisions conflict;
-compare `get-post ID`, then deliberately `bind DIR --post ID` after review.
-`--new` starts a separate post only when requested. A diff keeps parent post and
-revision IDs. Static assets are limited to 256 files / 20 MiB per revision.
+Keep public `differ-bit.json` with source and private `.differ/state.json` locally.
+Public bindings identify a bit, its version and that version's caption; they
+grant no editing rights. Private state holds guest proof and retry requests and
+must stay out of Git. Uncertain publication is reconciled with `status`, never
+by deleting state. A stale version conflicts; compare `get-bit ID`, then
+deliberately `bind DIR --bit ID` after review. `--new` starts a separate bit
+only when requested. A diff names its parent with `--parent-bit` and
+`--parent-version` and starts without a caption. Static assets are limited to
+256 files / 20 MiB per version. A `differ-post.json` or `.differ` journal from
+a helper before 0.7.0 stops every command and is never uploaded.
 
 ## Installation and remote connectors
 
@@ -59,9 +75,8 @@ on upfront login; the copied player prompt remains a no-install guest fallback.
 Mobile/cloud hosts must support creating a bundle and transferring it; package
 installation alone does not grant those capabilities. See [setup](skills/publish-content/references/setup.md).
 
-Shared-token publishing has been removed. Unsupported configurations fail closed;
-connect an account or explicitly disconnect for guest mode. Never put credentials
-in chat or content.
+Unsupported configurations fail closed; connect an account or explicitly
+disconnect for guest mode. Never put credentials in chat or content.
 
 ## Skills
 

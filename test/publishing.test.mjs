@@ -23,7 +23,7 @@ async function harness(t) {
   const cli = (...args) => new Promise((resolve, reject) => execFile(process.execPath, [bundle, ...args], { env, encoding: 'utf8', timeout: 30_000 }, (error, stdout, stderr) => {
     try { resolve(JSON.parse(stdout)); } catch { reject(new Error(`differ ${args.join(' ')} failed: ${stderr || stdout || error}`)); }
   }));
-  const post = (name, files) => {
+  const bit = (name, files) => {
     const directory = join(root, name); mkdirSync(directory);
     for (const [path, text] of Object.entries(files)) writeFileSync(join(directory, path), text);
     return directory;
@@ -32,83 +32,85 @@ async function harness(t) {
   const state = directory => json(join(directory, '.differ', 'state.json'));
   // Time passes locally: the next connection-status may poll immediately.
   const pollNow = () => writeFileSync(env.DIFFER_CONFIG, JSON.stringify({ ...config(), pendingConnection: { ...config().pendingConnection, nextPollAt: 0 } }));
-  async function connectAs(username) {
+  async function connectAs(handle) {
     await cli('connect');
-    control.approve(username);
+    control.approve(handle);
     const connected = await cli('connection-status');
     assert.equal(connected.state, 'connected', JSON.stringify(connected));
   }
-  return { control, cli, post, config, state, env, pollNow, connectAs };
+  return { control, cli, bit, config, state, env, pollNow, connectAs };
 }
 
-test('guest publishing reserves once, sends the upload pass as a bearer and returns the reservation claim link', async t => {
+test('guest publishing reserves once, sends the upload pass as a bearer and the caption, and returns the reservation claim link', async t => {
   const h = await harness(t);
   const html = '<!doctype html><title>Guest piece</title><link rel="stylesheet" href="style.css"><h1>One</h1>';
   const css = 'h1{color:red}';
-  const directory = h.post('guest', { 'index.html': html, 'style.css': css });
+  const directory = h.bit('guest', { 'index.html': html, 'style.css': css });
 
-  const first = await h.cli('publish', directory);
-  const id = first.postId;
+  const first = await h.cli('publish', directory, '--caption', '  Tap the\nred one  ');
+  const id = first.bitId;
   assert.match(id, uuid);
   const [reserve, upload, ...others] = h.control.calls();
   assert.deepEqual(others, [], 'no capabilities read to build a claim link');
-  assert.deepEqual([reserve.method, reserve.path, reserve.authorization, reserve.contentType], ['POST', `/v1/publishing/posts/${id}/reservation`, undefined, 'application/json']);
+  assert.deepEqual([reserve.method, reserve.path, reserve.authorization, reserve.contentType], ['POST', `/v1/publishing/bits/${id}/reservation`, undefined, 'application/json']);
   assert.deepEqual(Object.keys(reserve.body), ['ownerProof']);
   assert.match(reserve.body.ownerProof, /^[a-f0-9]{64}$/);
-  const pass = h.control.post(id).uploadToken;
+  const pass = h.control.bit(id).uploadToken;
   assert.equal(reserve.response.uploadToken, pass);
-  assert.deepEqual([upload.method, upload.path, upload.authorization, upload.contentType], ['POST', `/v1/publishing/posts/${id}/versions`, `Bearer ${pass}`, 'application/json']);
-  assert.deepEqual(Object.keys(upload.body).sort(), ['expectedRevisionId', 'files', 'requestId', 'title']);
-  assert.equal(upload.body.expectedRevisionId, null);
-  assert.equal(upload.body.title, 'Guest piece');
+  assert.deepEqual([upload.method, upload.path, upload.authorization, upload.contentType], ['POST', `/v1/publishing/bits/${id}/versions`, `Bearer ${pass}`, 'application/json']);
+  assert.deepEqual(Object.keys(upload.body).sort(), ['caption', 'expectedVersionId', 'files', 'requestId']);
+  assert.equal(upload.body.expectedVersionId, null);
+  assert.equal(upload.body.caption, 'Tap the\nred one', 'the caption is sent trimmed, never taken from the page title');
   assert.match(upload.body.requestId, uuid);
   assert.deepEqual(upload.body.files, [{ path: 'index.html', content: b64(html) }, { path: 'style.css', content: b64(css) }]);
 
   assert.equal(first.state, 'succeeded');
-  assert.equal(first.revisionId, h.control.post(id).versions[0].id);
+  assert.equal(first.versionId, h.control.bit(id).versions[0].id);
+  assert.equal(first.url, `https://player.test/bit/${id}`);
   assert.equal(first.claimUrl, h.control.claimUrl(id, reserve.body.ownerProof));
   assert.equal(first.claimLinkPrivate, true);
-  assert.equal(first.expiresAt, h.control.post(id).expiresAt);
+  assert.equal(first.expiresAt, h.control.bit(id).expiresAt);
   assert.equal(first.contentVerified, true);
-  assert.deepEqual(h.state(directory).creation, { id, mode: 'guest', ownerProof: reserve.body.ownerProof, uploadToken: pass, claimUrl: first.claimUrl });
-  assert.deepEqual(json(join(directory, 'differ-post.json')), { version: 1, publisher: h.control.origin, postId: id, revisionId: first.revisionId, title: 'Guest piece' });
+  assert.deepEqual(h.state(directory).bit, { id, mode: 'guest', ownerProof: reserve.body.ownerProof, uploadToken: pass, claimUrl: first.claimUrl });
+  assert.deepEqual(json(join(directory, 'differ-bit.json')), { version: 1, publisher: h.control.origin, bitId: id, versionId: first.versionId, caption: 'Tap the\nred one' });
 
   writeFileSync(join(directory, 'index.html'), html.replace('One', 'Two'));
   h.control.reset();
   const second = await h.cli('publish', directory);
-  const [revision, ...extra] = h.control.calls();
-  assert.deepEqual(extra, [], 'a revision reuses the reservation');
-  assert.deepEqual([revision.method, revision.path, revision.authorization], ['POST', `/v1/publishing/posts/${id}/versions`, `Bearer ${pass}`]);
-  assert.equal(revision.body.expectedRevisionId, first.revisionId);
-  assert.notEqual(revision.body.requestId, upload.body.requestId);
+  const [update, ...extra] = h.control.calls();
+  assert.deepEqual(extra, [], 'a new version reuses the reservation');
+  assert.deepEqual([update.method, update.path, update.authorization], ['POST', `/v1/publishing/bits/${id}/versions`, `Bearer ${pass}`]);
+  assert.equal(update.body.expectedVersionId, first.versionId);
+  assert.equal(update.body.caption, 'Tap the\nred one', 'the saved caption carries to the next version of the same bit');
+  assert.notEqual(update.body.requestId, upload.body.requestId);
   assert.equal(second.claimUrl, first.claimUrl);
 
   h.control.reset();
   const status = await h.cli('status', directory);
   assert.deepEqual(h.control.calls().map(({ method, path, authorization, contentType, body }) => ({ method, path, authorization, contentType, body })),
-    [{ method: 'GET', path: `/v1/publishing/posts/${id}/operations/${revision.body.requestId}`, authorization: `Bearer ${pass}`, contentType: undefined, body: undefined }]);
+    [{ method: 'GET', path: `/v1/publishing/bits/${id}/operations/${update.body.requestId}`, authorization: `Bearer ${pass}`, contentType: undefined, body: undefined }]);
   assert.equal(status.state, 'succeeded');
-  assert.equal(status.revisionId, second.revisionId);
+  assert.equal(status.versionId, second.versionId);
   assert.equal(status.claimUrl, first.claimUrl);
 
   h.control.reset();
-  assert.equal((await h.cli('publish', directory)).revisionId, second.revisionId);
-  assert.deepEqual(lines(h.control.calls()), [`GET /v1/publishing/posts/${id}/operations/${revision.body.requestId}`], 'unchanged content is not uploaded again');
+  assert.equal((await h.cli('publish', directory)).versionId, second.versionId);
+  assert.deepEqual(lines(h.control.calls()), [`GET /v1/publishing/bits/${id}/operations/${update.body.requestId}`], 'unchanged content is not uploaded again');
 
   h.control.reset();
-  const remote = await h.cli('get-post', id);
-  assert.deepEqual(h.control.calls().map(r => [r.method, r.path, r.authorization]), [['GET', `/v1/publishing/posts/${id}`, undefined]]);
-  assert.equal(remote.currentRevisionId, second.revisionId);
-  assert.deepEqual(remote.revisions.map(r => r.id), [first.revisionId, second.revisionId]);
-  assert.equal(remote.username, undefined);
+  const remote = await h.cli('get-bit', id);
+  assert.deepEqual(h.control.calls().map(r => [r.method, r.path, r.authorization]), [['GET', `/v1/publishing/bits/${id}`, undefined]]);
+  assert.equal(remote.currentVersionId, second.versionId);
+  assert.deepEqual(remote.versions.map(v => v.id), [first.versionId, second.versionId]);
+  assert.equal(remote.handle, undefined);
 });
 
 test('an unknown outcome keeps the exact saved request; a 4xx rejection drops it', async t => {
   const h = await harness(t);
-  const directory = h.post('retry', { 'index.html': '<title>Retry</title>v1' });
+  const directory = h.bit('retry', { 'index.html': '<title>Retry</title>v1' });
   const edit = text => writeFileSync(join(directory, 'index.html'), `<title>Retry</title>${text}`);
   const first = await h.cli('publish', directory);
-  const id = first.postId;
+  const id = first.bitId;
 
   edit('v2');
   h.control.failNextVersion(503, 'content_unavailable');
@@ -117,10 +119,10 @@ test('an unknown outcome keeps the exact saved request; a 4xx rejection drops it
   h.control.reset();
   const retried = await h.cli('publish', directory);
   const [check, resend] = h.control.calls();
-  assert.deepEqual(lines([check, resend]), [`GET /v1/publishing/posts/${id}/operations/${pending.requestId}`, `POST /v1/publishing/posts/${id}/versions`]);
+  assert.deepEqual(lines([check, resend]), [`GET /v1/publishing/bits/${id}/operations/${pending.requestId}`, `POST /v1/publishing/bits/${id}/versions`]);
   assert.deepEqual(check.response, { state: 'unknown', requestId: pending.requestId });
   assert.equal(resend.body.requestId, pending.requestId);
-  assert.equal(resend.body.expectedRevisionId, first.revisionId);
+  assert.equal(resend.body.expectedVersionId, first.versionId);
   assert.equal(retried.state, 'succeeded');
   assert.equal(h.state(directory).pending, undefined);
 
@@ -130,26 +132,26 @@ test('an unknown outcome keeps the exact saved request; a 4xx rejection drops it
   h.control.reset();
   const recovered = await h.cli('publish', directory);
   assert.equal(recovered.recovered, true);
-  assert.equal(recovered.revisionId, h.control.post(id).versions.at(-1).id);
+  assert.equal(recovered.versionId, h.control.bit(id).versions.at(-1).id);
   assert.deepEqual(h.control.calls().map(r => r.method), ['GET'], 'a committed request is recovered, not uploaded again');
 
   h.control.advance(id);
   edit('v4');
   const conflict = await h.cli('publish', directory);
-  assert.equal(conflict.code, 'revision_conflict');
-  assert.equal(conflict.message, 'The post changed after this draft.');
-  assert.match(conflict.recovery, /bind DIR --post ID/);
+  assert.equal(conflict.code, 'version_conflict');
+  assert.equal(conflict.message, 'The bit changed after this draft.');
+  assert.match(conflict.recovery, /bind DIR --bit ID/);
   const after = h.state(directory);
   assert.equal(after.pending, undefined);
-  assert.equal(after.rejected.code, 'revision_conflict');
+  assert.equal(after.rejected.code, 'version_conflict');
 });
 
-test('connecting uses the device grant, saves the account username and uploads drafts with the access token', async t => {
+test('connecting uses the device grant, saves the account handle and uploads drafts with the access token', async t => {
   const h = await harness(t);
   const started = await h.cli('connect');
   const [device] = h.control.calls();
   assert.deepEqual([device.method, device.path, device.authorization], ['POST', '/oauth/device', undefined]);
-  assert.deepEqual(device.body, { client_id: 'differ-plugin', resource: `${h.control.origin}/mcp`, scope: 'profile posts:write' });
+  assert.deepEqual(device.body, { client_id: 'differ-plugin', resource: `${h.control.origin}/mcp`, scope: 'profile bits:write' });
   assert.equal(started.state, 'awaiting_approval');
   assert.equal(started.url, device.response.verification_uri_complete);
   assert.equal(started.code, device.response.user_code);
@@ -169,73 +171,74 @@ test('connecting uses the device grant, saves the account username and uploads d
   const tokens = exchange.response;
   assert.deepEqual([account.method, account.path, account.authorization], ['GET', '/v1/publishing/account', `Bearer ${tokens.access_token}`]);
   assert.equal(connected.state, 'connected');
-  assert.equal(connected.username, 'maker');
+  assert.equal(connected.handle, 'maker');
   assert.equal(statSync(h.env.DIFFER_CONFIG).mode & 0o777, 0o600);
   const saved = h.config();
   assert.deepEqual({ ...saved, expiresAt: typeof saved.expiresAt },
-    { url: h.control.origin, mode: 'connected', accessToken: tokens.access_token, refreshToken: tokens.refresh_token, expiresAt: 'number', accountUsername: 'maker' });
+    { url: h.control.origin, mode: 'connected', accessToken: tokens.access_token, refreshToken: tokens.refresh_token, expiresAt: 'number', accountHandle: 'maker' });
 
   h.control.reset();
-  assert.deepEqual(await h.cli('connection-status'), { state: 'connected', username: 'maker' });
+  assert.deepEqual(await h.cli('connection-status'), { state: 'connected', handle: 'maker' });
   assert.deepEqual(h.control.calls(), []);
 
-  const directory = h.post('mine', { 'index.html': '<title>Mine</title>made by me' });
+  const directory = h.bit('mine', { 'index.html': '<title>Mine</title>made by me' });
   const receipt = await h.cli('publish', directory);
-  assert.match(receipt.postId, uuid);
+  assert.match(receipt.bitId, uuid);
   const [whoami, upload, ...rest] = h.control.calls();
   assert.deepEqual(rest, [], 'no guest reservation');
   assert.deepEqual([whoami.path, whoami.authorization], ['/v1/publishing/account', `Bearer ${tokens.access_token}`]);
-  assert.deepEqual([upload.method, upload.path, upload.authorization], ['POST', `/v1/publishing/posts/${receipt.postId}/versions`, `Bearer ${tokens.access_token}`]);
-  assert.deepEqual(Object.keys(upload.body).sort(), ['expectedRevisionId', 'files', 'requestId', 'title']);
-  assert.equal(upload.body.expectedRevisionId, null);
+  assert.deepEqual([upload.method, upload.path, upload.authorization], ['POST', `/v1/publishing/bits/${receipt.bitId}/versions`, `Bearer ${tokens.access_token}`]);
+  assert.deepEqual(Object.keys(upload.body).sort(), ['expectedVersionId', 'files', 'requestId'], 'without --caption the draft carries no caption, and the page title is never one');
+  assert.equal(upload.body.expectedVersionId, null);
   assert.equal(receipt.claimed, true);
-  assert.equal(receipt.url, `https://player.test/@maker/post/${receipt.postId}/draft`);
+  assert.equal(receipt.url, `https://player.test/@maker/bit/${receipt.bitId}/draft`);
   assert.equal(receipt.claimUrl, undefined);
-  assert.deepEqual(h.state(directory).creation, { id: receipt.postId, mode: 'connected', accountUsername: 'maker' });
+  assert.deepEqual(h.state(directory).bit, { id: receipt.bitId, mode: 'connected', accountHandle: 'maker' });
+  assert.deepEqual(json(join(directory, 'differ-bit.json')), { version: 1, publisher: h.control.origin, bitId: receipt.bitId, versionId: receipt.versionId, caption: '' });
 });
 
-test('a claimed guest post refuses its upload pass and is revised as its connected owner; another owner stops before upload', async t => {
+test('a claimed guest bit refuses its upload pass and is updated as its connected owner; another owner stops before upload', async t => {
   const h = await harness(t);
-  const mine = h.post('mine', { 'index.html': '<title>Mine</title>v1' });
-  const theirs = h.post('theirs', { 'index.html': '<title>Theirs</title>v1' });
+  const mine = h.bit('mine', { 'index.html': '<title>Mine</title>v1' });
+  const theirs = h.bit('theirs', { 'index.html': '<title>Theirs</title>v1' });
   const guest = await h.cli('publish', mine);
   const other = await h.cli('publish', theirs);
-  h.control.claim(guest.postId, 'maker');
-  h.control.claim(other.postId, 'someone-else');
+  h.control.claim(guest.bitId, 'maker', 'Mine, claimed');
+  h.control.claim(other.bitId, 'someone-else', 'Theirs, claimed');
 
   writeFileSync(join(mine, 'index.html'), '<title>Mine</title>v2');
   h.control.reset();
   const refused = await h.cli('publish', mine);
-  assert.deepEqual(h.control.calls().map(r => [r.path, r.authorization, r.status]), [[`/v1/publishing/posts/${guest.postId}/versions`, `Bearer ${h.control.post(guest.postId).uploadToken}`, 403]]);
+  assert.deepEqual(h.control.calls().map(r => [r.path, r.authorization, r.status]), [[`/v1/publishing/bits/${guest.bitId}/versions`, `Bearer ${h.control.bit(guest.bitId).uploadToken}`, 403]]);
   assert.equal(refused.code, 'owner_conflict');
-  assert.match(refused.recovery, /Connect the account that owns this post/);
+  assert.match(refused.recovery, /Connect the account that owns this bit/);
   assert.equal(h.state(mine).pending, undefined);
 
   await h.connectAs('maker');
   const token = h.config().accessToken;
   h.control.reset();
-  const revised = await h.cli('publish', mine);
+  const updated = await h.cli('publish', mine);
   assert.deepEqual(h.control.calls().map(r => [r.method, r.path, r.authorization]), [
     ['GET', '/v1/publishing/account', `Bearer ${token}`],
-    ['GET', `/v1/publishing/posts/${guest.postId}`, undefined],
-    ['POST', `/v1/publishing/posts/${guest.postId}/versions`, `Bearer ${token}`],
+    ['GET', `/v1/publishing/bits/${guest.bitId}`, undefined],
+    ['POST', `/v1/publishing/bits/${guest.bitId}/versions`, `Bearer ${token}`],
   ]);
-  assert.equal(revised.claimed, true);
-  assert.equal(revised.url, `https://player.test/@maker/post/${guest.postId}/draft`);
-  assert.equal(revised.claimUrl, undefined);
-  assert.deepEqual([h.state(mine).creation.mode, h.state(mine).creation.accountUsername], ['connected', 'maker']);
+  assert.equal(updated.claimed, true);
+  assert.equal(updated.url, `https://player.test/@maker/bit/${guest.bitId}/draft`);
+  assert.equal(updated.claimUrl, undefined);
+  assert.deepEqual([h.state(mine).bit.mode, h.state(mine).bit.accountHandle], ['connected', 'maker']);
 
   writeFileSync(join(theirs, 'index.html'), '<title>Theirs</title>v2');
   h.control.reset();
   const blocked = await h.cli('publish', theirs);
   assert.equal(blocked.code, 'owner_conflict');
-  assert.deepEqual(lines(h.control.calls()), ['GET /v1/publishing/account', `GET /v1/publishing/posts/${other.postId}`]);
+  assert.deepEqual(lines(h.control.calls()), ['GET /v1/publishing/account', `GET /v1/publishing/bits/${other.bitId}`]);
   assert.equal(h.state(theirs).pending, undefined);
 });
 
-test('refresh keeps the username, unclaimed guest drafts keep their pass, a refused token never falls back to guest, and disconnect revokes', async t => {
+test('refresh keeps the handle, unclaimed guest drafts keep their pass, a refused token never falls back to guest, and disconnect revokes', async t => {
   const h = await harness(t);
-  const draft = h.post('draft', { 'index.html': '<title>Draft</title>v1' });
+  const draft = h.bit('draft', { 'index.html': '<title>Draft</title>v1' });
   await h.cli('publish', draft);
   await h.connectAs('maker');
   const before = h.config();
@@ -247,21 +250,21 @@ test('refresh keeps the username, unclaimed guest drafts keep their pass, a refu
   assert.deepEqual(refresh.body, { grant_type: 'refresh_token', client_id: 'differ-plugin', refresh_token: before.refreshToken, resource: `${h.control.origin}/mcp` });
   assert.deepEqual([capabilities.path, capabilities.authorization], ['/v1/publishing/capabilities', undefined]);
   assert.deepEqual([account.path, account.authorization], ['/v1/publishing/account', `Bearer ${refresh.response.access_token}`]);
-  assert.deepEqual([doctor.mode, doctor.username, doctor.url, doctor.limits.files], ['connected', 'maker', h.control.origin, 256]);
+  assert.deepEqual([doctor.mode, doctor.handle, doctor.url, doctor.limits.files], ['connected', 'maker', h.control.origin, 256]);
   const after = h.config();
-  assert.deepEqual([after.accessToken, after.refreshToken, after.accountUsername], [refresh.response.access_token, refresh.response.refresh_token, 'maker']);
+  assert.deepEqual([after.accessToken, after.refreshToken, after.accountHandle], [refresh.response.access_token, refresh.response.refresh_token, 'maker']);
 
-  // Connecting claims nothing: an unclaimed guest draft is still revised with its upload pass.
+  // Connecting claims nothing: an unclaimed guest bit is still updated with its upload pass.
   writeFileSync(join(draft, 'index.html'), '<title>Draft</title>v2');
   h.control.reset();
-  const postId = h.state(draft).creation.id;
-  const guestRevision = await h.cli('publish', draft);
+  const bitId = h.state(draft).bit.id;
+  const guestVersion = await h.cli('publish', draft);
   assert.deepEqual(h.control.calls().map(r => [r.method, r.path, r.authorization]), [
     ['GET', '/v1/publishing/account', `Bearer ${after.accessToken}`],
-    ['GET', `/v1/publishing/posts/${postId}`, undefined],
-    ['POST', `/v1/publishing/posts/${postId}/versions`, `Bearer ${h.control.post(postId).uploadToken}`],
+    ['GET', `/v1/publishing/bits/${bitId}`, undefined],
+    ['POST', `/v1/publishing/bits/${bitId}/versions`, `Bearer ${h.control.bit(bitId).uploadToken}`],
   ]);
-  assert.equal(guestRevision.claimUrl, h.state(draft).creation.claimUrl);
+  assert.equal(guestVersion.claimUrl, h.state(draft).bit.claimUrl);
 
   // Control revokes the connection, for example from the player's connections page.
   h.control.revokeAll();
@@ -271,7 +274,7 @@ test('refresh keeps the username, unclaimed guest drafts keep their pass, a refu
   assert.equal(refused.code, 'reconnect_required');
   assert.match(refused.recovery, /Run connect/);
   assert.deepEqual(lines(h.control.calls()), ['GET /v1/publishing/account'], 'the guest draft is not published with its upload pass');
-  const fresh = h.post('fresh', { 'index.html': '<title>Fresh</title>new' });
+  const fresh = h.bit('fresh', { 'index.html': '<title>Fresh</title>new' });
   h.control.reset();
   assert.equal((await h.cli('publish', fresh)).code, 'reconnect_required');
   assert.deepEqual(lines(h.control.calls()), ['GET /v1/publishing/account'], 'no guest reservation');
@@ -293,10 +296,10 @@ test('OAuth errors surface as code and message', async t => {
   assert.deepEqual([declined.code, declined.message], ['access_denied', 'Connection declined.']);
 });
 
-test('a connected draft is reported as unpublished and revised using its pending revision', async t => {
+test('a connected draft is reported as unpublished and replaced by naming its pending version', async t => {
   const h = await harness(t);
   await h.connectAs('maker');
-  const directory = h.post('draft-receipt', { 'index.html': '<title>Draft</title>First' });
+  const directory = h.bit('draft-receipt', { 'index.html': '<title>Draft</title>First' });
   h.control.reset();
   const first = await h.cli('publish', directory);
   assert.equal(first.draft, true);
@@ -304,7 +307,7 @@ test('a connected draft is reported as unpublished and revised using its pending
   assert.equal(first.recovery, undefined, 'a successful draft is not a failed public-content verification');
   assert.match(first.notice, /not published yet/);
   assert.equal(first.runtimeUrl, undefined);
-  assert.equal(h.control.post(first.postId).versions.length, 0);
+  assert.equal(h.control.bit(first.bitId).versions.length, 0);
   assert.equal(h.control.requests.some(request => request.path.startsWith('/runtime/')), false);
   assert.equal(h.state(directory).pending, undefined);
 
@@ -312,9 +315,57 @@ test('a connected draft is reported as unpublished and revised using its pending
   h.control.reset();
   const second = await h.cli('publish', directory);
   const upload = h.control.calls().find(request => request.method === 'POST');
-  assert.equal(upload.body.expectedRevisionId, first.revisionId);
+  assert.equal(upload.body.expectedVersionId, first.versionId);
   assert.equal(upload.body.publish, undefined, 'the helper does not silently skip preview');
-  assert.equal(second.postId, first.postId);
-  assert.notEqual(second.revisionId, first.revisionId);
+  assert.equal(second.bitId, first.bitId);
+  assert.notEqual(second.versionId, first.versionId);
   assert.equal((await h.cli('status', directory)).draft, true);
+});
+
+test('an older helper\'s differ-post.json or journal stops every command before anything is sent', async t => {
+  const h = await harness(t);
+  const directory = h.bit('older', { 'index.html': '<title>Older</title>v1' });
+  const legacy = { version: 1, publisher: h.control.origin, postId: '11111111-1111-4111-8111-111111111111', revisionId: '22222222-2222-4222-8222-222222222222', title: 'Older' };
+  writeFileSync(join(directory, 'differ-post.json'), JSON.stringify(legacy));
+  for (const args of [['publish', directory, '--caption', 'Older'], ['check', directory], ['status', directory], ['bind', directory, '--bit', legacy.postId]]) {
+    const refused = await h.cli(...args);
+    assert.equal(refused.code, 'stale_binding', args[0]);
+    assert.match(refused.recovery, /Remove differ-post\.json/);
+  }
+  assert.deepEqual(h.control.calls(), [], 'nothing reaches Control, so differ-post.json is never uploaded');
+
+  rmSync(join(directory, 'differ-post.json'));
+  mkdirSync(join(directory, '.differ'), { recursive: true });
+  writeFileSync(join(directory, '.differ', 'state.json'), JSON.stringify({ version: 1, url: h.control.origin, creation: { id: legacy.postId, mode: 'guest' } }));
+  const stale = await h.cli('publish', directory);
+  assert.equal(stale.code, 'stale_state');
+  assert.deepEqual(h.control.calls(), [], 'an older journal is refused, not reinterpreted');
+});
+
+test('a caption is checked before upload; a new bit or a diff never inherits the saved caption', async t => {
+  const h = await harness(t);
+  const directory = h.bit('words', { 'index.html': '<title>Words</title>v1' });
+  for (const caption of ['   ', 'x'.repeat(201), 'one\ntwo\nthree\nfour\nfive', 'tab\tinside']) {
+    assert.equal((await h.cli('publish', directory, '--caption', caption)).code, 'invalid_caption', JSON.stringify(caption));
+  }
+  assert.deepEqual(h.control.calls(), [], 'an invalid caption is refused locally');
+  const emoji = '🎈'.repeat(200);
+  const first = await h.cli('publish', directory, '--caption', emoji);
+  assert.equal(h.control.bit(first.bitId).versions[0].caption, emoji, 'the limit counts characters, not UTF-16 units');
+
+  h.control.reset();
+  writeFileSync(join(directory, 'index.html'), '<title>Words</title>v2');
+  const fresh = await h.cli('publish', directory, '--new');
+  assert.notEqual(fresh.bitId, first.bitId);
+  const upload = h.control.calls().find(request => request.method === 'POST' && request.path.endsWith('/versions'));
+  assert.equal(upload.body.caption, undefined, 'a new bit starts without the old bit\'s words');
+  assert.equal(json(join(directory, 'differ-bit.json')).caption, '');
+
+  h.control.reset();
+  writeFileSync(join(directory, 'differ-bit.json'), JSON.stringify({ ...json(join(directory, 'differ-bit.json')), caption: 'Saved words' }));
+  rmSync(join(directory, '.differ'), { recursive: true });
+  const diff = await h.cli('publish', directory, '--parent-bit', first.bitId, '--parent-version', first.versionId);
+  const child = h.control.calls().find(request => request.method === 'POST' && request.path.endsWith('/versions'));
+  assert.deepEqual([child.body.parentBitId, child.body.parentVersionId, child.body.caption], [first.bitId, first.versionId, undefined], 'a diff never copies saved words');
+  assert.equal(diff.state, 'succeeded');
 });
