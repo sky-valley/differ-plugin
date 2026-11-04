@@ -31,7 +31,13 @@ export async function advanceTask(id,{signal,execute=runCodex}={}) {
   let local=readTask(id);
   if(!local)throw taskError();
   if(['completed','failed'].includes(local.state))return localTaskView(local);
-  if(local.state==='received'&&!local.prepared)await prepareTask(id);
+  if(local.state==='received'&&!local.prepared){
+    await remoteTask(local); // Verify the original connection before a terminal failure.
+    try{await prepareTask(id);}catch(error){
+      if(![404,410].includes(error.status)&&error.code!=='invalid_task_source')throw error;
+      await withTask(id,async task=>{task.outcome={failure:'source_unavailable'};task.state='reporting';saveTask(task);});
+    }
+  }
   return withTask(id,async task=>{
     const remote=await remoteTask(task);
     if(['completed','failed'].includes(remote.state)){
@@ -43,6 +49,9 @@ export async function advanceTask(id,{signal,execute=runCodex}={}) {
       await progress(task,'needs_input');return localTaskView(task);
     }
     if(['received','needs_input'].includes(task.state)){
+      try{taskInput(task);}catch{task.outcome={failure:'execution_failed'};task.state='reporting';saveTask(task);}
+    }
+    if(['received','needs_input'].includes(task.state)){
       const prompt=instructions(task); // Validate authorization before any model call.
       task.continuation=remote.continuation||0;task.state='running';saveTask(task);
       try{
@@ -51,16 +60,23 @@ export async function advanceTask(id,{signal,execute=runCodex}={}) {
           onTurn:turnId=>{task.turnId=turnId;saveTask(task);}});
         let answer;
         try{answer=JSON.parse(result.text);}catch{}
-        task.state=result.status==='completed'&&answer?.status==='ready'?'ready':'needs_input';
+        if(result.status==='failed'){task.outcome={failure:'execution_failed'};task.state='reporting';}
+        else task.state=result.status==='completed'&&answer?.status==='ready'?'ready':'needs_input';
       }catch(error){
         if(!task.sessionId){task.state='received';saveTask(task);throw error;}
         task.state='needs_input';
       }
-      saveTask(task);await progress(task,task.state);
+      saveTask(task);if(task.state!=='reporting')await progress(task,task.state);
     }
     if(task.state==='ready'||task.state==='publishing'){
       task.state='publishing';saveTask(task);
-      task.outcome=await publishTask(task);task.state='reporting';saveTask(task);
+      try{task.outcome=await publishTask(task);}catch(error){
+        if(error.code==='task_publication_rejected')task.outcome={failure:'publication_failed'};
+        else if(error.status>=400&&error.status<500){
+          task.state='needs_input';saveTask(task);await progress(task,'needs_input');return localTaskView(task);
+        }else throw error;
+      }
+      task.state='reporting';saveTask(task);
     }
     if(task.state==='reporting'){
       const result=await taskRequest(`/${id}/outcome`,{body:{claimId:task.claimId,outcome:task.outcome}});

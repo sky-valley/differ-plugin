@@ -32,7 +32,10 @@ export async function publishTask(task) {
   }
   let receipt;
   try { receipt=await request(config.url,`/v1/publishing/bits/${saved.bitId}/versions`,{bearer:config.token,body:saved.body}); }
-  catch { throw taskError('task_publication_pending'); }
+  catch(error) {
+    if(error.status>=400&&error.status<500&&error.status!==401&&error.code!=='upload_busy')throw taskError('task_publication_rejected');
+    throw taskError('task_publication_pending');
+  }
   if(receipt?.state!=='succeeded'||receipt.draft||receipt.bitId!==saved.bitId||!uuid(receipt.versionId))throw taskError('invalid_publication_response');
   return {bitId:receipt.bitId,versionId:receipt.versionId};
 }

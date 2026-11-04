@@ -37834,7 +37834,8 @@ async function publishTask(task) {
   let receipt;
   try {
     receipt = await request(config2.url, `/v1/publishing/bits/${saved2.bitId}/versions`, { bearer: config2.token, body: saved2.body });
-  } catch {
+  } catch (error63) {
+    if (error63.status >= 400 && error63.status < 500 && error63.status !== 401 && error63.code !== "upload_busy") throw taskError("task_publication_rejected");
     throw taskError("task_publication_pending");
   }
   if (receipt?.state !== "succeeded" || receipt.draft || receipt.bitId !== saved2.bitId || !uuid5(receipt.versionId)) throw taskError("invalid_publication_response");
@@ -37932,7 +37933,10 @@ async function runCodex({
       }
     }
   });
-  const abort = () => stop(taskError("codex_interrupted"));
+  const abort = () => {
+    if (threadId && turnId) send({ id: ++serial, method: "turn/interrupt", params: { threadId, turnId } });
+    stop(taskError("codex_interrupted"));
+  };
   signal?.addEventListener("abort", abort, { once: true });
   const timeout = setTimeout(() => stop(taskError("codex_timeout")), 30 * 6e4);
   try {
@@ -38001,7 +38005,19 @@ async function advanceTask(id, { signal, execute = runCodex } = {}) {
   let local = readTask(id);
   if (!local) throw taskError();
   if (["completed", "failed"].includes(local.state)) return localTaskView(local);
-  if (local.state === "received" && !local.prepared) await prepareTask(id);
+  if (local.state === "received" && !local.prepared) {
+    await remoteTask(local);
+    try {
+      await prepareTask(id);
+    } catch (error63) {
+      if (![404, 410].includes(error63.status) && error63.code !== "invalid_task_source") throw error63;
+      await withTask(id, async (task) => {
+        task.outcome = { failure: "source_unavailable" };
+        task.state = "reporting";
+        saveTask(task);
+      });
+    }
+  }
   return withTask(id, async (task) => {
     const remote = await remoteTask(task);
     if (["completed", "failed"].includes(remote.state)) {
@@ -38018,6 +38034,15 @@ async function advanceTask(id, { signal, execute = runCodex } = {}) {
     if (task.state === "needs_input" && (remote.continuation || 0) <= (task.continuation || 0)) {
       await progress(task, "needs_input");
       return localTaskView(task);
+    }
+    if (["received", "needs_input"].includes(task.state)) {
+      try {
+        taskInput(task);
+      } catch {
+        task.outcome = { failure: "execution_failed" };
+        task.state = "reporting";
+        saveTask(task);
+      }
     }
     if (["received", "needs_input"].includes(task.state)) {
       const prompt = instructions(task);
@@ -38045,7 +38070,10 @@ async function advanceTask(id, { signal, execute = runCodex } = {}) {
           answer = JSON.parse(result.text);
         } catch {
         }
-        task.state = result.status === "completed" && answer?.status === "ready" ? "ready" : "needs_input";
+        if (result.status === "failed") {
+          task.outcome = { failure: "execution_failed" };
+          task.state = "reporting";
+        } else task.state = result.status === "completed" && answer?.status === "ready" ? "ready" : "needs_input";
       } catch (error63) {
         if (!task.sessionId) {
           task.state = "received";
@@ -38055,12 +38083,22 @@ async function advanceTask(id, { signal, execute = runCodex } = {}) {
         task.state = "needs_input";
       }
       saveTask(task);
-      await progress(task, task.state);
+      if (task.state !== "reporting") await progress(task, task.state);
     }
     if (task.state === "ready" || task.state === "publishing") {
       task.state = "publishing";
       saveTask(task);
-      task.outcome = await publishTask(task);
+      try {
+        task.outcome = await publishTask(task);
+      } catch (error63) {
+        if (error63.code === "task_publication_rejected") task.outcome = { failure: "publication_failed" };
+        else if (error63.status >= 400 && error63.status < 500) {
+          task.state = "needs_input";
+          saveTask(task);
+          await progress(task, "needs_input");
+          return localTaskView(task);
+        } else throw error63;
+      }
       task.state = "reporting";
       saveTask(task);
     }

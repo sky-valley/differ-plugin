@@ -68,3 +68,20 @@ Status logs contain fixed error codes, IDs and local status only. Prompts,
 transcripts and source bytes remain in private task files. The directory-only
 plugin cannot run this receiver. Remote browser users must have a receiver
 running on the machine whose Codex interface they intend to open.
+
+## Verification and limits
+
+Run `npm run check` for the hermetic suite. The explicit opt-in command
+`DIFFER_LIVE_CODEX=1 node scripts/check-live-task.mjs` uses the installed Codex
+login and can spend model credits. It receives a fixture task, changes one
+source value, verifies the actual saved file, and checks the publication body
+and lineage against a local HTTP fixture. It never publishes to Differ.
+It retains the temporary workspace so the persistent Codex session can be
+inspected. On 2026-11-04 this check passed with Codex CLI 0.153.2.
+
+Permanent source removal reports `source_unavailable`. A failed model turn
+reports `execution_failed`. A definite publication rejection reports
+`publication_failed`. Network outages and uncertain uploads retain their
+request identity for retry. Invalid local content stops for user input before
+upload. The macOS installer is covered by generated-plist tests; installing an
+actual login service is a separate user action, not part of package validation.

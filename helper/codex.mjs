@@ -58,7 +58,10 @@ export async function runCodex({ cwd, prompt, sessionId, onSession, onTurn, sign
       }catch{stop(taskError('codex_invalid_response'));}
     }
   });
-  const abort=()=>stop(taskError('codex_interrupted'));
+  const abort=()=>{
+    if(threadId&&turnId)send({id:++serial,method:'turn/interrupt',params:{threadId,turnId}});
+    stop(taskError('codex_interrupted'));
+  };
   signal?.addEventListener('abort',abort,{once:true});
   const timeout=setTimeout(()=>stop(taskError('codex_timeout')),30*60_000);
   try{

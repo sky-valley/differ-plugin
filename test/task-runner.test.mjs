@@ -45,3 +45,15 @@ test('a stopped turn needs explicit continuation and keeps the same session', as
  await advanceTask(task.id,{execute});assert.equal(executions,1);
  assert.ok(f.calls.every(c=>!c.path.endsWith('/versions')));
 });
+
+test('a removed source produces a fixed failure outcome instead of waiting forever',async t=>{
+ const {advanceTask}=await import('../helper/task-runner.mjs');const f=await fixture(t);
+ const before={DIFFER_CONFIG:process.env.DIFFER_CONFIG,DIFFER_PUBLISH_URL:process.env.DIFFER_PUBLISH_URL};
+ Object.assign(process.env,{DIFFER_CONFIG:f.config,DIFFER_PUBLISH_URL:f.url});
+ t.after(()=>{for(const[k,v]of Object.entries(before)){if(v===undefined)delete process.env[k];else process.env[k]=v;}});
+ saveTask({schema:1,id:task.id,claimId,publisher:f.url,state:'received',delivery:{parentBitId:bit,parentVersionId:version,prompt:'private'}});
+ f.state.reply=call=>call.path.includes('/source?')?{status:410,body:{error:'source_unavailable'}}:
+  call.path.endsWith('/outcome')?{status:200,body:{id:task.id,state:'failed',version:4}}:{status:200,body:{id:task.id,state:'received',version:3}};
+ const result=await advanceTask(task.id);assert.equal(result.state,'failed');
+ const outcome=f.calls.find(c=>c.path.endsWith('/outcome'));assert.deepEqual(JSON.parse(outcome.body),{claimId,outcome:{failure:'source_unavailable'}});
+});
