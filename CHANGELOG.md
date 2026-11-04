@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.4
+
+- Declare the directory server's OpenAI authentication in `mcp.json`
+  (mixed: guest tools open, account tools by OAuth with dynamic client
+  registration), and add commerce and release notes to the review metadata.
+
 ## 0.7.3
 
 - Carry the five positive and three negative review cases in the directory
