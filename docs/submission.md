@@ -87,11 +87,10 @@ Sources: [packaging](https://developers.openai.com/plugins/build/plugins),
 
 These gates require product/account work beyond an installable open-source repo:
 
-1. **Service privacy policy and terms.** No current approved URLs were found in
-   the inspected Player source or public landing page. Do not invent URLs or
-   present the MIT license or implementation notes as hosted-service terms.
-   Add the approved HTTPS URLs to `interfaceFields` in `scripts/build.mjs`, then
-   rebuild. OpenAI requires website, support, privacy and terms URLs. Anthropic's
+1. **Service privacy policy and terms.** Done in 0.7.1:
+   `https://www.getdiffer.com/privacy` and `https://www.getdiffer.com/terms` are
+   in `interfaceFields` in `scripts/build.mjs` and linked from the directory
+   README. OpenAI requires website, support, privacy and terms URLs. Anthropic's
    connector process also needs privacy and support information.
 2. **Publisher and domain verification.** The operator selects the correct
    organization, verifies Sky Valley's publishing identity and proves endpoint
@@ -99,9 +98,9 @@ These gates require product/account work beyond an installable open-source repo:
    controlled deployment, not in source with fabricated values.
 3. **Reviewer access and host testing.** Run the eight proposed cases in
    `submission/review-cases.json` through each intended host. Account cases need
-   a dedicated review account, never production-user credentials. Differ uses
-   Google sign-in; OpenAI requires reviewer access without interactive MFA/code
-   dependencies. Resolve that access with the operator, without weakening auth.
+   an account, but sign-up is open: a reviewer signs in with any Google account
+   at app.getdiffer.com, and guest cases need no account. Say so in each
+   portal's reviewer-access field; there is no shared review account.
 4. **Video.** Record the actual tested workflow and provide its accessible URL
    for OpenAI review. No generated demonstration or local unit test can stand in
    for that recording. Do not expose claim links or credentials in it.

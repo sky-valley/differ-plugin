@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.1
+
+- Prepare the directory listings: describe what Differ does (make, publish and
+  diff bits) with no assistant named, list Diff bits as a capability, and add
+  the privacy policy and terms links that OpenAI's directory requires.
+
 ## 0.7.0
 
 Breaking: Control now speaks of bits, versions, captions and handles (gdiffer

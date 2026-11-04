@@ -1,12 +1,13 @@
 # Differ
 
-Make a small interactive bit: something people can play, respond to, and share.
+Make bits: small interactive pieces people open, join in on and diff.
 This plugin includes Differ's making and publishing skills, complete shared
 participation examples, and the remote Differ connector. It talks to the hosted
 service at `https://publish.getdiffer.com/mcp`.
 
-Ask Claude or ChatGPT to make a bit, preview it if the host supports that,
-and publish when you are ready. Making a bit never authorizes publication.
+Ask your assistant to make a bit, preview it if the host supports that,
+and publish when you are ready. To diff someone else's bit, ask for a diff of
+its link: the new bit names the one it came from. Making a bit never authorizes publication.
 A bit is its `index.html`, which opens full screen on a phone, and optionally a
 390×520 interactive `preview.html` the feed shows; its caption is the maker's
 own words, which the maker confirms before the bit goes public.
@@ -47,7 +48,9 @@ installation runs no scripts. Local runtime rehearsal requires Node, a browser
 test library, and pagelike. Review the example README before running its checks.
 
 The MIT license covers this plugin's code and documentation. Differ's hosted
-service is operated separately. See the repository's
+service is operated separately under its
+[privacy policy](https://www.getdiffer.com/privacy) and
+[terms](https://www.getdiffer.com/terms). See the repository's
 [data-handling notes](https://github.com/sky-valley/differ-plugin/blob/main/docs/data-handling.md)
 and [support](https://github.com/sky-valley/differ-plugin/issues).
 

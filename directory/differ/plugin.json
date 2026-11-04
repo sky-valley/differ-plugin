@@ -1,8 +1,8 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "differ",
-  "version": "0.7.0",
-  "description": "Make, preview and publish interactive bits on Differ.",
+  "version": "0.7.1",
+  "description": "Make, publish and diff interactive bits on Differ.",
   "author": {
     "name": "Sky Valley",
     "url": "https://skyvalley.ac"
@@ -13,23 +13,27 @@
   "keywords": [
     "differ",
     "interactive",
+    "bits",
     "publishing",
-    "participation"
+    "diff"
   ],
   "extensions": {
     "com.openai": {
       "interface": {
         "displayName": "Differ",
-        "shortDescription": "Make interactive bits",
-        "longDescription": "Make interactive bits and publish them to Differ. Start as a guest, claim the bit later, or connect your account for future publications. Shared participation requires a claimed bit and runtime verification. Local file and browser capabilities depend on the host.",
+        "shortDescription": "Make, publish and diff bits",
+        "longDescription": "Differ helps you make bits: small interactive pieces people open, join in on and diff. Describe an idea and your assistant builds it, previews it and publishes it to Differ. You can revise it later or diff someone else's bit into your own version. Publish as a guest with no account, or connect your Differ account to publish as you.",
         "developerName": "Sky Valley",
         "category": "Productivity",
         "capabilities": [
           "Make bits",
-          "Publish bits"
+          "Publish bits",
+          "Diff bits"
         ],
         "websiteURL": "https://app.getdiffer.com",
         "supportURL": "https://github.com/sky-valley/differ-plugin/issues",
+        "privacyPolicyURL": "https://www.getdiffer.com/privacy",
+        "termsOfServiceURL": "https://www.getdiffer.com/terms",
         "defaultPrompt": [
           "Make an interactive bit with Differ."
         ],
