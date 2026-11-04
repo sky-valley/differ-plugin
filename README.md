@@ -137,3 +137,8 @@ endpoint with digest and size verification. See [contributing](CONTRIBUTING.md),
 before acknowledging receipt. It returns only the task ID and local state.
 Repeat the same command after a network failure. Receipt alone does not run an
 agent. Task journals are kept beside the publisher configuration under `tasks/`.
+
+`task-source ID` downloads the received task's exact source into its private
+`workspace/content` folder. It checks the source identity, response size, static
+file limits, encoding, path traversal, duplicate paths and case aliases before
+writing files. A retry preserves an existing workspace, including local edits.

@@ -3,6 +3,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { z } from 'zod';
 import { doctor, check, preview, publish, status, getBit, bind, connect, connectionStatus, disconnect } from './client.mjs';
 import { errorResult } from './diagnostics.mjs';
+import { prepareTask } from './task-source.mjs';
 import { receiveTask } from './task-receipt.mjs';
 import { pollTasks, taskCursor } from './tasks.mjs';
 import { imageCandidate, inspectVideo } from './media.mjs';
@@ -42,6 +43,7 @@ async function main() {
   switch (command) {
     case 'mcp': return mcp();
     case 'doctor': return output(await doctor());
+    case 'task-source': return output(await prepareTask(args[0]));
     case 'task-receive': return output(await receiveTask(args[0], args.length === 2 ? Number(args[1]) : NaN));
     case 'tasks': return output(await pollTasks(taskCursor(args)));
     case 'connect': return output(await connect());
@@ -67,7 +69,7 @@ async function main() {
       });
       return;
     }
-    default: output({ commands: ['doctor', 'tasks [--after SEQUENCE]', 'task-receive ID VERSION', 'connect', 'connection-status', 'disconnect', 'check APP_OR_CONTENT', 'preview APP_OR_CONTENT [--port N]', 'publish APP_OR_CONTENT [--caption CAPTION] [--new] [--parent-bit UUID --parent-version UUID]', 'status APP_OR_CONTENT', 'get-bit UUID', 'bind APP_OR_CONTENT --bit UUID', 'image-candidate FILE --output NEW.webp [--quality 85]', 'inspect-video FILE', 'mcp'], note: 'Node 24+. App roots resolve content/. Keep differ-bit.json with source for team handoff; keep .differ state locally for retries. Guest publishing needs no setup. Connect optionally to publish as yourself. Never pass tokens in chat.' });
+    default: output({ commands: ['doctor', 'tasks [--after SEQUENCE]', 'task-receive ID VERSION', 'task-source ID', 'connect', 'connection-status', 'disconnect', 'check APP_OR_CONTENT', 'preview APP_OR_CONTENT [--port N]', 'publish APP_OR_CONTENT [--caption CAPTION] [--new] [--parent-bit UUID --parent-version UUID]', 'status APP_OR_CONTENT', 'get-bit UUID', 'bind APP_OR_CONTENT --bit UUID', 'image-candidate FILE --output NEW.webp [--quality 85]', 'inspect-video FILE', 'mcp'], note: 'Node 24+. App roots resolve content/. Keep differ-bit.json with source for team handoff; keep .differ state locally for retries. Guest publishing needs no setup. Connect optionally to publish as yourself. Never pass tokens in chat.' });
   }
 }
 main().catch(e => { output(error(e)); process.exitCode = 1; });

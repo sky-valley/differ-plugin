@@ -37537,8 +37537,9 @@ function withSDK(bytes) {
   return head ? html.slice(0, head.index + head[0].length) + sdkTag + html.slice(head.index + head[0].length) : sdkTag + html;
 }
 
-// helper/task-receipt.mjs
-var import_node_crypto5 = require("node:crypto");
+// helper/task-source.mjs
+var import_node_fs5 = require("node:fs");
+var import_node_path6 = require("node:path");
 
 // helper/task-store.mjs
 var import_node_fs4 = require("node:fs");
@@ -37650,7 +37651,66 @@ async function taskRequest(path, { body, maxBytes = 512 * 1024 } = {}) {
   }
 }
 
+// helper/task-source.mjs
+function workspaceFor(task) {
+  const path = (0, import_node_path6.join)(taskDirectory(task.id), "workspace");
+  if ((0, import_node_fs5.existsSync)(path)) {
+    if (!(0, import_node_fs5.lstatSync)(path).isDirectory() || (0, import_node_fs5.lstatSync)(path).isSymbolicLink()) throw taskError("unsafe_task_directory");
+    const marker = JSON.parse((0, import_node_fs5.readFileSync)((0, import_node_path6.join)(path, "source.json"), "utf8"));
+    if (marker.bitId !== task.delivery.parentBitId || marker.versionId !== task.delivery.parentVersionId) throw taskError();
+  }
+  return path;
+}
+async function prepareTask(id) {
+  return withTask(id, async (task) => {
+    if (!task || task.state !== "received") throw taskError("task_not_received");
+    const config2 = configuration();
+    if (config2.mode !== "connected" || task.publisher !== config2.url) throw taskError("account_connection_required");
+    const workspace = workspaceFor(task);
+    if (!(0, import_node_fs5.existsSync)(workspace)) {
+      const source = await taskRequest(`/${id}/source?claimId=${task.claimId}`, { maxBytes: limits.wireBytes });
+      if (!source || source.bitId !== task.delivery.parentBitId || source.versionId !== task.delivery.parentVersionId) throw taskError("invalid_task_source");
+      let artifact;
+      try {
+        artifact = validateArtifact(source);
+      } catch {
+        throw taskError("invalid_task_source");
+      }
+      const names = /* @__PURE__ */ new Set();
+      for (const path of artifact.files.keys()) {
+        const key = path.toLowerCase();
+        if (names.has(key)) throw taskError("invalid_task_source");
+        names.add(key);
+      }
+      for (const path of names) {
+        const parts = path.split("/");
+        parts.pop();
+        while (parts.length) {
+          if (names.has(parts.join("/"))) throw taskError("invalid_task_source");
+          parts.pop();
+        }
+      }
+      const temporary = (0, import_node_fs5.mkdtempSync)((0, import_node_path6.join)(taskDirectory(id), "source-"));
+      try {
+        for (const [path, bytes] of artifact.files) {
+          const target = (0, import_node_path6.join)(temporary, "content", path);
+          (0, import_node_fs5.mkdirSync)((0, import_node_path6.dirname)(target), { recursive: true, mode: 448 });
+          (0, import_node_fs5.writeFileSync)(target, bytes, { flag: "wx", mode: 384 });
+        }
+        (0, import_node_fs5.writeFileSync)((0, import_node_path6.join)(temporary, "source.json"), JSON.stringify({ bitId: source.bitId, versionId: source.versionId, artifactId: artifact.artifactId }), { flag: "wx", mode: 384 });
+        (0, import_node_fs5.renameSync)(temporary, workspace);
+      } finally {
+        (0, import_node_fs5.rmSync)(temporary, { recursive: true, force: true });
+      }
+    }
+    task.prepared = true;
+    saveTask(task);
+    return { id, state: task.state, directory: (0, import_node_path6.join)(workspace, "content") };
+  });
+}
+
 // helper/task-receipt.mjs
+var import_node_crypto5 = require("node:crypto");
 function deliveryValid(delivery, task) {
   return delivery && delivery.id === task.id && delivery.claimId === task.claimId && delivery.version === task.offerVersion + 1 && uuid5(delivery.parentBitId) && uuid5(delivery.parentVersionId) && Number.isFinite(Date.parse(delivery.expiresAt)) && typeof delivery.prompt === "string" && delivery.prompt.trim().length > 0 && Buffer.byteLength(delivery.prompt) <= 64 * 1024;
 }
@@ -37717,8 +37777,8 @@ async function pollTasks(after = 0) {
 
 // helper/media.mjs
 var import_node_child_process = require("node:child_process");
-var import_node_fs5 = require("node:fs");
-var import_node_path6 = require("node:path");
+var import_node_fs6 = require("node:fs");
+var import_node_path7 = require("node:path");
 function command(name, args, options = {}) {
   try {
     return (0, import_node_child_process.execFileSync)(name, args, { timeout: 6e4, maxBuffer: 32 * 1024 * 1024, ...options });
@@ -37728,19 +37788,19 @@ function command(name, args, options = {}) {
 }
 function inputFile(path) {
   if (typeof path !== "string") throw problem("missing_file", "Supply a local media file.", "Select the exact source file.");
-  const full = (0, import_node_path6.resolve)(path);
-  const stat = (0, import_node_fs5.lstatSync)(full);
+  const full = (0, import_node_path7.resolve)(path);
+  const stat = (0, import_node_fs6.lstatSync)(full);
   if (!stat.isFile() || stat.isSymbolicLink()) throw problem("unsafe_input", "Media input must be a regular file.", "Select the original file, not a link.");
   return full;
 }
 function imageCandidate(input2, output3, quality = 85) {
   const source = inputFile(input2);
   if (!/\.(png|jpe?g)$/i.test(source)) throw problem("unsupported_image", "Candidates support still PNG/JPEG sources.", "Do not flatten animation; use an appropriate format-specific workflow.");
-  if (typeof output3 !== "string" || (0, import_node_path6.extname)(output3).toLowerCase() !== ".webp" || !Number.isFinite(quality) || quality < 0 || quality > 100) throw problem("invalid_candidate", "Specify a new .webp output and quality 0\u2013100.", "Write candidates outside publishable content; review before adopting.");
-  const target = (0, import_node_path6.resolve)(output3);
-  (0, import_node_fs5.realpathSync)((0, import_node_path6.dirname)(target));
-  if ((0, import_node_fs5.existsSync)(target)) throw problem("output_exists", "Candidate output already exists.", "Choose a new path; originals and previous candidates are never overwritten.");
-  const original = (0, import_node_fs5.readFileSync)(source);
+  if (typeof output3 !== "string" || (0, import_node_path7.extname)(output3).toLowerCase() !== ".webp" || !Number.isFinite(quality) || quality < 0 || quality > 100) throw problem("invalid_candidate", "Specify a new .webp output and quality 0\u2013100.", "Write candidates outside publishable content; review before adopting.");
+  const target = (0, import_node_path7.resolve)(output3);
+  (0, import_node_fs6.realpathSync)((0, import_node_path7.dirname)(target));
+  if ((0, import_node_fs6.existsSync)(target)) throw problem("output_exists", "Candidate output already exists.", "Choose a new path; originals and previous candidates are never overwritten.");
+  const original = (0, import_node_fs6.readFileSync)(source);
   if (/\.png$/i.test(source)) {
     for (let offset = 8; offset + 12 <= original.length; ) {
       if (original.toString("ascii", offset + 4, offset + 8) === "acTL") throw problem("animated_image", "Animated PNG requires a different encoder.", "Keep animation intact; do not convert it as a still image.");
@@ -37748,7 +37808,7 @@ function imageCandidate(input2, output3, quality = 85) {
     }
   }
   const candidate = command("cwebp", ["-preset", "photo", "-q", String(quality), "-m", "6", "-sharp_yuv", "-metadata", "icc", "-quiet", source, "-o", "-"], { stdio: ["ignore", "pipe", "pipe"] });
-  (0, import_node_fs5.writeFileSync)(target, candidate, { flag: "wx" });
+  (0, import_node_fs6.writeFileSync)(target, candidate, { flag: "wx" });
   return {
     source,
     candidate: target,
@@ -37849,6 +37909,8 @@ async function main() {
       return mcp();
     case "doctor":
       return output2(await doctor());
+    case "task-source":
+      return output2(await prepareTask(args[0]));
     case "task-receive":
       return output2(await receiveTask(args[0], args.length === 2 ? Number(args[1]) : NaN));
     case "tasks":
@@ -37891,7 +37953,7 @@ async function main() {
       return;
     }
     default:
-      output2({ commands: ["doctor", "tasks [--after SEQUENCE]", "task-receive ID VERSION", "connect", "connection-status", "disconnect", "check APP_OR_CONTENT", "preview APP_OR_CONTENT [--port N]", "publish APP_OR_CONTENT [--caption CAPTION] [--new] [--parent-bit UUID --parent-version UUID]", "status APP_OR_CONTENT", "get-bit UUID", "bind APP_OR_CONTENT --bit UUID", "image-candidate FILE --output NEW.webp [--quality 85]", "inspect-video FILE", "mcp"], note: "Node 24+. App roots resolve content/. Keep differ-bit.json with source for team handoff; keep .differ state locally for retries. Guest publishing needs no setup. Connect optionally to publish as yourself. Never pass tokens in chat." });
+      output2({ commands: ["doctor", "tasks [--after SEQUENCE]", "task-receive ID VERSION", "task-source ID", "connect", "connection-status", "disconnect", "check APP_OR_CONTENT", "preview APP_OR_CONTENT [--port N]", "publish APP_OR_CONTENT [--caption CAPTION] [--new] [--parent-bit UUID --parent-version UUID]", "status APP_OR_CONTENT", "get-bit UUID", "bind APP_OR_CONTENT --bit UUID", "image-candidate FILE --output NEW.webp [--quality 85]", "inspect-video FILE", "mcp"], note: "Node 24+. App roots resolve content/. Keep differ-bit.json with source for team handoff; keep .differ state locally for retries. Guest publishing needs no setup. Connect optionally to publish as yourself. Never pass tokens in chat." });
   }
 }
 main().catch((e) => {
