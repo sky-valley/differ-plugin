@@ -214,7 +214,7 @@ footer { max-width: 812px; margin: 24px auto 0; }
 
 export function previewPage({ preview }) {
   const box = preview
-    ? '<div class="box"><iframe id="preview" src="/preview.html" title="preview.html" width="390" height="520"></iframe><div id="layer"></div><button id="badge" aria-label="Open">⤢</button></div>'
+    ? '<div class="box"><iframe id="preview" src="/preview.html" title="preview.html" allow="" width="390" height="520"></iframe><div id="layer"></div><button id="badge" aria-label="Open">⤢</button></div>'
     : '<p class="note">No preview.html. The feed shows index.html laid out at 390×693 and scaled into this 390×520 box, and a tap there opens the bit. Add preview.html to make the box interactive.</p>';
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Differ preview</title><style>${style}</style></head><body>
 <main><section><h2>preview.html <span>390×520, the feed's box</span></h2>${box}</section>

@@ -37077,7 +37077,7 @@ footer { max-width: 812px; margin: 24px auto 0; }
 #log { font: 12px/1.6 ui-monospace, monospace; padding-left: 0; list-style: none; color: var(--ink); }
 `;
 function previewPage({ preview: preview2 }) {
-  const box = preview2 ? '<div class="box"><iframe id="preview" src="/preview.html" title="preview.html" width="390" height="520"></iframe><div id="layer"></div><button id="badge" aria-label="Open">\u2922</button></div>' : '<p class="note">No preview.html. The feed shows index.html laid out at 390\xD7693 and scaled into this 390\xD7520 box, and a tap there opens the bit. Add preview.html to make the box interactive.</p>';
+  const box = preview2 ? '<div class="box"><iframe id="preview" src="/preview.html" title="preview.html" allow="" width="390" height="520"></iframe><div id="layer"></div><button id="badge" aria-label="Open">\u2922</button></div>' : '<p class="note">No preview.html. The feed shows index.html laid out at 390\xD7693 and scaled into this 390\xD7520 box, and a tap there opens the bit. Add preview.html to make the box interactive.</p>';
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Differ preview</title><style>${style}</style></head><body>
 <main><section><h2>preview.html <span>390\xD7520, the feed's box</span></h2>${box}</section>
 <section><h2>index.html <span>390\xD7693, the open bit</span></h2><div class="open" id="open"></div></section></main>
