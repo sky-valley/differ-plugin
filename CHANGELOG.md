@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.4
+
+- Execute and publish tasks with exact lineage.
+
 ## 0.8.3
 
 - Add the persistent Codex protocol adapter.
