@@ -1,3 +1,4 @@
+import metadata from '../package.json' with { type: 'json' };
 import { spawn } from 'node:child_process';
 import { taskError, uuid } from './task-store.mjs';
 
@@ -66,7 +67,7 @@ export async function runCodex({ cwd, prompt, sessionId, onSession, onTurn, sign
   const timeout=setTimeout(()=>stop(taskError('codex_timeout')),30*60_000);
   try{
     if(signal?.aborted)throw taskError('codex_interrupted');
-    await call('initialize',{clientInfo:{name:'differ_tasks',version:'0.8.0'}});
+    await call('initialize',{clientInfo:{name:'differ_tasks',version:metadata.version}});
     send({method:'initialized',params:{}});
     const result=await call(sessionId?'thread/resume':'thread/start',{
       ...(sessionId?{threadId:sessionId}:{}),cwd,approvalPolicy:'on-request',sandbox:'workspace-write',

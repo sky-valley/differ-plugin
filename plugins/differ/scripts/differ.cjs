@@ -37842,6 +37842,40 @@ async function publishTask(task) {
   return { bitId: receipt.bitId, versionId: receipt.versionId };
 }
 
+// package.json
+var package_default = {
+  name: "differ-plugin",
+  version: "0.8.5",
+  private: true,
+  type: "module",
+  engines: {
+    node: ">=24"
+  },
+  scripts: {
+    build: "node scripts/build.mjs",
+    test: "node --test test/*.test.mjs",
+    "sync-skills": "node scripts/sync-skills.mjs",
+    "check-skills": "node scripts/sync-skills.mjs --check",
+    check: "npm run build && npm test && node scripts/validate.mjs",
+    release: "python3 scripts/package-release.py",
+    version: "node scripts/version.mjs",
+    "check-service": "node scripts/check-service.mjs"
+  },
+  dependencies: {
+    "@modelcontextprotocol/sdk": "1.32.1",
+    zod: "4.6.7"
+  },
+  devDependencies: {
+    esbuild: "0.25.12"
+  },
+  license: "MIT",
+  description: "Differ skills for making bits, and the publishing helper",
+  repository: {
+    type: "git",
+    url: "https://github.com/sky-valley/differ-plugin.git"
+  }
+};
+
 // helper/codex.mjs
 var import_node_child_process = require("node:child_process");
 async function runCodex({
@@ -37941,7 +37975,7 @@ async function runCodex({
   const timeout = setTimeout(() => stop(taskError("codex_timeout")), 30 * 6e4);
   try {
     if (signal?.aborted) throw taskError("codex_interrupted");
-    await call("initialize", { clientInfo: { name: "differ_tasks", version: "0.8.0" } });
+    await call("initialize", { clientInfo: { name: "differ_tasks", version: package_default.version } });
     send({ method: "initialized", params: {} });
     const result = await call(sessionId ? "thread/resume" : "thread/start", {
       ...sessionId ? { threadId: sessionId } : {},
@@ -38317,40 +38351,6 @@ function inspectVideo(input2) {
   const stream = data.streams[0];
   return { file: file2, ...stream, ...data.format, review: "Encoding metadata does not prove smooth capture, visible gestures, pacing or legibility. Play the actual clip; do not certify stitched screenshots as real-time recording." };
 }
-
-// package.json
-var package_default = {
-  name: "differ-plugin",
-  version: "0.8.0",
-  private: true,
-  type: "module",
-  engines: {
-    node: ">=24"
-  },
-  scripts: {
-    build: "node scripts/build.mjs",
-    test: "node --test test/*.test.mjs",
-    "sync-skills": "node scripts/sync-skills.mjs",
-    "check-skills": "node scripts/sync-skills.mjs --check",
-    check: "npm run build && npm test && node scripts/validate.mjs",
-    release: "python3 scripts/package-release.py",
-    version: "node scripts/version.mjs",
-    "check-service": "node scripts/check-service.mjs"
-  },
-  dependencies: {
-    "@modelcontextprotocol/sdk": "1.32.1",
-    zod: "4.6.7"
-  },
-  devDependencies: {
-    esbuild: "0.25.12"
-  },
-  license: "MIT",
-  description: "Differ skills for making bits, and the publishing helper",
-  repository: {
-    type: "git",
-    url: "https://github.com/sky-valley/differ-plugin.git"
-  }
-};
 
 // helper/main.mjs
 var error62 = errorResult;
