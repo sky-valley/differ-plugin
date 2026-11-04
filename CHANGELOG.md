@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.5
+
+- Run continuous local task delivery.
+
 ## 0.8.4
 
 - Execute and publish tasks with exact lineage.
