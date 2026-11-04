@@ -24,6 +24,11 @@
   mode. It does not claim, acknowledge or execute tasks.
 - Task discovery returns no instructions and gives no permission to execute.
 
+## 0.7.2
+
+- Name the privacy policy in the Claude plugin manifest (`privacyPolicyUrl`),
+  as Anthropic's directory validator asks.
+
 ## 0.7.1
 
 - Prepare the directory listings: describe what Differ does (make, publish and
