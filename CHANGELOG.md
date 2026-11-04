@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.7.2
+
+- Name the privacy policy in the Claude plugin manifest (`privacyPolicyUrl`),
+  as Anthropic's directory validator asks.
+
 ## 0.7.1
 
 - Prepare the directory listings: describe what Differ does (make, publish and
