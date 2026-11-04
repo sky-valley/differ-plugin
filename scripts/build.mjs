@@ -46,7 +46,7 @@ const interfaceFields = {
   longDescription: 'Create interactive posts and publish them to Differ. Start as a guest, claim a post later, or connect your account for future publications. Shared participation requires a claimed post and runtime verification. Local file and browser capabilities depend on the host.',
   developerName: 'Sky Valley', category: 'Productivity',
   capabilities: ['Create posts', 'Publish posts'],
-  websiteURL: 'https://player.getdiffer.com',
+  websiteURL: 'https://app.getdiffer.com',
   supportURL: 'https://github.com/sky-valley/differ-plugin/issues',
   defaultPrompt: ['Create an interactive social post with Differ.'],
   brandColor: '#1A1A1A', composerIcon: './assets/icon.svg', logo: './assets/icon.svg',
