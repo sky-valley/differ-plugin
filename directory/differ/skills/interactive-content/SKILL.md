@@ -28,10 +28,15 @@ Infer from the brief; ask only about consequential gaps.
   three picks. Avoid empty templates, landing pages, onboarding, dashboards,
   accounts, and settings unless the experience requires them.
 - Derive the hook from the material: a real contrast, curiosity, joke, opinion,
-  or recognizable situation. Fulfil its promise; never invent facts or popularity.
+  or recognizable situation. Make it easy: understood within a second from the
+  screen, with one short line at most. Fulfil its promise; never invent facts or popularity.
 - Make the subject actionable: boop the nose, wash the wall, shake back.
-  Make the invitation noticeable without obscuring the subject; retire hints
-  once learned. Prefer direct gestures to redundant narration; retain accessible labels.
+  Every gesture is how you do what the piece is about; add no mashing or
+  interaction for its own sake. Make the invitation noticeable without
+  obscuring the subject; retire hints once learned. Prefer direct gestures to
+  redundant narration; retain accessible labels.
+- Build as much as the idea needs and no more. Every mechanic and feature
+  earns its place by serving the experience; cut what does not, finish what does.
 - Deliver a perceptible payoff: reveal, transformation, answer, punchline,
   personal artifact, win/loss, or satisfying loop. Spend effort on assets,
   composition, timing, motion, sound, and exact copy.
@@ -50,6 +55,27 @@ Infer from the brief; ask only about consequential gaps.
   targets, intact focal subjects, and deliberate desktop/iframe adaptation.
   Keep authoring controls and implementation details off the consuming surface
   unless needed there; respect the player's existing navigation and sharing.
+
+## Look
+
+- Set it in a real world: a place, time of day, light, weather, materials.
+  Build that scene around the subject, not the subject on a flat background.
+- Choose the look on purpose, from that world, before building: one art
+  direction, a deliberate palette, lighting and composition, carried from the
+  first screen to the last button.
+- Use the medium the world needs. With depth, build real-time 3D in three.js:
+  physically based materials, an environment map or sky for light, soft
+  shadows, fog, filmic tone mapping; vendor three.js and its add-ons into
+  `content/` and import them relatively. Flat by nature, make the 2D crafted:
+  illustrated, textured, lit.
+- Use real assets: textures, illustrations, characters, fonts and sounds, made,
+  generated or licensed, bundled in `content/`. Nothing may look like a
+  placeholder or a child's drawing: no crude shapes, clip-art or stray emoji
+  standing in for a character, object or place, and no default system styling.
+- Make the interface part of the world: few controls in thumb reach, made of
+  the world's own materials and type.
+- Keep it smooth on a mid-range phone: steady frame rate, pixel ratio capped
+  at 2, textures sized to their display, a first screen that appears at once.
 
 ## Implement
 
@@ -81,7 +107,10 @@ opportunities are implemented, not merely a working interaction.
 Open the actual experience on phone and desktop. Perform the interaction,
 reach its payoff, and test participation/sharing as a fresh recipient when
 present. Check loading, gestures, framing, and failure states; report what was
-observed versus unverified. Remove friction and generic product chrome.
+observed versus unverified. Remove friction and generic product chrome. Look
+at it as a stranger scrolling past: fix whatever looks generic, unfinished or
+worse than the best phone apps and games, and any interaction that does not
+serve the experience.
 
 When testing diff behaviour, distinguish consumption, participation, diffing,
 and subsequent sharing. Forced steps do not demonstrate desire. Inherited
