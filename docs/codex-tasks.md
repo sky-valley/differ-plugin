@@ -109,7 +109,8 @@ node /path/to/plugins/differ/scripts/differ.cjs tasks-install --agent claude-cod
 
 Use the same connected account configuration as before. The selected agent must
 already be installed and signed in. The helper uses its configured model.
-Claude runs with normal permission rules and no interactive permission prompts.
+Claude uses `acceptEdits` for work in the task folder. Other permission rules
+still apply, and interactive permission prompts are not auto-approved.
 A denial returns `needs_input`, even if the model says its work is ready.
 Each task keeps its selected agent when the receiver restarts with a new default.
 Control stores only the agent name, chat ID, and progress state.

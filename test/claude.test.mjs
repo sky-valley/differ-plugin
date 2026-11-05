@@ -25,7 +25,7 @@ let input='';process.stdin.on('data',c=>input+=c);process.stdin.on('end',()=>{
  assert.ok(args.includes(prior?'--resume':'--session-id'));
  assert.ok(!args.includes('--dangerously-skip-permissions'));
  assert.ok(!args.includes('private task'));
- assert.equal(args[args.indexOf('--permission-mode')+1],'default');
+ assert.equal(args[args.indexOf('--permission-mode')+1],'acceptEdits');
 });
 
 test('agent selection rejects unknown commands and opens the exact local folder',async()=>{
