@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.7
+
+- Wait for the local Codex process to exit before reporting its result or requesting user input.
+
 ## 0.8.6
 
 - Verify Codex execution and handle permanent failures.

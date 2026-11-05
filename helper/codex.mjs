@@ -7,6 +7,10 @@ import { taskError, uuid } from './task-store.mjs';
 export async function runCodex({ cwd, prompt, sessionId, onSession, onTurn, signal,
   command = 'codex', args = ['app-server', '--listen', 'stdio://'] }) {
   const child = spawn(command, args, { cwd, stdio:['pipe','pipe','pipe'], shell:false });
+  const exited=new Promise(resolve=>{
+    child.once('exit',resolve);
+    child.once('error',()=>{if(!child.pid)resolve();});
+  });
   let serial=0, buffer='', threadId=sessionId, turnId, text='', ended=false, inputNeeded=false;
   const pending=new Map(), completed=[];
   let finish, fail;
@@ -87,8 +91,16 @@ export async function runCodex({ cwd, prompt, sessionId, onSession, onTurn, sign
   }finally{
     clearTimeout(timeout);signal?.removeEventListener('abort',abort);
     for(const waiter of pending.values())clearTimeout(waiter.timer);
-    child.stdin.end();child.kill('SIGTERM');
-    const kill=setTimeout(()=>child.kill('SIGKILL'),2000);kill.unref();child.once('exit',()=>clearTimeout(kill));
+    // EOF lets app-server save and release its chat. A result is not a handoff
+    // until this process has exited. Bound shutdown if it stops responding.
+    child.stdin.end();
+    const terminate=setTimeout(()=>child.kill('SIGTERM'),2000);
+    const kill=setTimeout(()=>child.kill('SIGKILL'),4000);
+    try { await exited; }
+    finally {
+      clearTimeout(terminate);clearTimeout(kill);
+      child.stdin.destroy();child.stdout.destroy();child.stderr.destroy();
+    }
   }
 }
 

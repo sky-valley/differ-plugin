@@ -37845,7 +37845,7 @@ async function publishTask(task) {
 // package.json
 var package_default = {
   name: "differ-plugin",
-  version: "0.8.6",
+  version: "0.8.7",
   private: true,
   type: "module",
   engines: {
@@ -37889,6 +37889,12 @@ async function runCodex({
   args = ["app-server", "--listen", "stdio://"]
 }) {
   const child = (0, import_node_child_process.spawn)(command2, args, { cwd, stdio: ["pipe", "pipe", "pipe"], shell: false });
+  const exited = new Promise((resolve5) => {
+    child.once("exit", resolve5);
+    child.once("error", () => {
+      if (!child.pid) resolve5();
+    });
+  });
   let serial = 0, buffer = "", threadId = sessionId, turnId, text = "", ended = false, inputNeeded = false;
   const pending = /* @__PURE__ */ new Map(), completed = [];
   let finish, fail2;
@@ -38000,10 +38006,17 @@ async function runCodex({
     signal?.removeEventListener("abort", abort);
     for (const waiter of pending.values()) clearTimeout(waiter.timer);
     child.stdin.end();
-    child.kill("SIGTERM");
-    const kill = setTimeout(() => child.kill("SIGKILL"), 2e3);
-    kill.unref();
-    child.once("exit", () => clearTimeout(kill));
+    const terminate = setTimeout(() => child.kill("SIGTERM"), 2e3);
+    const kill = setTimeout(() => child.kill("SIGKILL"), 4e3);
+    try {
+      await exited;
+    } finally {
+      clearTimeout(terminate);
+      clearTimeout(kill);
+      child.stdin.destroy();
+      child.stdout.destroy();
+      child.stderr.destroy();
+    }
   }
 }
 function sessionLink(sessionId) {
@@ -38012,7 +38025,7 @@ function sessionLink(sessionId) {
 }
 
 // helper/task-runner.mjs
-var localTaskView = (task) => ({ id: task.id, state: task.state, ...task.sessionId ? sessionLink(task.sessionId) : {}, ...task.outcome ? { outcome: task.outcome } : {} });
+var localTaskView = (task) => ({ id: task.id, state: task.state, ...task.sessionId && ["needs_input", "completed", "failed"].includes(task.state) ? sessionLink(task.sessionId) : {}, ...task.outcome ? { outcome: task.outcome } : {} });
 async function remoteTask(task) {
   const config2 = configuration();
   if (config2.mode !== "connected" || config2.url !== task.publisher) throw taskError("account_connection_required");

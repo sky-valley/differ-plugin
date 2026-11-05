@@ -57,3 +57,15 @@ test('a removed source produces a fixed failure outcome instead of waiting forev
  const result=await advanceTask(task.id);assert.equal(result.state,'failed');
  const outcome=f.calls.find(c=>c.path.endsWith('/outcome'));assert.deepEqual(JSON.parse(outcome.body),{claimId,outcome:{failure:'source_unavailable'}});
 });
+
+test('local task status offers chat links only after the receiver releases the work',async()=>{
+ const {localTaskView}=await import('../helper/task-runner.mjs');
+ for(const state of ['received','running','ready','publishing','reporting']) {
+  const view=localTaskView({id:task.id,state,sessionId:bit});
+  assert.equal(view.url,undefined);assert.equal(view.resumeCommand,undefined);
+ }
+ for(const state of ['needs_input','completed','failed']) {
+  const view=localTaskView({id:task.id,state,sessionId:bit});
+  assert.equal(view.url,`codex://threads/${bit}`);
+ }
+});

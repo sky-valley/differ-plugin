@@ -14,7 +14,17 @@ in their own Codex interface. No private transcript is sent to Control.
 `codex://threads/<id>` was verified on macOS with Codex 0.153.2. It is an installed
 app integration, not a portable web API. Keep `codex resume <id>` as a fallback.
 The helper never reports that a chat is visible merely because an OS accepted
-an open request.
+an open request. The browser must wait for `needs_input` or a terminal task
+result before it offers this link. `running` still belongs to the receiver;
+`ready` can still be freezing and uploading files. Opening either early can
+leave the desktop app showing “This is open in another app.”
+
+After a turn, the helper closes the app-server input and waits for process exit
+before returning. It sends SIGTERM after two seconds and SIGKILL after four if
+shutdown stalls. It never removes a chat lock file or kills the desktop app.
+Thus completion and user-input progress follow release of the receiver's
+process. If a chat was opened before release, its desktop Retry action may
+still be needed. The browser link cannot refresh that desktop state.
 
 Protocol: https://learn.chatgpt.com/docs/app-server
 Tests use real child processes with a protocol fixture. They do not prove a
@@ -23,7 +33,8 @@ model call or the installed desktop app's visible behavior.
 ## Execute a received task
 
 `task-run ID` prepares its source and starts Codex. `task-status ID` shows the
-local state, desktop link and terminal resume command. The task prompt is a
+local state, with the desktop link and terminal resume command only after
+the receiver releases the work. The task prompt is a
 versioned JSON envelope: `{schema:1,instructions,caption,publish:true}`. Diff
 constructs this only after the creator supplies a caption and selects the
 button that explicitly authorizes publication. The text stays in temporary

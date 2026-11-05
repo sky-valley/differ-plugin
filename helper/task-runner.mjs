@@ -6,7 +6,7 @@ import { prepareTask, workspaceFor } from './task-source.mjs';
 import { taskInput, publishTask } from './task-publication.mjs';
 import { runCodex, sessionLink } from './codex.mjs';
 
-export const localTaskView=task=>({id:task.id,state:task.state,...(task.sessionId?sessionLink(task.sessionId):{}),...(task.outcome?{outcome:task.outcome}:{})});
+export const localTaskView=task=>({id:task.id,state:task.state,...(task.sessionId&&['needs_input','completed','failed'].includes(task.state)?sessionLink(task.sessionId):{}),...(task.outcome?{outcome:task.outcome}:{})});
 async function remoteTask(task) {
   const config=configuration();
   if(config.mode!=='connected'||config.url!==task.publisher)throw taskError('account_connection_required');
