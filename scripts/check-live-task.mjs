@@ -1,6 +1,9 @@
-// Explicit opt-in: starts the user's installed Codex and may use model credits.
+// Explicit opt-in: starts the user's selected local agent and may use model credits.
 // Control and publishing are local fixtures; no live Differ account is touched.
-if (process.env.DIFFER_LIVE_CODEX !== '1') throw new Error('Set DIFFER_LIVE_CODEX=1 to run the installed Codex integration check.');
+const {taskAgent,resumeInvocation} = await import('../helper/task-agents.mjs');
+const selected = process.env.DIFFER_LIVE_AGENT || (process.env.DIFFER_LIVE_CODEX === '1' ? 'codex' : '');
+if (!selected) throw new Error('Set DIFFER_LIVE_AGENT=codex|claude-code|pi|opencode to run the installed agent integration check.');
+const agent = taskAgent(selected);
 const { createServer } = await import('node:http');
 const { once } = await import('node:events');
 const { mkdtempSync, writeFileSync, readFileSync, rmSync } = await import('node:fs');
@@ -22,7 +25,7 @@ const server = createServer(async (req, res) => {
     if (req.url.endsWith('/claim')) {
       claimId = body.claimId; state = 'claimed'; revision++;
       answer = { id, version: revision, claimId, expiresAt: new Date(Date.now() + 60_000).toISOString(), parentBitId: bit, parentVersionId: version,
-        prompt: JSON.stringify({ schema: 1, instructions: 'Replace SOURCE-0 with DATA-42 in content/index.html. Keep the markup. This is a tiny local fixture; do not browse, use connectors, or access any other personal files. Check the saved HTML. No browser check is needed for this one text replacement.', caption: 'My test data', publish: true }) };
+        prompt: JSON.stringify({ schema: 1, instructions: 'Replace SOURCE-0 with DATA-42 in content/index.html. Keep the markup. Use file tools instead of shell commands. This is a tiny local fixture; do not browse, use connectors, or access any other personal files. Check the saved HTML. No browser check is needed for this one text replacement.', caption: 'My test data', publish: true }) };
     } else if (req.url.endsWith('/receipt')) { state = 'received'; revision++; }
     else if (req.url.includes('/source?')) answer = { bitId: bit, versionId: version, caption: 'Original', files: [{ path: 'index.html', content: Buffer.from('<!doctype html><html><head><title>Data</title></head><body><h1>SOURCE-0</h1></body></html>').toString('base64') }] };
     else if (req.url.endsWith('/session')) { session = body.session; revision++; }
@@ -40,17 +43,20 @@ process.env.DIFFER_CONFIG = join(root, 'publisher.json'); process.env.DIFFER_PUB
 writeFileSync(process.env.DIFFER_CONFIG, JSON.stringify({ mode: 'connected', url, accessToken: 'dfa_fixture', expiresAt: Date.now() + 3600_000 }), { mode: 0o600 });
 try {
   await receiveTask(id, 1);
-  const result = await advanceTask(id);
+  const result = await advanceTask(id,{agent,signal:AbortSignal.timeout(180_000)});
   assert.equal(result.state, 'completed');
   assert.equal(upload.parentBitId, bit); assert.equal(upload.parentVersionId, version);
   assert.equal(upload.caption, 'My test data'); assert.equal(upload.publish, true);
   const html = Buffer.from(upload.files.find(file => file.path === 'index.html').content, 'base64').toString();
   assert.ok(html.includes('DATA-42')); assert.ok(!html.includes('SOURCE-0'));
   const saved = JSON.parse(readFileSync(join(root, 'tasks', id, 'task.json'), 'utf8'));
-  assert.ok(saved.sessionId && saved.turnId);
-  console.log(JSON.stringify({ completed: true, actualCodex: true, verifiedFileChange: true, exactLineage: true, publication: 'local fixture only', workspace: root }));
+  assert.ok(saved.sessionId);
+  if (agent === 'codex') assert.ok(saved.turnId);
+  assert.equal(saved.agent, agent); assert.equal(session.agent, agent);
+  assert.equal(resumeInvocation(saved).cwd, join(root,'tasks',id,'workspace'));
+  console.log(JSON.stringify({ completed: true, actualAgent: agent, verifiedFileChange: true, exactLineage: true, publication: 'local fixture only', workspace: root }));
 } finally {
   server.closeAllConnections(); await new Promise(resolve => server.close(resolve));
-  // Retain this workspace for the persistent Codex session and manual review.
+  // Retain this workspace for the persistent agent session and manual review.
   rmSync(process.env.DIFFER_CONFIG, { force: true });
 }

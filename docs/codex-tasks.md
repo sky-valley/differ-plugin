@@ -1,4 +1,4 @@
-# Local Codex task execution
+# Local agent task execution
 
 The local helper uses `codex app-server --listen stdio://` with the installed
 Codex login. It creates a persistent workspace-write session with on-request
@@ -14,8 +14,8 @@ in their own Codex interface. No private transcript is sent to Control.
 `codex://threads/<id>` was verified on macOS with Codex 0.153.2. It is an installed
 app integration, not a portable web API. Keep `codex resume <id>` as a fallback.
 The helper never reports that a chat is visible merely because an OS accepted
-an open request. The browser must wait for `needs_input` or a terminal task
-result before it offers this link. `running` still belongs to the receiver;
+an open request. The browser waits for `needs_input` or a terminal task result before it offers
+the desktop link or terminal resume. The user chose to wait for an editable chat. `running` still belongs to the receiver;
 `ready` can still be freezing and uploading files. Opening either early can
 leave the desktop app showing “This is open in another app.”
 
@@ -32,7 +32,7 @@ model call or the installed desktop app's visible behavior.
 
 ## Execute a received task
 
-`task-run ID` prepares its source and starts Codex. `task-status ID` shows the
+`task-run ID` prepares its source and starts the selected agent (Codex by default). `task-status ID` shows the
 local state, with the desktop link and terminal resume command only after
 the receiver releases the work. The task prompt is a
 versioned JSON envelope: `{schema:1,instructions,caption,publish:true}`. Diff
@@ -78,16 +78,16 @@ The release does not install or start this service automatically.
 Status logs contain fixed error codes, IDs and local status only. Prompts,
 transcripts and source bytes remain in private task files. The directory-only
 plugin cannot run this receiver. Remote browser users must have a receiver
-running on the machine whose Codex interface they intend to open.
+running on the machine whose agent interface they intend to open.
 
 ## Verification and limits
 
 Run `npm run check` for the hermetic suite. The explicit opt-in command
-`DIFFER_LIVE_CODEX=1 node scripts/check-live-task.mjs` uses the installed Codex
+`DIFFER_LIVE_AGENT=codex node scripts/check-live-task.mjs` uses the selected agent’s
 login and can spend model credits. It receives a fixture task, changes one
 source value, verifies the actual saved file, and checks the publication body
 and lineage against a local HTTP fixture. It never publishes to Differ.
-It retains the temporary workspace so the persistent Codex session can be
+It retains the temporary workspace so the persistent agent session can be
 inspected. On 2026-11-04 this check passed with Codex CLI 0.153.2.
 
 Permanent source removal reports `source_unavailable`. A failed model turn
@@ -134,3 +134,26 @@ waits for `agent_settled`, including automatic retries and compaction, then clos
 Pi before publication. `task-open` resumes Pi in the same task folder.
 
 Pi RPC contract: https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/rpc.md
+
+OpenCode is supported with `--agent opencode` (ACP v1; checked with CLI 1.19.5).
+It uses local stdio and keeps its existing login, model and tool settings.
+The receiver does not approve ACP permission requests. It loads the same session
+on continuation and ignores replayed history when reading the new answer.
+`task-open` opens OpenCode in the saved task folder. No desktop URL is invented
+for Claude Code, Pi, or OpenCode; use their terminal interface for this release.
+
+OpenCode CLI contract: https://opencode.ai/docs/cli/
+ACP contract: https://agentclientprotocol.com/protocol/v1/prompt-turn
+
+The same live test accepts `claude-code`, `pi`, or `opencode`. On 2026-11-05,
+standalone file-edit checks passed with Claude Code 2.1.318, Pi 1.1.0 and OpenCode
+1.19.5. All three modified a temporary HTML file and returned a ready result.
+These checks do not verify a visible desktop interface for those agents.
+
+The complete local-fixture pipeline also passed for all three agents: receive,
+download, edit, record the agent session, and upload with the exact parent lineage.
+The first OpenCode pipeline run stopped for permission when it tried to read the
+receiver's `task.json` outside the workspace. No upload occurred. The task
+instructions now explicitly forbid inspecting receiver files and account settings;
+the repeat passed without changing permission rules. Desktop handoff for these
+three agents remains unverified; the terminal command is the supported entry.
