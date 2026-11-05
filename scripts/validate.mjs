@@ -52,10 +52,9 @@ for (const [file, openai] of [['plugin.json', openaiRoot], ['.codex-plugin/plugi
   assert.ok(openai.publication?.release_notes?.trim(), `${file}: release notes`);
 }
 assert.deepEqual(codex.extensions['com.openai'].review, openaiRoot.review, '.codex-plugin review must match plugin.json');
+// build.mjs asserts the category, URLs and case fields at their source; these
+// check the generated package that is actually uploaded.
 const listing = openaiRoot.interface;
-const categories = ['Productivity', 'Creativity', 'Developer Tools', 'Business & Operations', 'Data & Analytics', 'Communication', 'Education & Research', 'Security', 'Finance', 'Healthcare', 'Travel', 'Entertainment', 'Other'];
-assert.ok(categories.includes(listing.category) && codex.interface.category === listing.category, `category must be one of OpenAI's: ${categories.join(', ')}`);
-for (const field of ['websiteURL', 'supportURL', 'privacyPolicyURL', 'termsOfServiceURL']) assert.match(listing[field] ?? '', /^https:\/\/[^\s]{1,1016}$/, `listing needs an HTTPS ${field}`);
 const prompts = [].concat(listing.defaultPrompt ?? []);
 assert.ok(prompts.length <= 3 && prompts.every(p => p.trim() && p.length <= 128 && !p.includes('@')), 'at most three starter prompts of 128 characters, no @mentions');
 // Anthropic's validator asks for the privacy policy in the Claude manifest.

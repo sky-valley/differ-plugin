@@ -45,7 +45,7 @@ try {
 
   // Claude starts sign-in only on an HTTP 401 with WWW-Authenticate (lazy authentication).
   // ChatGPT reads a 200 error tool result carrying _meta["mcp/www_authenticate"] with
-  // error and error_description. Control picks by User-Agent (gdiffer #314).
+  // error and error_description. Control picks by User-Agent (gdiffer decision 0147).
   const signIn = {};
   for (const [name, argumentsFor] of Object.entries(accountTools)) {
     const args = await argumentsFor();
