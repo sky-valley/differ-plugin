@@ -1,124 +1,136 @@
-# Directory submission and remaining gates
+# Directory submission playbook
 
-Researched against the live official documentation on **2026-09-30**. GitHub
-release availability is separate from listing acceptance. No directory
-submission or account approval is recorded by this repository.
+Differ was submitted to both directories on **2026-11-05**: OpenAI (plugin
+`plugin_asdk_app_6aec535cf4988191a435c6fe28e3c998`, package 0.7.6) and
+Anthropic (plugin bundle plus MCP connector). This is the path that worked, with
+each trap at the step where it bites. Re-read the linked portal docs before the
+next submission: both portals changed during that week.
+
+Two commands guard most of it:
+
+- `npm run check` fails the build if the directory package loses anything a portal
+  rejected (`scripts/validate.mjs`): mixed MCP auth, the review cases in both
+  manifests, an OpenAI category, the four listing URLs, starter prompts and
+  Claude's `privacyPolicyUrl`.
+- `npm run check-service` checks the live server, read-only: every tool's title
+  and annotations, each host's sign-in signal, OAuth discovery and the OpenAI
+  domain token. Run it before every submission and after Control changes.
 
 ## Package choice
 
-The local marketplace serves `plugins/differ`: Node 24+, local files, a bundled
-stdio MCP server, and the verified skill snapshot. The bundle is about 1.4 MiB;
-Anthropic's scanner would hold it for review under its 256 KiB non-image file
-threshold. It also cannot run as a remote MCP process in a hosted chat.
+Submit **`directory/differ`** to both directories, never `plugins/differ`. The
+local package bundles a stdio MCP server and `scripts/differ.cjs`; Anthropic's
+validator holds it for review ("Files or downloads the validator couldn't
+inspect", "Local MCP server: not on claude.ai") and OpenAI excludes local MCP.
+The directory package has one remote server, `https://publish.getdiffer.com/mcp`,
+and no hooks, `.app.json`, dependencies or helper.
 
-Both directory submissions should use **`directory/differ`**, generated from the
-same version and skills with a single remote MCP URL. No Node dependency install,
-local daemon, hooks, app IDs, symlinks, or minified helper enter that package.
-The skills select the remote connector when the helper is unavailable. Their
-optional runtime/browser checks still need an execution environment and must
-never be represented as checks a plain chat host has performed.
+Build the ZIP from the exact commit under review (`npm run release` or the
+GitHub release). GitHub's automatic "Source code (zip)" is the whole repository:
+never upload it.
 
-## Anthropic
+## One MCP URL, two sign-in conventions
 
-Use the current [developer portal](https://claude.ai/directory/manage), introduced
-in the [September 25 announcement](https://claude.com/blog/build-plugins-for-claude).
-Do not use the older Claude Code repository's form as the primary process.
+Guest tools (`start_bit`, `publish_bit`, `get_bit`) need no account; the account
+tools (`get_profile`, `publish_as_me`, `start_upload_as_me`) need OAuth. The hosts
+disagree on how a server asks for sign-in mid-session, so Control answers an
+anonymous account-tool call by caller (gdiffer #314):
 
-Submit a **Plugin bundle** with:
+- **Claude** ([lazy authentication](https://claude.com/docs/connectors/building/lazy-authentication)):
+  an HTTP `401` with `WWW-Authenticate`. Claude shows an inline Connect card and
+  retries. A `200` error tool result only shows text.
+- **ChatGPT and Codex** ([Apps SDK auth](https://developers.openai.com/apps-sdk/build/auth)):
+  a `200` error tool result whose `_meta["mcp/www_authenticate"]` names `error`
+  and `error_description`, with per-tool `securitySchemes`. OpenAI staff say not
+  to rely on a `401` during a tool call. Control picks this path when the
+  User-Agent names OpenAI or ChatGPT.
 
-- Repository: `https://github.com/sky-valley/differ-plugin`
-- Plugin path: `directory/differ`
-- Tracked branch: `main`
-- Identity: `differ`, display name `Differ`, publisher `Sky Valley`
-
-The submitting Claude organization's connected GitHub account must have push
-access. The repository must be public before publication. Validate the exact
-commit, inspect the listing, answer data-handling questions, supply a reachable
-contact, and accept the directory terms as an authorized publisher. Submit
-Control's remote MCP endpoint separately as an **MCP connector**, as Anthropic
-requires for a plugin that references its own server.
-
-Use a push webhook or scheduled directory checks for new commits. Bump the
-plugin version for every release. Passing validation does not automatically
-publish: reviewer and auto-publish settings control when a passing version goes
-live, and the previous approved version remains available meanwhile. Repository
-and plugin path cannot be changed after submission.
-
-Sources: [submission and updates](https://claude.com/docs/plugins/submit),
-[pre-submission checks](https://claude.com/docs/plugins/pre-submission-checklist),
-[connector submission](https://claude.com/docs/connectors/building/submission),
-[platform support](https://claude.com/docs/plugins/platform-support),
-[marketplace updates](https://code.claude.com/docs/en/plugins/host-marketplace).
-
-The directory checks README length, license, names, regular files, safe paths,
-package sizes, script behavior, and secret handling. Local CLI validation covers
-formatting only. This repository deliberately keeps build dependencies outside
-plugin folders, since a package.json plus lockfile inside a Claude Code plugin
-can trigger dependency installation. No binaries or ZIPs live in the submitted
-folder; ZIPs are GitHub release assets.
+Do not add a second, sign-in-only URL: Claude's directory supports this mix on one
+URL ("Required when the server asks").
 
 ## OpenAI
 
-The current source of truth is [Upload and submit your plugin](https://developers.openai.com/plugins/deploy/submission).
-Its latest flow starts with a ZIP, unlike the older skills-only/With-MCP flow
-still described on some migration pages.
-
-Upload `differ-directory-VERSION.zip` at
-[OpenAI Plugins](https://platform.openai.com/plugins). It includes the remote
-MCP from the first upload; a skills-only listing cannot later add MCP through
-the current update flow. Select the verified developer identity, resolve package
-and skill scans, verify domain ownership with the portal's exact challenge, and
-connect and scan the MCP server. Complete review materials, submit, and publish
-the approved version explicitly.
-
-New metadata or skill versions need a new ZIP on the existing listing. Hosted
-tool changes are scanned separately, normally daily or through **Rescan**;
-eligible changes become available after checks. A rejected tool change can leave
-the previous approved schema live. Keep the endpoint stable; changing its URL
-requires support under the current process.
-
-Sources: [packaging](https://developers.openai.com/plugins/build/plugins),
+Portal: [platform.openai.com/plugins](https://platform.openai.com/plugins).
+Docs: [package](https://developers.openai.com/plugins/build/plugins),
 [submission](https://developers.openai.com/plugins/deploy/submission),
-[plugin guidelines](https://developers.openai.com/plugins/plugin-guidelines),
-[MCP review](https://developers.openai.com/plugins/deploy/app-review),
-[Claude migration/local MCP limit](https://developers.openai.com/plugins/guides/submit-claude-plugin).
+[errors](https://developers.openai.com/plugins/deploy/submission-errors).
 
-## Before either submission
+1. **Identity.** Verify the business (Sky Valley Ambient Computing, UK company
+   17041955) in organization settings, and choose it as the developer identity on
+   upload. Verify the UK company: the privacy policy and terms name it.
+2. **Upload** `differ-directory-VERSION.zip` with **Upload new or existing plugin**.
+   The package carries, and `npm run check` enforces:
+   - `mcp.json` → `mcpServers.differ.extensions["com.openai"].auth`
+     `{ "type": "mixed", "client": { "mode": "dcr" } }`. Without it: "Declare
+     extensions.com.openai.auth.type for the MCP server". The portal adds
+     `baseScopes` from discovery.
+   - Review cases (5 positive, 3 negative, from `submission/review-cases.json`),
+     `commerce: false`, and `publication.release_notes` under
+     `extensions["com.openai"]`, **in both `plugin.json` and
+     `.codex-plugin/plugin.json`**. With the cases only in the root manifest, the
+     portal imported every field except `prompt` and showed "Test case user prompt
+     is required" ([forum](https://community.openai.com/t/plugin-submission-bug-user-prompt-fields-are-empty-despite-valid-prompt-values-in-plugin-json/1412959)).
+     Imported cases are read-only in the dashboard; change them in the package.
+   - Category **Creativity**. "Productivity" drew "We couldn't confirm the selected
+     category". Allowed: Productivity, Creativity, Developer Tools, Business &
+     Operations, Data & Analytics, Communication, Education & Research, Security,
+     Finance, Healthcare, Travel, Entertainment, Other.
+3. **MCPs → Connect.** The panel shows Authentication "Mixed Auth" read from
+   `mcp.json`; leave request headers empty (public submission rejects them).
+   - **Domain verification**: the portal shows a token. Serve it as plain text at
+     `https://publish.getdiffer.com/.well-known/openai-apps-challenge`, then
+     **Verify Domain**. It is currently an exact-match `location` in the
+     publish.getdiffer.com server block of nginx on the Control VM (outside
+     gdiffer's `deploy/pagelike/front-door.conf`); keep it served, because OpenAI
+     rescans. `npm run check-service` fails if it disappears.
+   - **Connect**, then sign in to Differ and approve the connection in the popup.
+     Wait for the tool scan: six tools, no findings.
+4. **Review information.**
+   - Reviewer credentials: Differ has Google and email-code sign-in and open
+     sign-up, but OpenAI requires an account that already exists and needs no
+     registration or MFA. Use a dedicated Google account with 2-step verification
+     off that has signed in to Differ once and chosen a handle, entered under
+     "Username and password". The email-code option (mcp-review@theaicompany.org)
+     only works if that inbox's person and handle exist beforehand, which Control
+     cannot create.
+   - Video walkthrough URL (required): an accessible recording of the guest
+     publish, update and connected-draft cases. Keep claim links and passwords
+     off screen.
+5. **Submit for review**, accept the attestations, and **Publish plugin** after
+   approval. Only one review can be active; don't upload a new ZIP mid-review.
 
-These gates require product/account work beyond an installable open-source repo:
+Later: hosted tool changes are rescanned daily (or **Rescan**) without a new ZIP;
+metadata or skill changes need a new ZIP and review. The MCP URL can't change
+without OpenAI support.
 
-1. **Service privacy policy and terms.** Done in 0.7.1:
-   `https://www.getdiffer.com/privacy` and `https://www.getdiffer.com/terms` are
-   in `interfaceFields` in `scripts/build.mjs` and linked from the directory
-   README. OpenAI requires website, support, privacy and terms URLs. Anthropic's
-   connector process also needs privacy and support information.
-2. **Publisher and domain verification.** The operator selects the correct
-   organization, verifies Sky Valley's publishing identity and proves endpoint
-   ownership. Portal-generated challenge tokens belong in the selected domain's
-   controlled deployment, not in source with fabricated values.
-3. **Reviewer access and host testing.** Run the eight proposed cases in
-   `submission/review-cases.json` through each intended host. Account cases need
-   an account, but sign-up is open: a reviewer signs in with any Google account
-   at app.getdiffer.com, and guest cases need no account. Say so in each
-   portal's reviewer-access field; there is no shared review account.
-4. **Video.** Record the actual tested workflow and provide its accessible URL
-   for OpenAI review. No generated demonstration or local unit test can stand in
-   for that recording. Do not expose claim links or credentials in it.
-5. **MCP effects and authentication.** `npm run check-service` audits live tool
-   annotations and OAuth discovery without writes. Public publishing and
-   new versions must be labeled accurately. Metadata discovery alone does not prove
-   a host can complete account consent, refresh, or file upload.
-6. **Final portal validation and attestations.** Name availability, automated
-   scan results, plan eligibility and legal attestations are determined there.
-   Neither a passing CI run nor these packages claim approval.
+## Anthropic
 
-## Facts checked in this extraction
+Portal: [claude.ai/directory/manage](https://claude.ai/directory/manage). Docs:
+[plugin submission](https://claude.com/docs/plugins/submit),
+[connector submission](https://claude.com/docs/connectors/building/submission),
+[authentication](https://claude.com/docs/connectors/building/authentication).
 
-The public service exposes six tools and advertises DCR and S256 PKCE. Its
-2026-09-30 audit initially found missing explicit destructive annotations on
-read tools and incorrect public-write annotations on the two publishing tools.
-The extraction includes a Control correction and a repeatable read-only audit.
-Review the current command output rather than assuming an old audit is current.
+1. **Plugin bundle**: repository `https://github.com/sky-valley/differ-plugin`,
+   plugin path **`directory/differ`**, branch `main`. The repository and path can't
+   change after submission. The validator follows `.claude-plugin/marketplace.json`
+   (which points at the local package) if the path is left to it.
+   Expected notes, not holds: "agent-plugins manifest detected" (the root
+   `plugin.json` is OpenAI's) and the privacy URL, which
+   `.claude-plugin/plugin.json` carries as `privacyPolicyUrl`.
+2. **MCP connector** for the same server, required for a plugin that references
+   its own server:
+   - Connection: Universal URL `https://publish.getdiffer.com/mcp`.
+   - Authentication requirement: **Required when the server asks**; method OAuth;
+     client **Register automatically** (DCR). Control doesn't advertise CIMD, so
+     "Claude's published identity" won't work.
+   - Every tool needs a `title` and annotations (Control sets them).
+   - Test in Claude first: add a custom connector with "Sign in when needed".
+     A connector's auth setting can't be edited later; remove and re-add it.
 
-No account was connected, no review credentials were created, no test bit was
-published, and no portal attestation was accepted during package extraction.
+## Releasing
+
+Bump the version for any change to installed bytes (`check-release-change`
+enforces it on main). Tag the exact commit whose package is under review, not a
+later main: `v0.7.6` is on the #29 merge, while main had moved to 0.8.x. Merging
+and tagging are separate, explicit steps; the release workflow publishes the
+ZIPs and `SHA256SUMS`.
