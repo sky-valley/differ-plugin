@@ -2979,7 +2979,7 @@ var require_compile = __commonJS({
       const schOrFunc = root.refs[ref];
       if (schOrFunc)
         return schOrFunc;
-      let _sch = resolve5.call(this, root, ref);
+      let _sch = resolve6.call(this, root, ref);
       if (_sch === void 0) {
         const schema = (_a3 = root.localRefs) === null || _a3 === void 0 ? void 0 : _a3[ref];
         const { schemaId } = this.opts;
@@ -3006,7 +3006,7 @@ var require_compile = __commonJS({
     function sameSchemaEnv(s1, s2) {
       return s1.schema === s2.schema && s1.root === s2.root && s1.baseId === s2.baseId;
     }
-    function resolve5(root, ref) {
+    function resolve6(root, ref) {
       let sch;
       while (typeof (sch = this.refs[ref]) == "string")
         ref = sch;
@@ -3870,7 +3870,7 @@ var require_fast_uri = __commonJS({
       }
       return uri;
     }
-    function resolve5(baseURI, relativeURI, options) {
+    function resolve6(baseURI, relativeURI, options) {
       const schemelessOptions = options ? Object.assign({ scheme: "null" }, options) : { scheme: "null" };
       const {
         parsed: baseParsed,
@@ -4261,7 +4261,7 @@ var require_fast_uri = __commonJS({
     var fastUri = {
       SCHEMES,
       normalize,
-      resolve: resolve5,
+      resolve: resolve6,
       resolveComponent,
       equal,
       serialize,
@@ -15950,7 +15950,7 @@ var recursive = /* @__PURE__ */ new WeakMap();
 var NONE = 0;
 var ASSUMED = 1;
 var PROVEN = 2;
-function isRecursive(inst, stack, resolve5) {
+function isRecursive(inst, stack, resolve6) {
   const cached2 = recursive.get(inst);
   if (cached2 !== void 0)
     return cached2 ? PROVEN : NONE;
@@ -15960,7 +15960,7 @@ function isRecursive(inst, stack, resolve5) {
   let result = NONE;
   const check3 = (child) => {
     if (result !== PROVEN && child?._zod) {
-      const answer = isRecursive(child, stack, resolve5);
+      const answer = isRecursive(child, stack, resolve6);
       if (answer > result)
         result = answer;
     }
@@ -15971,7 +15971,7 @@ function isRecursive(inst, stack, resolve5) {
       const desc = Object.getOwnPropertyDescriptor(sh, key);
       if (spread && !desc.enumerable)
         continue;
-      const child = desc.get ? ASSUMED : desc.value?._zod ? isRecursive(desc.value, stack, resolve5) : NONE;
+      const child = desc.get ? ASSUMED : desc.value?._zod ? isRecursive(desc.value, stack, resolve6) : NONE;
       if (child > answer)
         answer = child;
     }
@@ -16035,7 +16035,7 @@ function isRecursive(inst, stack, resolve5) {
       break;
     // `$ZodLazy` caches its inner on the def, so a resolved edge is followed exactly
     case "lazy": {
-      const inner = def._cachedInner ?? (resolve5 ? inst._zod.innerType : void 0);
+      const inner = def._cachedInner ?? (resolve6 ? inst._zod.innerType : void 0);
       merge2(inner ? isRecursive(inner, stack, false) : ASSUMED);
       break;
     }
@@ -34473,7 +34473,7 @@ var Protocol = class {
           return;
         }
         const pollInterval = task2.pollInterval ?? this._options?.defaultTaskPollInterval ?? 1e3;
-        await new Promise((resolve5) => setTimeout(resolve5, pollInterval));
+        await new Promise((resolve6) => setTimeout(resolve6, pollInterval));
         options?.signal?.throwIfAborted();
       }
     } catch (error63) {
@@ -34490,7 +34490,7 @@ var Protocol = class {
    */
   request(request2, resultSchema, options) {
     const { relatedRequestId, resumptionToken, onresumptiontoken, task, relatedTask } = options ?? {};
-    return new Promise((resolve5, reject) => {
+    return new Promise((resolve6, reject) => {
       const earlyReject = (error63) => {
         reject(error63);
       };
@@ -34568,7 +34568,7 @@ var Protocol = class {
           if (!parseResult.success) {
             reject(parseResult.error);
           } else {
-            resolve5(parseResult.data);
+            resolve6(parseResult.data);
           }
         } catch (error63) {
           reject(error63);
@@ -34830,12 +34830,12 @@ var Protocol = class {
       }
     } catch {
     }
-    return new Promise((resolve5, reject) => {
+    return new Promise((resolve6, reject) => {
       if (signal.aborted) {
         reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
         return;
       }
-      const timeoutId = setTimeout(resolve5, interval);
+      const timeoutId = setTimeout(resolve6, interval);
       signal.addEventListener("abort", () => {
         clearTimeout(timeoutId);
         reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
@@ -35966,7 +35966,7 @@ var McpServer = class {
     let task = createTaskResult.task;
     const pollInterval = task.pollInterval ?? 5e3;
     while (task.status !== "completed" && task.status !== "failed" && task.status !== "cancelled") {
-      await new Promise((resolve5) => setTimeout(resolve5, pollInterval));
+      await new Promise((resolve6) => setTimeout(resolve6, pollInterval));
       const updatedTask = await extra.taskStore.getTask(taskId);
       if (!updatedTask) {
         throw new McpError(ErrorCode.InternalError, `Task ${taskId} not found during polling`);
@@ -36630,12 +36630,12 @@ var StdioServerTransport = class {
     this.onclose?.();
   }
   send(message) {
-    return new Promise((resolve5) => {
+    return new Promise((resolve6) => {
       const json2 = serializeMessage(message);
       if (this._stdout.write(json2)) {
-        resolve5();
+        resolve6();
       } else {
-        this._stdout.once("drain", resolve5);
+        this._stdout.once("drain", resolve6);
       }
     });
   }
@@ -37543,7 +37543,7 @@ var import_node_child_process3 = require("node:child_process");
 // package.json
 var package_default = {
   name: "differ-plugin",
-  version: "0.8.11",
+  version: "0.8.12",
   private: true,
   type: "module",
   engines: {
@@ -37576,6 +37576,7 @@ var package_default = {
 
 // helper/codex.mjs
 var import_node_child_process = require("node:child_process");
+var import_node_path6 = require("node:path");
 
 // helper/task-store.mjs
 var import_node_fs4 = require("node:fs");
@@ -37669,6 +37670,7 @@ async function runCodex({
   cwd,
   prompt,
   sessionId,
+  afterTurnId,
   onSession,
   onTurn,
   signal,
@@ -37676,17 +37678,17 @@ async function runCodex({
   args = ["app-server", "--listen", "stdio://"]
 }) {
   const child = (0, import_node_child_process.spawn)(command2, args, { cwd, stdio: ["pipe", "pipe", "pipe"], shell: false });
-  const exited = new Promise((resolve5) => {
-    child.once("exit", resolve5);
+  const exited = new Promise((resolve6) => {
+    child.once("exit", resolve6);
     child.once("error", () => {
-      if (!child.pid) resolve5();
+      if (!child.pid) resolve6();
     });
   });
   let serial = 0, buffer = "", threadId = sessionId, turnId, text = "", ended = false, inputNeeded = false;
   const pending = /* @__PURE__ */ new Map(), completed = [];
   let finish, fail2;
-  const done = new Promise((resolve5, reject) => {
-    finish = resolve5;
+  const done = new Promise((resolve6, reject) => {
+    finish = resolve6;
     fail2 = reject;
   });
   done.catch(() => {
@@ -37703,10 +37705,10 @@ async function runCodex({
       fail2(error63);
     }
   };
-  const call = (method, params) => new Promise((resolve5, reject) => {
+  const call = (method, params) => new Promise((resolve6, reject) => {
     const id = ++serial;
     const timer = setTimeout(() => stop(taskError("codex_timeout")), 45e3);
-    pending.set(id, { resolve: resolve5, reject, timer });
+    pending.set(id, { resolve: resolve6, reject, timer });
     send({ id, method, params });
   });
   const acceptCompletion = (params) => {
@@ -37770,6 +37772,26 @@ async function runCodex({
     if (signal?.aborted) throw taskError("codex_interrupted");
     await call("initialize", { clientInfo: { name: "differ_tasks", version: package_default.version } });
     send({ method: "initialized", params: {} });
+    if (sessionId && afterTurnId) {
+      const { thread } = await call("thread/read", { threadId: sessionId });
+      if (thread?.id !== sessionId || typeof thread.cwd !== "string" || (0, import_node_path6.resolve)(thread.cwd) !== (0, import_node_path6.resolve)(cwd)) throw taskError("codex_invalid_response");
+      const page = await call("thread/turns/list", { threadId: sessionId, limit: 20, sortDirection: "desc", itemsView: "full" });
+      const turns = page?.data;
+      if (!Array.isArray(turns)) throw taskError("codex_invalid_response");
+      const latest = turns[0];
+      const answer = latest?.items?.filter((item) => item.type === "agentMessage").at(-1);
+      let ready = false;
+      try {
+        ready = JSON.parse(answer?.text).status === "ready";
+      } catch {
+      }
+      if (turns.findIndex((turn2) => turn2.id === afterTurnId) > 0 && latest?.status === "completed" && answer?.phase === "final_answer" && ready) {
+        if (typeof latest.id !== "string" || !latest.id.length || latest.id.length > 128) throw taskError("codex_invalid_response");
+        await onSession(sessionId);
+        await onTurn(latest.id);
+        return { status: "completed", text: answer.text, sessionId, turnId: latest.id };
+      }
+    }
     const result = await call(sessionId ? "thread/resume" : "thread/start", {
       ...sessionId ? { threadId: sessionId } : {},
       cwd,
@@ -37821,10 +37843,10 @@ function agentProcess({ command: command2, args, cwd, signal, timeoutMs = 30 * 6
     error63 ||= taskError(code);
     waiter?.();
   };
-  const exited = new Promise((resolve5) => {
-    child.once("exit", resolve5);
+  const exited = new Promise((resolve6) => {
+    child.once("exit", resolve6);
     child.once("error", () => {
-      if (!child.pid) resolve5();
+      if (!child.pid) resolve6();
     });
   });
   child.once("error", () => fail2("agent_unavailable"));
@@ -37865,8 +37887,8 @@ function agentProcess({ command: command2, args, cwd, signal, timeoutMs = 30 * 6
   if (signal?.aborted) abort();
   const timeout = setTimeout(() => fail2("agent_timeout"), timeoutMs);
   async function next() {
-    while (!queue.length && !error63 && !closed) await new Promise((resolve5) => {
-      waiter = resolve5;
+    while (!queue.length && !error63 && !closed) await new Promise((resolve6) => {
+      waiter = resolve6;
     });
     waiter = void 0;
     if (error63) throw error63;
@@ -38039,7 +38061,7 @@ async function runClaude({ cwd, prompt, sessionId, onSession, signal, command: c
 
 // helper/task-source.mjs
 var import_node_fs5 = require("node:fs");
-var import_node_path6 = require("node:path");
+var import_node_path7 = require("node:path");
 
 // helper/task-api.mjs
 async function taskRequest(path, { body, maxBytes = 512 * 1024 } = {}) {
@@ -38074,10 +38096,10 @@ async function taskRequest(path, { body, maxBytes = 512 * 1024 } = {}) {
 
 // helper/task-source.mjs
 function workspaceFor(task) {
-  const path = (0, import_node_path6.join)(taskDirectory(task.id), "workspace");
+  const path = (0, import_node_path7.join)(taskDirectory(task.id), "workspace");
   if ((0, import_node_fs5.existsSync)(path)) {
     if (!(0, import_node_fs5.lstatSync)(path).isDirectory() || (0, import_node_fs5.lstatSync)(path).isSymbolicLink()) throw taskError("unsafe_task_directory");
-    const marker = JSON.parse((0, import_node_fs5.readFileSync)((0, import_node_path6.join)(path, "source.json"), "utf8"));
+    const marker = JSON.parse((0, import_node_fs5.readFileSync)((0, import_node_path7.join)(path, "source.json"), "utf8"));
     if (marker.bitId !== task.delivery.parentBitId || marker.versionId !== task.delivery.parentVersionId) throw taskError();
   }
   return path;
@@ -38111,14 +38133,14 @@ async function prepareTask(id) {
           parts.pop();
         }
       }
-      const temporary = (0, import_node_fs5.mkdtempSync)((0, import_node_path6.join)(taskDirectory(id), "source-"));
+      const temporary = (0, import_node_fs5.mkdtempSync)((0, import_node_path7.join)(taskDirectory(id), "source-"));
       try {
         for (const [path, bytes] of artifact.files) {
-          const target = (0, import_node_path6.join)(temporary, "content", path);
-          (0, import_node_fs5.mkdirSync)((0, import_node_path6.dirname)(target), { recursive: true, mode: 448 });
+          const target = (0, import_node_path7.join)(temporary, "content", path);
+          (0, import_node_fs5.mkdirSync)((0, import_node_path7.dirname)(target), { recursive: true, mode: 448 });
           (0, import_node_fs5.writeFileSync)(target, bytes, { flag: "wx", mode: 384 });
         }
-        (0, import_node_fs5.writeFileSync)((0, import_node_path6.join)(temporary, "source.json"), JSON.stringify({ bitId: source.bitId, versionId: source.versionId, artifactId: artifact.artifactId }), { flag: "wx", mode: 384 });
+        (0, import_node_fs5.writeFileSync)((0, import_node_path7.join)(temporary, "source.json"), JSON.stringify({ bitId: source.bitId, versionId: source.versionId, artifactId: artifact.artifactId }), { flag: "wx", mode: 384 });
         (0, import_node_fs5.renameSync)(temporary, workspace);
       } finally {
         (0, import_node_fs5.rmSync)(temporary, { recursive: true, force: true });
@@ -38126,7 +38148,7 @@ async function prepareTask(id) {
     }
     task.prepared = true;
     saveTask(task);
-    return { id, state: task.state, directory: (0, import_node_path6.join)(workspace, "content") };
+    return { id, state: task.state, directory: (0, import_node_path7.join)(workspace, "content") };
   });
 }
 
@@ -38157,17 +38179,17 @@ async function openTask(id, ui = "terminal") {
   return withTask(id, async (task) => {
     if (!task || !["needs_input", "completed", "failed"].includes(task.state)) throw taskError("agent_still_working");
     const { command: command2, args, cwd } = resumeInvocation(task, ui);
-    await new Promise((resolve5, reject) => {
+    await new Promise((resolve6, reject) => {
       const child = (0, import_node_child_process3.spawn)(command2, args, { cwd, stdio: "inherit", shell: false });
       child.once("error", () => reject(taskError("agent_unavailable")));
-      child.once("exit", (code) => code === 0 ? resolve5() : reject(taskError("agent_disconnected")));
+      child.once("exit", (code) => code === 0 ? resolve6() : reject(taskError("agent_disconnected")));
     });
   });
 }
 
 // helper/task-watch.mjs
 var import_node_fs7 = require("node:fs");
-var import_node_path8 = require("node:path");
+var import_node_path9 = require("node:path");
 
 // helper/tasks.mjs
 var invalidCursor = () => problem("invalid_task_cursor", "The task cursor must be a nonnegative safe integer.", "Use tasks, or tasks --after with the next value from the previous page.");
@@ -38247,7 +38269,7 @@ async function receiveTask(id, version2) {
 
 // helper/task-publication.mjs
 var import_node_fs6 = require("node:fs");
-var import_node_path7 = require("node:path");
+var import_node_path8 = require("node:path");
 var import_node_crypto7 = require("node:crypto");
 function taskInput(task) {
   let value;
@@ -38263,11 +38285,11 @@ function taskInput(task) {
 async function publishTask(task) {
   const config2 = await activeConfiguration();
   if (config2.mode !== "connected" || config2.url !== task.publisher) throw taskError("account_connection_required");
-  const path = (0, import_node_path7.join)(taskDirectory(task.id), "publication.json");
+  const path = (0, import_node_path8.join)(taskDirectory(task.id), "publication.json");
   let saved2;
   if ((0, import_node_fs6.existsSync)(path)) saved2 = JSON.parse((0, import_node_fs6.readFileSync)(path, "utf8"));
   else {
-    const input2 = taskInput(task), artifact = pack((0, import_node_path7.join)(workspaceFor(task), "content"));
+    const input2 = taskInput(task), artifact = pack((0, import_node_path8.join)(workspaceFor(task), "content"));
     saved2 = { bitId: (0, import_node_crypto7.randomUUID)(), body: {
       requestId: (0, import_node_crypto7.randomUUID)(),
       publish: true,
@@ -38370,6 +38392,7 @@ async function advanceTask(id, { signal, execute, agent = "codex" } = {}) {
           cwd: workspaceFor(task),
           prompt,
           sessionId: task.sessionId,
+          afterTurnId: task.turnId,
           signal,
           onSession: async (sessionId) => {
             task.sessionId = sessionId;
@@ -38430,11 +38453,11 @@ async function advanceTask(id, { signal, execute, agent = "codex" } = {}) {
 
 // helper/task-watch.mjs
 function pause(ms, signal) {
-  return new Promise((resolve5) => {
+  return new Promise((resolve6) => {
     const finish = () => {
       clearTimeout(timer);
       signal?.removeEventListener("abort", finish);
-      resolve5();
+      resolve6();
     };
     const timer = setTimeout(finish, ms);
     signal?.addEventListener("abort", finish, { once: true });
@@ -38443,7 +38466,7 @@ function pause(ms, signal) {
 }
 function receiverLock() {
   privateDirectory(taskRoot());
-  const path = (0, import_node_path8.join)(taskRoot(), "receiver.lock");
+  const path = (0, import_node_path9.join)(taskRoot(), "receiver.lock");
   try {
     (0, import_node_fs7.writeFileSync)(path, String(process.pid), { flag: "wx", mode: 384 });
   } catch (error63) {
@@ -38531,7 +38554,7 @@ async function watchTasks({ signal, intervalMs = 5e3, report = () => {
 // helper/task-service.mjs
 var import_node_fs8 = require("node:fs");
 var import_node_os2 = require("node:os");
-var import_node_path9 = require("node:path");
+var import_node_path10 = require("node:path");
 var import_node_child_process4 = require("node:child_process");
 var label = "com.getdiffer.tasks";
 var xml = (value) => String(value).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
@@ -38548,7 +38571,7 @@ function receiverPlist({ node: node2, helper, config: config2, publisher: publis
 function installReceiver(remove = false, agent = "codex") {
   taskAgent(agent);
   if (process.platform !== "darwin") throw taskError("use_tasks_watch");
-  const file2 = (0, import_node_path9.join)((0, import_node_os2.homedir)(), "Library", "LaunchAgents", `${label}.plist`), domain2 = `gui/${process.getuid()}`;
+  const file2 = (0, import_node_path10.join)((0, import_node_os2.homedir)(), "Library", "LaunchAgents", `${label}.plist`), domain2 = `gui/${process.getuid()}`;
   if (remove) {
     try {
       (0, import_node_child_process4.execFileSync)("/bin/launchctl", ["bootout", `${domain2}/${label}`], { stdio: "ignore" });
@@ -38563,16 +38586,16 @@ function installReceiver(remove = false, agent = "codex") {
   }
   const config2 = configuration();
   if (config2.mode !== "connected") throw taskError("account_connection_required");
-  const root = (0, import_node_path9.join)(taskRoot(), "receiver");
+  const root = (0, import_node_path10.join)(taskRoot(), "receiver");
   privateDirectory(taskRoot());
   privateDirectory(root);
-  const helper = (0, import_node_path9.join)(root, "differ.cjs"), log = (0, import_node_path9.join)(root, "receiver.log");
-  (0, import_node_fs8.copyFileSync)((0, import_node_path9.resolve)(process.argv[1]), helper);
+  const helper = (0, import_node_path10.join)(root, "differ.cjs"), log = (0, import_node_path10.join)(root, "receiver.log");
+  (0, import_node_fs8.copyFileSync)((0, import_node_path10.resolve)(process.argv[1]), helper);
   (0, import_node_fs8.chmodSync)(helper, 384);
   (0, import_node_fs8.writeFileSync)(log, "", { flag: "a", mode: 384 });
   (0, import_node_fs8.chmodSync)(log, 384);
-  (0, import_node_fs8.mkdirSync)((0, import_node_path9.join)((0, import_node_os2.homedir)(), "Library", "LaunchAgents"), { recursive: true });
-  (0, import_node_fs8.writeFileSync)(file2, receiverPlist({ node: process.execPath, helper, config: (0, import_node_path9.resolve)(configPath()), publisher: config2.url, path: process.env.PATH || "", log, agent }), { mode: 384 });
+  (0, import_node_fs8.mkdirSync)((0, import_node_path10.join)((0, import_node_os2.homedir)(), "Library", "LaunchAgents"), { recursive: true });
+  (0, import_node_fs8.writeFileSync)(file2, receiverPlist({ node: process.execPath, helper, config: (0, import_node_path10.resolve)(configPath()), publisher: config2.url, path: process.env.PATH || "", log, agent }), { mode: 384 });
   try {
     (0, import_node_child_process4.execFileSync)("/bin/launchctl", ["bootout", `${domain2}/${label}`], { stdio: "ignore" });
   } catch {
@@ -38588,7 +38611,7 @@ function installReceiver(remove = false, agent = "codex") {
 // helper/media.mjs
 var import_node_child_process5 = require("node:child_process");
 var import_node_fs9 = require("node:fs");
-var import_node_path10 = require("node:path");
+var import_node_path11 = require("node:path");
 function command(name, args, options = {}) {
   try {
     return (0, import_node_child_process5.execFileSync)(name, args, { timeout: 6e4, maxBuffer: 32 * 1024 * 1024, ...options });
@@ -38598,7 +38621,7 @@ function command(name, args, options = {}) {
 }
 function inputFile(path) {
   if (typeof path !== "string") throw problem("missing_file", "Supply a local media file.", "Select the exact source file.");
-  const full = (0, import_node_path10.resolve)(path);
+  const full = (0, import_node_path11.resolve)(path);
   const stat = (0, import_node_fs9.lstatSync)(full);
   if (!stat.isFile() || stat.isSymbolicLink()) throw problem("unsafe_input", "Media input must be a regular file.", "Select the original file, not a link.");
   return full;
@@ -38606,9 +38629,9 @@ function inputFile(path) {
 function imageCandidate(input2, output3, quality = 85) {
   const source = inputFile(input2);
   if (!/\.(png|jpe?g)$/i.test(source)) throw problem("unsupported_image", "Candidates support still PNG/JPEG sources.", "Do not flatten animation; use an appropriate format-specific workflow.");
-  if (typeof output3 !== "string" || (0, import_node_path10.extname)(output3).toLowerCase() !== ".webp" || !Number.isFinite(quality) || quality < 0 || quality > 100) throw problem("invalid_candidate", "Specify a new .webp output and quality 0\u2013100.", "Write candidates outside publishable content; review before adopting.");
-  const target = (0, import_node_path10.resolve)(output3);
-  (0, import_node_fs9.realpathSync)((0, import_node_path10.dirname)(target));
+  if (typeof output3 !== "string" || (0, import_node_path11.extname)(output3).toLowerCase() !== ".webp" || !Number.isFinite(quality) || quality < 0 || quality > 100) throw problem("invalid_candidate", "Specify a new .webp output and quality 0\u2013100.", "Write candidates outside publishable content; review before adopting.");
+  const target = (0, import_node_path11.resolve)(output3);
+  (0, import_node_fs9.realpathSync)((0, import_node_path11.dirname)(target));
   if ((0, import_node_fs9.existsSync)(target)) throw problem("output_exists", "Candidate output already exists.", "Choose a new path; originals and previous candidates are never overwritten.");
   const original = (0, import_node_fs9.readFileSync)(source);
   if (/\.png$/i.test(source)) {

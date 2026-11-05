@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.8.12
+
+- On explicit Continue, accept a newer completed Codex desktop result from the
+  same task workspace without reopening its chat. Stale, interrupted, and
+  non-final answers do not authorize publication. Content and lineage checks
+  still run before publication.
+
 ## 0.8.7
 
 - Wait for the local Codex process to exit before reporting its result or requesting user input.

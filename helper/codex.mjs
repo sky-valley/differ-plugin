@@ -1,10 +1,11 @@
 import metadata from '../package.json' with { type: 'json' };
 import { spawn } from 'node:child_process';
+import { resolve } from 'node:path';
 import { taskError, uuid } from './task-store.mjs';
 
 // Stdio keeps the local session off the network. The caller saves session and
 // turn IDs before proceeding. No shell, model override, or full-access flag.
-export async function runCodex({ cwd, prompt, sessionId, onSession, onTurn, signal,
+export async function runCodex({ cwd, prompt, sessionId, afterTurnId, onSession, onTurn, signal,
   command = 'codex', args = ['app-server', '--listen', 'stdio://'] }) {
   const child = spawn(command, args, { cwd, stdio:['pipe','pipe','pipe'], shell:false });
   const exited=new Promise(resolve=>{
@@ -73,6 +74,23 @@ export async function runCodex({ cwd, prompt, sessionId, onSession, onTurn, sign
     if(signal?.aborted)throw taskError('codex_interrupted');
     await call('initialize',{clientInfo:{name:'differ_tasks',version:metadata.version}});
     send({method:'initialized',params:{}});
+    // Continue is explicit permission to publish work finished in the user's
+    // desktop chat. Reading history does not acquire that app's writer lock.
+    if(sessionId && afterTurnId){
+      const {thread}=await call('thread/read',{threadId:sessionId});
+      if(thread?.id!==sessionId || typeof thread.cwd!=='string' || resolve(thread.cwd)!==resolve(cwd))throw taskError('codex_invalid_response');
+      const page=await call('thread/turns/list',{threadId:sessionId,limit:20,sortDirection:'desc',itemsView:'full'});
+      const turns=page?.data;
+      if(!Array.isArray(turns))throw taskError('codex_invalid_response');
+      const latest=turns[0];
+      const answer=latest?.items?.filter(item=>item.type==='agentMessage').at(-1);
+      let ready=false;try{ready=JSON.parse(answer?.text).status==='ready';}catch{}
+      if(turns.findIndex(turn=>turn.id===afterTurnId)>0 && latest?.status==='completed' && answer?.phase==='final_answer' && ready){
+        if(typeof latest.id!=='string' || !latest.id.length || latest.id.length>128)throw taskError('codex_invalid_response');
+        await onSession(sessionId);await onTurn(latest.id);
+        return {status:'completed',text:answer.text,sessionId,turnId:latest.id};
+      }
+    }
     const result=await call(sessionId?'thread/resume':'thread/start',{
       ...(sessionId?{threadId:sessionId}:{}),cwd,approvalPolicy:'on-request',sandbox:'workspace-write',
     });

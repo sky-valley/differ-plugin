@@ -93,3 +93,41 @@ test('a missing Codex executable fails without waiting for a nonexistent process
  const {runCodex}=await import('../helper/codex.mjs');
  await assert.rejects(runCodex({cwd:tmpdir(),prompt:'fixture',onSession:()=>{},onTurn:()=>{},command:join(tmpdir(),'differ-missing-codex-executable')}),e=>e.code==='codex_unavailable');
 });
+
+test('an explicit continuation reads a newer completed desktop result without taking the chat', async t=>{
+  const {runCodex}=await import('../helper/codex.mjs');
+  const root=mkdtempSync(join(tmpdir(),'differ-desktop-result-'));t.after(()=>rmSync(root,{recursive:true,force:true}));
+  const fake=join(root,'server.mjs'),log=join(root,'wire.jsonl'),id='12345678-1234-4234-8234-123456789abc';
+  writeFileSync(fake,`import {createInterface} from 'node:readline';import {appendFileSync} from 'node:fs';
+const send=m=>console.log(JSON.stringify(m));
+createInterface({input:process.stdin}).on('line',line=>{const m=JSON.parse(line);appendFileSync(${JSON.stringify(log)},line+'\\n');
+if(m.method==='initialize')send({id:m.id,result:{}});
+if(m.method==='thread/read')send({id:m.id,result:{thread:{id:${JSON.stringify(id)},cwd:${JSON.stringify(root)}}}});
+if(m.method==='thread/turns/list')send({id:m.id,result:{data:[{id:'desktop-turn',status:'completed',items:[{type:'agentMessage',phase:'final_answer',text:'{"status":"ready"}'}]},{id:'receiver-turn',status:'interrupted',items:[]}]}});
+if(m.method==='thread/resume')send({id:m.id,error:{code:-32600,message:'Thread is open in another app'}});
+});`);
+  let savedTurn;
+  const result=await runCodex({cwd:root,sessionId:id,afterTurnId:'receiver-turn',prompt:'original request',onSession:got=>assert.equal(got,id),onTurn:got=>{savedTurn=got;},command:process.execPath,args:[fake]});
+  assert.equal(result.status,'completed');assert.equal(result.text,'{"status":"ready"}');assert.equal(savedTurn,'desktop-turn');
+  const methods=readFileSync(log,'utf8').trim().split('\n').map(x=>JSON.parse(x).method);
+  assert.ok(methods.includes('thread/turns/list'));assert.ok(!methods.includes('thread/resume'));assert.ok(!methods.includes('turn/start'));
+});
+
+test('desktop completion must be new, final, completed, and from the same workspace',async t=>{
+ const {runCodex}=await import('../helper/codex.mjs');
+ for(const mode of ['stale','older','active','interrupted','commentary','needs_input','wrong_workspace'])await t.test(mode,async t=>{
+  const root=mkdtempSync(join(tmpdir(),'differ-desktop-guard-'));t.after(()=>rmSync(root,{recursive:true,force:true}));
+  const fake=join(root,'server.mjs'),id='12345678-1234-4234-8234-123456789abc';
+  const latest={id:mode==='stale'?'receiver-turn':'desktop-turn',status:mode==='active'?'inProgress':mode==='interrupted'?'interrupted':'completed',items:[{type:'agentMessage',phase:mode==='commentary'?'commentary':'final_answer',text:JSON.stringify({status:mode==='needs_input'?'needs_input':'ready'})}]};
+  const prior={id:'receiver-turn',status:'interrupted',items:[]};
+  const turns=mode==='older'?[prior,latest]:[latest,prior];
+  writeFileSync(fake,`import {createInterface} from 'node:readline';const send=m=>console.log(JSON.stringify(m));
+createInterface({input:process.stdin}).on('line',line=>{const m=JSON.parse(line);
+if(m.method==='initialize')send({id:m.id,result:{}});
+if(m.method==='thread/read')send({id:m.id,result:{thread:{id:${JSON.stringify(id)},cwd:${JSON.stringify(mode==='wrong_workspace'?root+'/other':root)}}}});
+if(m.method==='thread/turns/list')send({id:m.id,result:{data:${JSON.stringify(turns)}}});
+if(m.method==='thread/resume')send({id:m.id,error:{code:-32600,message:'Thread is open in another app'}});
+});`);
+  await assert.rejects(runCodex({cwd:root,sessionId:id,afterTurnId:'receiver-turn',prompt:'fixture',onSession:()=>assert.fail('must not accept this result'),onTurn:()=>assert.fail('must not record this result'),command:process.execPath,args:[fake]}),e=>e.code===(mode==='wrong_workspace'?'codex_invalid_response':'codex_request_failed'));
+ });
+});

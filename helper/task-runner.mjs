@@ -58,7 +58,7 @@ export async function advanceTask(id,{signal,execute,agent='codex'}={}) {
       const prompt=instructions(task); // Validate authorization before any model call.
       task.continuation=remote.continuation||0;task.state='running';saveTask(task);
       try{
-        const result=await run({cwd:workspaceFor(task),prompt,sessionId:task.sessionId,signal,
+        const result=await run({cwd:workspaceFor(task),prompt,sessionId:task.sessionId,afterTurnId:task.turnId,signal,
           onSession:async sessionId=>{task.sessionId=sessionId;saveTask(task);await progress(task,'running');},
           onTurn:turnId=>{task.turnId=turnId;saveTask(task);}});
         let answer;
