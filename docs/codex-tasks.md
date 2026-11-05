@@ -49,7 +49,11 @@ Static checks and an agent's ready result are not independent quality proof.
 
 Interrupted work and user-input requests show `needs_input`. Open the saved
 session, give the agent the missing information, then select Continue in Diff.
-The receiver consumes that continuation once and resumes the same session.
+The receiver consumes that continuation once. For Codex, it first reads the
+saved chat without taking ownership. If a newer completed desktop turn in the
+same workspace returned `{"status":"ready"}`, it validates and publishes the
+files without reopening the chat. Otherwise it tries to resume the same session;
+another app still holding it leaves the task waiting for input.
 It does not repeat an uncertain turn automatically. Control needs the session
 and continuation API changes from the linked gdiffer stack for this command.
 

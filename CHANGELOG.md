@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.8.12
+
+- On explicit Continue, accept a newer completed Codex desktop result from the
+  same task workspace without reopening its chat. Stale, interrupted, and
+  non-final answers do not authorize publication. Content and lineage checks
+  still run before publication.
+
 ## 0.8.11
 
 - Open a released Claude Code task session in the Claude desktop app with

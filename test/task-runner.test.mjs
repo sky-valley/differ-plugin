@@ -36,10 +36,10 @@ test('a stopped turn needs explicit continuation and keeps the same session', as
  t.after(()=>{for(const[k,v]of Object.entries(before)){if(v===undefined)delete process.env[k];else process.env[k]=v;}});
  const dir=taskDirectory(task.id);mkdirSync(join(dir,'workspace','content'),{recursive:true});
  writeFileSync(join(dir,'workspace','source.json'),JSON.stringify({bitId:bit,versionId:version}));
- saveTask({schema:1,id:task.id,claimId,publisher:f.url,state:'running',agent:'claude-code',prepared:true,sessionId:bit,delivery:{parentBitId:bit,parentVersionId:version,prompt:JSON.stringify({schema:1,instructions:'Read my data',caption:'My data',publish:true})}});
+ saveTask({schema:1,id:task.id,claimId,publisher:f.url,state:'running',agent:'claude-code',prepared:true,sessionId:bit,turnId:'turn-one',delivery:{parentBitId:bit,parentVersionId:version,prompt:JSON.stringify({schema:1,instructions:'Read my data',caption:'My data',publish:true})}});
  let continuation=0, executions=0;
  f.state.reply=()=>({status:200,body:{id:task.id,state:'received',version:4,continuation,session:{id:bit,state:'needs_input'}}});
- const execute=async options=>{assert.match(options.prompt,/Do not inspect or change the receiver's files or account settings/);executions++;assert.equal(options.sessionId,bit);await options.onSession(bit);options.onTurn('turn-two');return {status:'needs_input'};};
+ const execute=async options=>{assert.match(options.prompt,/Do not inspect or change the receiver's files or account settings/);executions++;assert.equal(options.afterTurnId,'turn-one');assert.equal(options.sessionId,bit);await options.onSession(bit);options.onTurn('turn-two');return {status:'needs_input'};};
  assert.equal((await advanceTask(task.id,{execute})).state,'needs_input');assert.equal(executions,0);
  continuation=1;assert.equal((await advanceTask(task.id,{execute})).state,'needs_input');assert.equal(executions,1);
  await advanceTask(task.id,{execute});assert.equal(executions,1);
