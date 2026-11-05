@@ -24,7 +24,7 @@
         "shortDescription": "Make, publish and diff bits",
         "longDescription": "Differ helps you make bits: small interactive pieces people open, join in on and diff. Describe an idea and your assistant builds it, previews it and publishes it to Differ. You can revise it later or diff someone else's bit into your own version. Publish as a guest with no account, or connect your Differ account to publish as you.",
         "developerName": "Sky Valley",
-        "category": "Productivity",
+        "category": "Creativity",
         "capabilities": [
           "Make bits",
           "Publish bits",
