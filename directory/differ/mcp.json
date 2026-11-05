@@ -3,7 +3,21 @@
   "mcpServers": {
     "differ": {
       "type": "streamable-http",
-      "url": "https://publish.getdiffer.com/mcp"
+      "url": "https://publish.getdiffer.com/mcp",
+      "extensions": {
+        "com.openai": {
+          "auth": {
+            "type": "mixed",
+            "client": {
+              "mode": "dcr"
+            },
+            "baseScopes": [
+              "profile",
+              "bits:write"
+            ]
+          }
+        }
+      }
     }
   }
 }

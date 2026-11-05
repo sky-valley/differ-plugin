@@ -1,5 +1,4 @@
 {
-  "status": "proposed; run in each target host before submission",
   "positive": [
     {
       "description": "Publish a small guest bit",
