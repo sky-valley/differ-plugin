@@ -126,3 +126,10 @@ Continue in Differ. A completed diff stays immutable; later chat edits do not
 republish it automatically.
 
 Claude CLI contract: https://code.claude.com/docs/en/headless
+
+Pi 1.1 or newer is also supported with `--agent pi`. It uses the installed Pi
+login and settings through RPC. Dialog requests stop for user input. The receiver
+waits for `agent_settled`, including automatic retries and compaction, then closes
+Pi before publication. `task-open` resumes Pi in the same task folder.
+
+Pi RPC contract: https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/rpc.md

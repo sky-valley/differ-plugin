@@ -37543,7 +37543,7 @@ var import_node_child_process3 = require("node:child_process");
 // package.json
 var package_default = {
   name: "differ-plugin",
-  version: "0.8.8",
+  version: "0.8.9",
   private: true,
   type: "module",
   engines: {
@@ -37811,9 +37811,6 @@ function sessionLink(sessionId) {
   return { url: `codex://threads/${sessionId}`, resumeCommand: `codex resume ${sessionId}` };
 }
 
-// helper/claude.mjs
-var import_node_crypto5 = require("node:crypto");
-
 // helper/agent-process.mjs
 var import_node_child_process2 = require("node:child_process");
 function agentProcess({ command: command2, args, cwd, signal, timeoutMs = 30 * 6e4 }) {
@@ -37920,7 +37917,42 @@ function agentProcess({ command: command2, args, cwd, signal, timeoutMs = 30 * 6
   };
 }
 
+// helper/pi.mjs
+async function runPi({ cwd, prompt, sessionId, onSession, signal, command: command2 = "pi", args = [] }) {
+  if (sessionId && !uuid5(sessionId)) throw taskError("invalid_session");
+  const process3 = agentProcess({ command: command2, cwd, signal, args: [...args, "--mode", "rpc", ...sessionId ? ["--session", sessionId] : []] });
+  let text = "", failed = false, id, settled;
+  const event = (message) => {
+    if (message.type === "agent_settled") settled = message;
+    if (message.type === "extension_ui_request" && ["select", "confirm", "input", "editor"].includes(message.method)) {
+      process3.send({ type: "extension_ui_response", id: message.id, cancelled: true });
+      process3.send({ type: "abort" });
+      throw taskError("agent_needs_input");
+    }
+    if (message.type === "message_end" && message.message?.role === "assistant") {
+      text = (message.message.content || []).filter((c) => c.type === "text").map((c) => c.text).join("");
+      failed = ["error", "aborted"].includes(message.message.stopReason);
+    }
+  };
+  try {
+    const state = await process3.request({ type: "get_state" }, event);
+    id = state?.sessionId;
+    if (!uuid5(id) || sessionId && id !== sessionId) throw taskError("invalid_session");
+    await onSession(id);
+    const result = await process3.request({ type: "prompt", message: prompt }, event);
+    if (result?.disposition === "handled") return { status: "needs_input", sessionId: id };
+    while (!settled) event(await process3.next());
+    return { status: failed ? "failed" : settled.aborted ? "needs_input" : "completed", sessionId: id, text };
+  } catch (error63) {
+    if (error63.code === "agent_needs_input") return { status: "needs_input", sessionId: id };
+    throw error63;
+  } finally {
+    await process3.close();
+  }
+}
+
 // helper/claude.mjs
+var import_node_crypto5 = require("node:crypto");
 async function runClaude({ cwd, prompt, sessionId, onSession, signal, command: command2 = "claude", args = [] }) {
   const id = sessionId ?? (0, import_node_crypto5.randomUUID)();
   if (!uuid5(id)) throw taskError("invalid_session");
@@ -38050,7 +38082,7 @@ async function prepareTask(id) {
 }
 
 // helper/task-agents.mjs
-var agents = /* @__PURE__ */ new Map([["codex", runCodex], ["claude-code", runClaude]]);
+var agents = /* @__PURE__ */ new Map([["codex", runCodex], ["claude-code", runClaude], ["pi", runPi]]);
 function taskAgent(value = "codex") {
   if (!agents.has(value)) throw taskError("unsupported_agent");
   return value;
@@ -38066,6 +38098,7 @@ function taskSessionLink(task) {
 function resumeInvocation(task) {
   const agent = taskAgent(task.agent);
   if (!uuid5(task.sessionId)) throw taskError("invalid_session");
+  if (agent === "pi") return { command: "pi", args: ["--session", task.sessionId], cwd: workspaceFor(task) };
   return { command: agent === "claude-code" ? "claude" : "codex", args: [agent === "codex" ? "resume" : "--resume", task.sessionId], cwd: workspaceFor(task) };
 }
 async function openTask(id) {
@@ -38666,7 +38699,7 @@ async function main() {
       return;
     }
     default:
-      output2({ commands: ["doctor", "tasks [--after SEQUENCE]", "task-receive ID VERSION", "task-source ID", "task-run ID [--agent codex|claude-code]", "task-open ID", "task-status ID", "tasks-watch [--agent codex|claude-code]", "tasks-install [--agent codex|claude-code]", "tasks-uninstall", "connect", "connection-status", "disconnect", "check APP_OR_CONTENT", "preview APP_OR_CONTENT [--port N]", "publish APP_OR_CONTENT [--caption CAPTION] [--new] [--parent-bit UUID --parent-version UUID]", "status APP_OR_CONTENT", "get-bit UUID", "bind APP_OR_CONTENT --bit UUID", "image-candidate FILE --output NEW.webp [--quality 85]", "inspect-video FILE", "mcp"], note: "Node 24+. App roots resolve content/. Keep differ-bit.json with source for team handoff; keep .differ state locally for retries. Guest publishing needs no setup. Connect optionally to publish as yourself. Never pass tokens in chat." });
+      output2({ commands: ["doctor", "tasks [--after SEQUENCE]", "task-receive ID VERSION", "task-source ID", "task-run ID [--agent codex|claude-code|pi]", "task-open ID", "task-status ID", "tasks-watch [--agent codex|claude-code|pi]", "tasks-install [--agent codex|claude-code|pi]", "tasks-uninstall", "connect", "connection-status", "disconnect", "check APP_OR_CONTENT", "preview APP_OR_CONTENT [--port N]", "publish APP_OR_CONTENT [--caption CAPTION] [--new] [--parent-bit UUID --parent-version UUID]", "status APP_OR_CONTENT", "get-bit UUID", "bind APP_OR_CONTENT --bit UUID", "image-candidate FILE --output NEW.webp [--quality 85]", "inspect-video FILE", "mcp"], note: "Node 24+. App roots resolve content/. Keep differ-bit.json with source for team handoff; keep .differ state locally for retries. Guest publishing needs no setup. Connect optionally to publish as yourself. Never pass tokens in chat." });
   }
 }
 main().catch((e) => {
