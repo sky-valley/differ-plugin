@@ -7,6 +7,24 @@
   non-final answers do not authorize publication. Content and lineage checks
   still run before publication.
 
+## 0.8.11
+
+- Open a released Claude Code task session in the Claude desktop app with
+  `task-open TASK_ID --interface desktop`.
+
+## 0.8.10
+
+- Run data tasks with OpenCode, and verify every agent path.
+
+## 0.8.9
+
+- Run local data tasks through Pi RPC.
+
+## 0.8.8
+
+- Run received tasks with Claude Code or Codex, and permit Claude edits inside
+  the task folder without approving other actions.
+
 ## 0.8.7
 
 - Wait for the local Codex process to exit before reporting its result or requesting user input.
