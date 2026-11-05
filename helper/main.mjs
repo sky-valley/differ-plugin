@@ -57,7 +57,7 @@ async function main() {
       finally{process.removeListener('SIGINT',stop);process.removeListener('SIGTERM',stop);}
     }
     case 'task-run': return output(await advanceTask(args[0],{agent:option('agent')}));
-    case 'task-open': return openTask(args[0]);
+    case 'task-open': return openTask(args[0],args.includes('--interface')?(option('interface')??null):'terminal');
     case 'task-status': return output(localTaskView(readTask(args[0])));
     case 'task-source': return output(await prepareTask(args[0]));
     case 'task-receive': return output(await receiveTask(args[0], args.length === 2 ? Number(args[1]) : NaN));
@@ -85,7 +85,7 @@ async function main() {
       });
       return;
     }
-    default: output({ commands: ['doctor', 'tasks [--after SEQUENCE]', 'task-receive ID VERSION', 'task-source ID', 'task-run ID [--agent codex|claude-code|pi|opencode]', 'task-open ID', 'task-status ID', 'tasks-watch [--agent codex|claude-code|pi|opencode]', 'tasks-install [--agent codex|claude-code|pi|opencode]', 'tasks-uninstall', 'connect', 'connection-status', 'disconnect', 'check APP_OR_CONTENT', 'preview APP_OR_CONTENT [--port N]', 'publish APP_OR_CONTENT [--caption CAPTION] [--new] [--parent-bit UUID --parent-version UUID]', 'status APP_OR_CONTENT', 'get-bit UUID', 'bind APP_OR_CONTENT --bit UUID', 'image-candidate FILE --output NEW.webp [--quality 85]', 'inspect-video FILE', 'mcp'], note: 'Node 24+. App roots resolve content/. Keep differ-bit.json with source for team handoff; keep .differ state locally for retries. Guest publishing needs no setup. Connect optionally to publish as yourself. Never pass tokens in chat.' });
+    default: output({ commands: ['doctor', 'tasks [--after SEQUENCE]', 'task-receive ID VERSION', 'task-source ID', 'task-run ID [--agent codex|claude-code|pi|opencode]', 'task-open ID [--interface terminal|desktop]', 'task-status ID', 'tasks-watch [--agent codex|claude-code|pi|opencode]', 'tasks-install [--agent codex|claude-code|pi|opencode]', 'tasks-uninstall', 'connect', 'connection-status', 'disconnect', 'check APP_OR_CONTENT', 'preview APP_OR_CONTENT [--port N]', 'publish APP_OR_CONTENT [--caption CAPTION] [--new] [--parent-bit UUID --parent-version UUID]', 'status APP_OR_CONTENT', 'get-bit UUID', 'bind APP_OR_CONTENT --bit UUID', 'image-candidate FILE --output NEW.webp [--quality 85]', 'inspect-video FILE', 'mcp'], note: 'Node 24+. App roots resolve content/. Keep differ-bit.json with source for team handoff; keep .differ state locally for retries. Guest publishing needs no setup. Connect optionally to publish as yourself. Never pass tokens in chat.' });
   }
 }
 main().catch(e => { output(error(e)); process.exitCode = 1; });

@@ -37543,7 +37543,7 @@ var import_node_child_process3 = require("node:child_process");
 // package.json
 var package_default = {
   name: "differ-plugin",
-  version: "0.8.10",
+  version: "0.8.11",
   private: true,
   type: "module",
   engines: {
@@ -38144,17 +38144,19 @@ function taskSessionLink(task) {
   if (!(agent === "opencode" ? openCodeID(task.sessionId) : uuid5(task.sessionId))) throw taskError("invalid_session");
   return agent === "codex" ? sessionLink(task.sessionId) : { agent, sessionId: task.sessionId };
 }
-function resumeInvocation(task) {
+function resumeInvocation(task, ui = "terminal") {
   const agent = taskAgent(task.agent);
   if (!(agent === "opencode" ? openCodeID(task.sessionId) : uuid5(task.sessionId))) throw taskError("invalid_session");
+  if (ui !== "terminal" && !(ui === "desktop" && agent === "claude-code")) throw taskError("unsupported_interface");
+  if (ui === "desktop") return { command: "claude", args: ["--desktop", "--resume", task.sessionId], cwd: workspaceFor(task) };
   if (agent === "opencode") return { command: "opencode", args: ["--session", task.sessionId], cwd: workspaceFor(task) };
   if (agent === "pi") return { command: "pi", args: ["--session", task.sessionId], cwd: workspaceFor(task) };
   return { command: agent === "claude-code" ? "claude" : "codex", args: [agent === "codex" ? "resume" : "--resume", task.sessionId], cwd: workspaceFor(task) };
 }
-async function openTask(id) {
+async function openTask(id, ui = "terminal") {
   return withTask(id, async (task) => {
     if (!task || !["needs_input", "completed", "failed"].includes(task.state)) throw taskError("agent_still_working");
-    const { command: command2, args, cwd } = resumeInvocation(task);
+    const { command: command2, args, cwd } = resumeInvocation(task, ui);
     await new Promise((resolve5, reject) => {
       const child = (0, import_node_child_process3.spawn)(command2, args, { cwd, stdio: "inherit", shell: false });
       child.once("error", () => reject(taskError("agent_unavailable")));
@@ -38702,7 +38704,7 @@ async function main() {
     case "task-run":
       return output2(await advanceTask(args[0], { agent: option("agent") }));
     case "task-open":
-      return openTask(args[0]);
+      return openTask(args[0], args.includes("--interface") ? option("interface") ?? null : "terminal");
     case "task-status":
       return output2(localTaskView(readTask(args[0])));
     case "task-source":
@@ -38749,7 +38751,7 @@ async function main() {
       return;
     }
     default:
-      output2({ commands: ["doctor", "tasks [--after SEQUENCE]", "task-receive ID VERSION", "task-source ID", "task-run ID [--agent codex|claude-code|pi|opencode]", "task-open ID", "task-status ID", "tasks-watch [--agent codex|claude-code|pi|opencode]", "tasks-install [--agent codex|claude-code|pi|opencode]", "tasks-uninstall", "connect", "connection-status", "disconnect", "check APP_OR_CONTENT", "preview APP_OR_CONTENT [--port N]", "publish APP_OR_CONTENT [--caption CAPTION] [--new] [--parent-bit UUID --parent-version UUID]", "status APP_OR_CONTENT", "get-bit UUID", "bind APP_OR_CONTENT --bit UUID", "image-candidate FILE --output NEW.webp [--quality 85]", "inspect-video FILE", "mcp"], note: "Node 24+. App roots resolve content/. Keep differ-bit.json with source for team handoff; keep .differ state locally for retries. Guest publishing needs no setup. Connect optionally to publish as yourself. Never pass tokens in chat." });
+      output2({ commands: ["doctor", "tasks [--after SEQUENCE]", "task-receive ID VERSION", "task-source ID", "task-run ID [--agent codex|claude-code|pi|opencode]", "task-open ID [--interface terminal|desktop]", "task-status ID", "tasks-watch [--agent codex|claude-code|pi|opencode]", "tasks-install [--agent codex|claude-code|pi|opencode]", "tasks-uninstall", "connect", "connection-status", "disconnect", "check APP_OR_CONTENT", "preview APP_OR_CONTENT [--port N]", "publish APP_OR_CONTENT [--caption CAPTION] [--new] [--parent-bit UUID --parent-version UUID]", "status APP_OR_CONTENT", "get-bit UUID", "bind APP_OR_CONTENT --bit UUID", "image-candidate FILE --output NEW.webp [--quality 85]", "inspect-video FILE", "mcp"], note: "Node 24+. App roots resolve content/. Keep differ-bit.json with source for team handoff; keep .differ state locally for retries. Guest publishing needs no setup. Connect optionally to publish as yourself. Never pass tokens in chat." });
   }
 }
 main().catch((e) => {

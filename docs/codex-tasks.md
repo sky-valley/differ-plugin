@@ -140,7 +140,7 @@ It uses local stdio and keeps its existing login, model and tool settings.
 The receiver does not approve ACP permission requests. It loads the same session
 on continuation and ignores replayed history when reading the new answer.
 `task-open` opens OpenCode in the saved task folder. No desktop URL is invented
-for Claude Code, Pi, or OpenCode; use their terminal interface for this release.
+for Pi or OpenCode; use their terminal interface for this release. Claude Code also supports the desktop handoff below.
 
 OpenCode CLI contract: https://opencode.ai/docs/cli/
 ACP contract: https://agentclientprotocol.com/protocol/v1/prompt-turn
@@ -155,5 +155,33 @@ download, edit, record the agent session, and upload with the exact parent linea
 The first OpenCode pipeline run stopped for permission when it tried to read the
 receiver's `task.json` outside the workspace. No upload occurred. The task
 instructions now explicitly forbid inspecting receiver files and account settings;
-the repeat passed without changing permission rules. Desktop handoff for these
-three agents remains unverified; the terminal command is the supported entry.
+the repeat passed without changing permission rules. Desktop handoff for
+Pi and OpenCode remains unverified; their terminal commands are the supported entry.
+
+## Open a Claude Code task in the Claude app
+
+After the receiver releases the chat, run this in an interactive terminal on the
+computer that did the work. Claude refuses redirected output for this command:
+
+```sh
+node /path/to/plugins/differ/scripts/differ.cjs task-open TASK_ID --interface desktop
+```
+
+The helper runs `claude --desktop --resume SESSION_ID` in the saved task folder.
+This continues the same chat in the Claude app's Code interface. It does not
+create a new chat or send a prompt. The command exits after the app opens.
+Close the chat in Claude before selecting **Continue** in Differ, so the receiver
+can take control again. The helper holds its task lock during launch; Claude
+owns the session lock after launch.
+
+This requires Claude Code 2.1.285 or newer, the Claude desktop app, and a Claude
+subscription on macOS or x64 Windows. API-key and third-party-provider sign-ins
+do not support this command. Other agents reject `--interface desktop`; their
+existing terminal entry remains the default. The browser shows the command; it
+cannot execute a local shell command directly.
+
+Official contract: https://code.claude.com/docs/en/desktop#coming-from-the-cli
+
+The local helper test with Claude Code 2.1.318 exited successfully and reported
+that it opened the saved test session in Desktop. The user confirmed that the
+correct chat was visible and the message box was editable.
