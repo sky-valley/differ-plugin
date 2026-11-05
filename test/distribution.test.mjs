@@ -16,8 +16,18 @@ test('directory package connects remotely and preserves every verified skill', (
     differ: { type: 'http', url: 'https://publish.getdiffer.com/mcp' },
   });
   assert.deepEqual(json(join(directory, 'mcp.json')).mcpServers, {
-    differ: { type: 'streamable-http', url: 'https://publish.getdiffer.com/mcp' },
+    differ: {
+      type: 'streamable-http', url: 'https://publish.getdiffer.com/mcp',
+      // OpenAI's portal requires the server's auth: guest tools open, account tools by OAuth via DCR.
+      extensions: { 'com.openai': { auth: { type: 'mixed', client: { mode: 'dcr' }, baseScopes: ['profile', 'bits:write'] } } },
+    },
   });
+  const openai = json(join(directory, 'plugin.json')).extensions['com.openai'];
+  assert.equal(openai.review.test_cases.positive.length, 5);
+  assert.equal(openai.review.test_cases.negative.length, 3);
+  assert.equal(openai.review.commerce, false);
+  const codex = json(join(directory, '.codex-plugin/plugin.json')).extensions['com.openai'];
+  assert.deepEqual(codex.review, openai.review, 'OpenAI imports the review prompts from .codex-plugin');
   assert.deepEqual(readSnapshot(directory), readLock(join(root, 'plugins/differ')));
   assert.ok(!existsSync(join(directory, 'scripts/differ.cjs')), 'remote package must not imply a local helper');
   for (const name of ['package.json', 'package-lock.json', 'node_modules', '.app.json', 'hooks']) {
