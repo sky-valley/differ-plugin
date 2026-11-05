@@ -56,6 +56,20 @@ const interfaceFields = {
 const cases = JSON.parse(readFileSync('submission/review-cases.json', 'utf8'));
 assert.equal(cases.positive.length, 5, 'OpenAI review needs exactly five positive cases.');
 assert.equal(cases.negative.length, 3, 'OpenAI review needs exactly three negative cases.');
+// The portal rejects an upload whose case is missing any of these, one field at a time.
+for (const kind of ['positive', 'negative']) {
+  for (const [index, entry] of cases[kind].entries()) {
+    for (const field of ['description', 'prompt', 'expected_behavior']) {
+      assert.ok(typeof entry[field] === 'string' && entry[field].trim(), `OpenAI review ${kind} case ${index + 1} needs a ${field}.`);
+    }
+  }
+}
+// OpenAI's portal accepts only these categories (checked 2026-11-05).
+const openaiCategories = ['Productivity', 'Creativity', 'Developer Tools', 'Business & Operations', 'Data & Analytics', 'Communication', 'Education & Research', 'Security', 'Finance', 'Healthcare', 'Travel', 'Entertainment', 'Other'];
+assert.ok(openaiCategories.includes(interfaceFields.category), `OpenAI has no category ${interfaceFields.category}.`);
+for (const field of ['websiteURL', 'supportURL', 'privacyPolicyURL', 'termsOfServiceURL']) {
+  assert.match(interfaceFields[field], /^https:\/\//, `Both directories need ${field}.`);
+}
 const review = {
   test_cases: { positive: cases.positive, negative: cases.negative },
   commerce: false,
