@@ -37931,7 +37931,7 @@ async function runClaude({ cwd, prompt, sessionId, onSession, signal, command: c
     "--output-format",
     "stream-json",
     "--permission-mode",
-    "default",
+    "acceptEdits",
     "--permission-prompts",
     "none",
     sessionId ? "--resume" : "--session-id",

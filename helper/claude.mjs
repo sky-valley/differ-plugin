@@ -2,12 +2,12 @@ import {randomUUID} from 'node:crypto';
 import {agentProcess} from './agent-process.mjs';
 import {uuid,taskError} from './task-store.mjs';
 
-// Use the installed CLI's login, model and normal permission rules. Pending
+// Use the installed CLI's login, model and workspace edit permission. Pending
 // approvals are denied by headless mode and returned to the person, not granted.
 export async function runClaude({cwd,prompt,sessionId,onSession,signal,command='claude',args=[]}) {
  const id=sessionId??randomUUID();if(!uuid(id))throw taskError('invalid_session');
  const process=agentProcess({command,cwd,signal,args:[...args,'--print','--verbose','--output-format','stream-json',
-  '--permission-mode','default','--permission-prompts','none',sessionId?'--resume':'--session-id',id]});
+  '--permission-mode','acceptEdits','--permission-prompts','none',sessionId?'--resume':'--session-id',id]});
  try{
   // The CLI accepts our exact ID. Save it before it can start any model work.
   await onSession(id);process.text(prompt);
