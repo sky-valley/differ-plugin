@@ -4,9 +4,9 @@ import { readTask, saveTask, withTask, taskError } from './task-store.mjs';
 import { taskRequest } from './task-api.mjs';
 import { prepareTask, workspaceFor } from './task-source.mjs';
 import { taskInput, publishTask } from './task-publication.mjs';
-import { runCodex, sessionLink } from './codex.mjs';
+import {taskAgent,executeAgent,taskSessionLink} from './task-agents.mjs';
 
-export const localTaskView=task=>({id:task.id,state:task.state,...(task.sessionId&&['needs_input','completed','failed'].includes(task.state)?sessionLink(task.sessionId):{}),...(task.outcome?{outcome:task.outcome}:{})});
+export const localTaskView=task=>({id:task.id,state:task.state,...(task.sessionId&&['needs_input','completed','failed'].includes(task.state)?taskSessionLink(task):{}),...(task.outcome?{outcome:task.outcome}:{})});
 async function remoteTask(task) {
   const config=configuration();
   if(config.mode!=='connected'||config.url!==task.publisher)throw taskError('account_connection_required');
@@ -17,8 +17,8 @@ async function remoteTask(task) {
 async function progress(task,state) {
   if(!task.sessionId)return;
   const current=await remoteTask(task);
-  if(current.session?.id===task.sessionId&&current.session.state===state)return;
-  await taskRequest(`/${task.id}/session`,{body:{claimId:task.claimId,version:current.version,session:{id:task.sessionId,state}}});
+  if(current.session?.id===task.sessionId&&current.session.state===state&&(current.session.agent||'codex')===(task.agent||'codex'))return;
+  await taskRequest(`/${task.id}/session`,{body:{claimId:task.claimId,version:current.version,session:{id:task.sessionId,state,agent:task.agent||'codex'}}});
 }
 function instructions(task) {
   const input=taskInput(task);
@@ -27,7 +27,8 @@ function instructions(task) {
 
 // An interrupted turn is never replayed automatically. A creator continuation
 // counter permits one new turn in the same saved session after user input.
-export async function advanceTask(id,{signal,execute=runCodex}={}) {
+export async function advanceTask(id,{signal,execute,agent='codex'}={}) {
+  taskAgent(agent);
   let local=readTask(id);
   if(!local)throw taskError();
   if(['completed','failed'].includes(local.state))return localTaskView(local);
@@ -52,10 +53,12 @@ export async function advanceTask(id,{signal,execute=runCodex}={}) {
       try{taskInput(task);}catch{task.outcome={failure:'execution_failed'};task.state='reporting';saveTask(task);}
     }
     if(['received','needs_input'].includes(task.state)){
+      task.agent ||= task.sessionId ? 'codex' : agent;
+      const run = execute || (options=>executeAgent(task.agent,options));
       const prompt=instructions(task); // Validate authorization before any model call.
       task.continuation=remote.continuation||0;task.state='running';saveTask(task);
       try{
-        const result=await execute({cwd:workspaceFor(task),prompt,sessionId:task.sessionId,signal,
+        const result=await run({cwd:workspaceFor(task),prompt,sessionId:task.sessionId,signal,
           onSession:async sessionId=>{task.sessionId=sessionId;saveTask(task);await progress(task,'running');},
           onTurn:turnId=>{task.turnId=turnId;saveTask(task);}});
         let answer;

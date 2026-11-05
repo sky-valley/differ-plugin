@@ -2,6 +2,7 @@ import { writeFileSync, readFileSync, unlinkSync } from 'node:fs';
 import { join } from 'node:path';
 import { pollTasks } from './tasks.mjs';
 import { receiveTask } from './task-receipt.mjs';
+import {taskAgent} from './task-agents.mjs';
 import { advanceTask } from './task-runner.mjs';
 import { localTasks, taskRoot, privateDirectory, taskError } from './task-store.mjs';
 
@@ -25,7 +26,8 @@ function receiverLock() {
 }
 // Delivery runs independently of execution. A long Codex turn cannot consume
 // the 15-minute delivery lifetime of tasks submitted while it is running.
-export async function watchTasks({signal,intervalMs=5000,report=()=>{},execute=advanceTask}={}) {
+export async function watchTasks({signal,intervalMs=5000,report=()=>{},execute=advanceTask,agent='codex'}={}) {
+  taskAgent(agent);
   const unlock=receiverLock(), reported=new Map();
   const emit=(key,value)=>{const text=JSON.stringify(value);if(reported.get(key)!==text){reported.set(key,text);report(value);}};
   const failure=(key,error)=>emit(key,{id:key,code:/^[a-z_]+$/.test(error.code||'')?error.code:'task_unavailable'});
@@ -54,7 +56,7 @@ export async function watchTasks({signal,intervalMs=5000,report=()=>{},execute=a
       try{
         for(const task of localTasks().filter(t=>!['claiming','saved','completed','failed'].includes(t.state))){
           if(signal?.aborted)break;
-          try{emit(task.id,await execute(task.id,{signal}));}catch(error){failure(task.id,error);}
+          try{emit(task.id,await execute(task.id,{signal,agent}));}catch(error){failure(task.id,error);}
         }
       }catch(error){failure('worker',error);}
       await pause(intervalMs,signal);

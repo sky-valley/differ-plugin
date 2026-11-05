@@ -37537,46 +37537,45 @@ function withSDK(bytes) {
   return head ? html.slice(0, head.index + head[0].length) + sdkTag + html.slice(head.index + head[0].length) : sdkTag + html;
 }
 
-// helper/task-watch.mjs
-var import_node_fs7 = require("node:fs");
-var import_node_path8 = require("node:path");
+// helper/task-agents.mjs
+var import_node_child_process3 = require("node:child_process");
 
-// helper/tasks.mjs
-var invalidCursor = () => problem("invalid_task_cursor", "The task cursor must be a nonnegative safe integer.", "Use tasks, or tasks --after with the next value from the previous page.");
-function taskCursor(args) {
-  if (args.length === 0) return 0;
-  if (args.length !== 2 || args[0] !== "--after" || !/^(0|[1-9]\d*)$/.test(args[1])) throw invalidCursor();
-  const after = Number(args[1]);
-  if (!Number.isSafeInteger(after)) throw invalidCursor();
-  return after;
-}
-var fields = (value, names) => value !== null && typeof value === "object" && !Array.isArray(value) && Object.keys(value).length === names.length && names.every((name) => Object.hasOwn(value, name));
-var taskID = /^agt_[a-f0-9]{64}$/;
-var invalidResponse = () => problem("invalid_task_response", "Control returned an invalid task page.", "Keep existing local task state and check that the plugin and Control versions agree.");
-async function pollTasks(after = 0) {
-  if (!Number.isSafeInteger(after) || after < 0) throw invalidCursor();
-  const config2 = await activeConfiguration();
-  if (config2.mode !== "connected") throw problem("account_connection_required", "Task polling requires a connected Differ account.", "Run connect and complete browser approval first.");
-  let page;
-  try {
-    page = await request(config2.url, `/v1/publishing/agent-tasks?after=${after}`, { bearer: config2.token });
-  } catch (error63) {
-    if (error63.status === 401) throw problem("reconnect_required", "The agent connection is no longer authorized.", "Reconnect this account before polling again.");
-    if (error63.status === 404) throw problem("task_delivery_unavailable", "Task delivery is not available on this Control service.", "Ask the service operator to enable task delivery.");
-    if (!error63.status && error63.code === "network_permission_required") throw problem("network_permission_required", "Network access to Control was refused.", "Allow access to the configured publisher, then retry.", { retryable: true });
-    throw problem("task_poll_failed", "Control could not list pending tasks.", "Retry later. Keep existing local task state.", { retryable: true });
+// package.json
+var package_default = {
+  name: "differ-plugin",
+  version: "0.8.8",
+  private: true,
+  type: "module",
+  engines: {
+    node: ">=24"
+  },
+  scripts: {
+    build: "node scripts/build.mjs",
+    test: "node --test test/*.test.mjs",
+    "sync-skills": "node scripts/sync-skills.mjs",
+    "check-skills": "node scripts/sync-skills.mjs --check",
+    check: "npm run build && npm test && node scripts/validate.mjs",
+    release: "python3 scripts/package-release.py",
+    version: "node scripts/version.mjs",
+    "check-service": "node scripts/check-service.mjs"
+  },
+  dependencies: {
+    "@modelcontextprotocol/sdk": "1.32.1",
+    zod: "4.6.7"
+  },
+  devDependencies: {
+    esbuild: "0.25.12"
+  },
+  license: "MIT",
+  description: "Differ skills for making bits, and the publishing helper",
+  repository: {
+    type: "git",
+    url: "https://github.com/sky-valley/differ-plugin.git"
   }
-  if (!fields(page, ["tasks", "next"]) || !Array.isArray(page.tasks) || page.tasks.length > 50 || !Number.isSafeInteger(page.next) || page.next < 0 || page.next !== 0 && page.next <= after) throw invalidResponse();
-  const seen = /* @__PURE__ */ new Set();
-  for (const task of page.tasks) {
-    if (!fields(task, ["id", "version"]) || typeof task.id !== "string" || !taskID.test(task.id) || !Number.isSafeInteger(task.version) || task.version < 1 || seen.has(task.id)) throw invalidResponse();
-    seen.add(task.id);
-  }
-  return page;
-}
+};
 
-// helper/task-receipt.mjs
-var import_node_crypto5 = require("node:crypto");
+// helper/codex.mjs
+var import_node_child_process = require("node:child_process");
 
 // helper/task-store.mjs
 var import_node_fs4 = require("node:fs");
@@ -37665,219 +37664,7 @@ async function withTask(id, operation) {
   }
 }
 
-// helper/task-api.mjs
-async function taskRequest(path, { body, maxBytes = 512 * 1024 } = {}) {
-  const config2 = await activeConfiguration();
-  if (config2.mode !== "connected") throw taskError("account_connection_required");
-  let response;
-  try {
-    response = await fetch(config2.url + "/v1/publishing/agent-tasks" + path, {
-      method: body === void 0 ? "GET" : "POST",
-      redirect: "error",
-      signal: AbortSignal.timeout(45e3),
-      headers: { authorization: `Bearer ${config2.token}`, ...body === void 0 ? {} : { "content-type": "application/json" } },
-      body: body === void 0 ? void 0 : JSON.stringify(body)
-    });
-    if (!response.ok) {
-      await response.body?.cancel();
-      throw Object.assign(taskError(response.status === 401 ? "reconnect_required" : response.status === 409 ? "task_conflict" : response.status === 404 ? "task_unavailable" : "task_request_failed"), { status: response.status });
-    }
-    const chunks = [];
-    let size = 0;
-    for await (const chunk of response.body) {
-      size += chunk.length;
-      if (size > maxBytes) throw taskError("invalid_task_response");
-      chunks.push(chunk);
-    }
-    return JSON.parse(Buffer.concat(chunks).toString("utf8"));
-  } catch (error63) {
-    if (error63.recovery) throw error63;
-    throw taskError("task_request_failed");
-  }
-}
-
-// helper/task-receipt.mjs
-function deliveryValid(delivery, task) {
-  return delivery && delivery.id === task.id && delivery.claimId === task.claimId && delivery.version === task.offerVersion + 1 && uuid5(delivery.parentBitId) && uuid5(delivery.parentVersionId) && Number.isFinite(Date.parse(delivery.expiresAt)) && typeof delivery.prompt === "string" && delivery.prompt.trim().length > 0 && Buffer.byteLength(delivery.prompt) <= 64 * 1024;
-}
-var taskSummary = (task) => ({ id: task.id, state: task.state });
-async function receiveTask(id, version2) {
-  if (!Number.isSafeInteger(version2) || version2 < 1) throw taskError("invalid_task_version");
-  const config2 = configuration();
-  if (config2.mode !== "connected") throw taskError("account_connection_required");
-  return withTask(id, async (task) => {
-    if (task && task.publisher !== config2.url) throw taskError("target_changed");
-    if (task && !["claiming", "saved"].includes(task.state)) return taskSummary(task);
-    if (!task || task.state === "claiming" && version2 > task.offerVersion) {
-      task = { schema: 1, id, publisher: config2.url, claimId: (0, import_node_crypto5.randomUUID)(), offerVersion: version2, state: "claiming" };
-      saveTask(task);
-    }
-    if (!task.delivery) {
-      const delivery = await taskRequest(`/${id}/claim`, { body: { claimId: task.claimId, version: task.offerVersion } });
-      if (!deliveryValid(delivery, task)) throw taskError("invalid_task_response");
-      task.delivery = delivery;
-      task.state = "saved";
-      saveTask(task);
-    }
-    let receipt;
-    try {
-      receipt = await taskRequest(`/${id}/receipt`, { body: { claimId: task.claimId } });
-    } catch (error63) {
-      if (error63.status === 409) {
-        task.state = "claiming";
-        delete task.delivery;
-        saveTask(task);
-      }
-      throw error63;
-    }
-    if (receipt?.id !== id || receipt.state !== "received" || receipt.version !== task.delivery.version + 1) throw taskError("invalid_task_response");
-    task.state = "received";
-    saveTask(task);
-    return taskSummary(task);
-  });
-}
-
-// helper/task-source.mjs
-var import_node_fs5 = require("node:fs");
-var import_node_path6 = require("node:path");
-function workspaceFor(task) {
-  const path = (0, import_node_path6.join)(taskDirectory(task.id), "workspace");
-  if ((0, import_node_fs5.existsSync)(path)) {
-    if (!(0, import_node_fs5.lstatSync)(path).isDirectory() || (0, import_node_fs5.lstatSync)(path).isSymbolicLink()) throw taskError("unsafe_task_directory");
-    const marker = JSON.parse((0, import_node_fs5.readFileSync)((0, import_node_path6.join)(path, "source.json"), "utf8"));
-    if (marker.bitId !== task.delivery.parentBitId || marker.versionId !== task.delivery.parentVersionId) throw taskError();
-  }
-  return path;
-}
-async function prepareTask(id) {
-  return withTask(id, async (task) => {
-    if (!task || task.state !== "received") throw taskError("task_not_received");
-    const config2 = configuration();
-    if (config2.mode !== "connected" || task.publisher !== config2.url) throw taskError("account_connection_required");
-    const workspace = workspaceFor(task);
-    if (!(0, import_node_fs5.existsSync)(workspace)) {
-      const source = await taskRequest(`/${id}/source?claimId=${task.claimId}`, { maxBytes: limits.wireBytes });
-      if (!source || source.bitId !== task.delivery.parentBitId || source.versionId !== task.delivery.parentVersionId) throw taskError("invalid_task_source");
-      let artifact;
-      try {
-        artifact = validateArtifact(source);
-      } catch {
-        throw taskError("invalid_task_source");
-      }
-      const names = /* @__PURE__ */ new Set();
-      for (const path of artifact.files.keys()) {
-        const key = path.toLowerCase();
-        if (names.has(key)) throw taskError("invalid_task_source");
-        names.add(key);
-      }
-      for (const path of names) {
-        const parts = path.split("/");
-        parts.pop();
-        while (parts.length) {
-          if (names.has(parts.join("/"))) throw taskError("invalid_task_source");
-          parts.pop();
-        }
-      }
-      const temporary = (0, import_node_fs5.mkdtempSync)((0, import_node_path6.join)(taskDirectory(id), "source-"));
-      try {
-        for (const [path, bytes] of artifact.files) {
-          const target = (0, import_node_path6.join)(temporary, "content", path);
-          (0, import_node_fs5.mkdirSync)((0, import_node_path6.dirname)(target), { recursive: true, mode: 448 });
-          (0, import_node_fs5.writeFileSync)(target, bytes, { flag: "wx", mode: 384 });
-        }
-        (0, import_node_fs5.writeFileSync)((0, import_node_path6.join)(temporary, "source.json"), JSON.stringify({ bitId: source.bitId, versionId: source.versionId, artifactId: artifact.artifactId }), { flag: "wx", mode: 384 });
-        (0, import_node_fs5.renameSync)(temporary, workspace);
-      } finally {
-        (0, import_node_fs5.rmSync)(temporary, { recursive: true, force: true });
-      }
-    }
-    task.prepared = true;
-    saveTask(task);
-    return { id, state: task.state, directory: (0, import_node_path6.join)(workspace, "content") };
-  });
-}
-
-// helper/task-publication.mjs
-var import_node_fs6 = require("node:fs");
-var import_node_path7 = require("node:path");
-var import_node_crypto6 = require("node:crypto");
-function taskInput(task) {
-  let value;
-  try {
-    value = JSON.parse(task.delivery.prompt);
-  } catch {
-    throw taskError("invalid_task_instructions");
-  }
-  if (value?.schema !== 1 || value.publish !== true || typeof value.instructions !== "string" || !value.instructions.trim() || typeof value.caption !== "string" || !value.caption.trim() || [...value.caption].length > 200 || (value.caption.match(/\n/g) || []).length > 3)
-    throw taskError("invalid_task_instructions");
-  return value;
-}
-async function publishTask(task) {
-  const config2 = await activeConfiguration();
-  if (config2.mode !== "connected" || config2.url !== task.publisher) throw taskError("account_connection_required");
-  const path = (0, import_node_path7.join)(taskDirectory(task.id), "publication.json");
-  let saved2;
-  if ((0, import_node_fs6.existsSync)(path)) saved2 = JSON.parse((0, import_node_fs6.readFileSync)(path, "utf8"));
-  else {
-    const input2 = taskInput(task), artifact = pack((0, import_node_path7.join)(workspaceFor(task), "content"));
-    saved2 = { bitId: (0, import_node_crypto6.randomUUID)(), body: {
-      requestId: (0, import_node_crypto6.randomUUID)(),
-      publish: true,
-      caption: input2.caption,
-      expectedVersionId: null,
-      parentBitId: task.delivery.parentBitId,
-      parentVersionId: task.delivery.parentVersionId,
-      files: artifact.files
-    } };
-    savePrivate(path, saved2);
-  }
-  let receipt;
-  try {
-    receipt = await request(config2.url, `/v1/publishing/bits/${saved2.bitId}/versions`, { bearer: config2.token, body: saved2.body });
-  } catch (error63) {
-    if (error63.status >= 400 && error63.status < 500 && error63.status !== 401 && error63.code !== "upload_busy") throw taskError("task_publication_rejected");
-    throw taskError("task_publication_pending");
-  }
-  if (receipt?.state !== "succeeded" || receipt.draft || receipt.bitId !== saved2.bitId || !uuid5(receipt.versionId)) throw taskError("invalid_publication_response");
-  return { bitId: receipt.bitId, versionId: receipt.versionId };
-}
-
-// package.json
-var package_default = {
-  name: "differ-plugin",
-  version: "0.8.7",
-  private: true,
-  type: "module",
-  engines: {
-    node: ">=24"
-  },
-  scripts: {
-    build: "node scripts/build.mjs",
-    test: "node --test test/*.test.mjs",
-    "sync-skills": "node scripts/sync-skills.mjs",
-    "check-skills": "node scripts/sync-skills.mjs --check",
-    check: "npm run build && npm test && node scripts/validate.mjs",
-    release: "python3 scripts/package-release.py",
-    version: "node scripts/version.mjs",
-    "check-service": "node scripts/check-service.mjs"
-  },
-  dependencies: {
-    "@modelcontextprotocol/sdk": "1.32.1",
-    zod: "4.6.7"
-  },
-  devDependencies: {
-    esbuild: "0.25.12"
-  },
-  license: "MIT",
-  description: "Differ skills for making bits, and the publishing helper",
-  repository: {
-    type: "git",
-    url: "https://github.com/sky-valley/differ-plugin.git"
-  }
-};
-
 // helper/codex.mjs
-var import_node_child_process = require("node:child_process");
 async function runCodex({
   cwd,
   prompt,
@@ -38024,8 +37811,402 @@ function sessionLink(sessionId) {
   return { url: `codex://threads/${sessionId}`, resumeCommand: `codex resume ${sessionId}` };
 }
 
+// helper/claude.mjs
+var import_node_crypto5 = require("node:crypto");
+
+// helper/agent-process.mjs
+var import_node_child_process2 = require("node:child_process");
+function agentProcess({ command: command2, args, cwd, signal, timeoutMs = 30 * 6e4 }) {
+  const child = (0, import_node_child_process2.spawn)(command2, args, { cwd, stdio: ["pipe", "pipe", "pipe"], shell: false });
+  const queue = [];
+  let buffer = "", bytes = 0, error63, waiter, serial = 0, closed = false;
+  const fail2 = (code) => {
+    error63 ||= taskError(code);
+    waiter?.();
+  };
+  const exited = new Promise((resolve5) => {
+    child.once("exit", resolve5);
+    child.once("error", () => {
+      if (!child.pid) resolve5();
+    });
+  });
+  child.once("error", () => fail2("agent_unavailable"));
+  child.once("close", () => {
+    closed = true;
+    waiter?.();
+  });
+  child.stdin.on("error", () => fail2("agent_disconnected"));
+  child.stderr.resume();
+  child.stdout.setEncoding("utf8");
+  child.stdout.on("data", (chunk) => {
+    if (error63) return;
+    buffer += chunk;
+    bytes += Buffer.byteLength(chunk);
+    if (bytes > 8 * 1024 * 1024) {
+      fail2("agent_invalid_response");
+      return;
+    }
+    let end;
+    while ((end = buffer.indexOf("\n")) >= 0) {
+      const line = buffer.slice(0, end);
+      buffer = buffer.slice(end + 1);
+      if (!line.trim()) {
+        bytes -= Buffer.byteLength(line) + 1;
+        continue;
+      }
+      try {
+        queue.push({ value: JSON.parse(line), bytes: Buffer.byteLength(line) + 1 });
+      } catch {
+        fail2("agent_invalid_response");
+        return;
+      }
+    }
+    waiter?.();
+  });
+  const abort = () => fail2("agent_interrupted");
+  signal?.addEventListener("abort", abort, { once: true });
+  if (signal?.aborted) abort();
+  const timeout = setTimeout(() => fail2("agent_timeout"), timeoutMs);
+  async function next() {
+    while (!queue.length && !error63 && !closed) await new Promise((resolve5) => {
+      waiter = resolve5;
+    });
+    waiter = void 0;
+    if (error63) throw error63;
+    if (!queue.length) throw taskError("agent_disconnected");
+    const record2 = queue.shift();
+    bytes -= record2.bytes;
+    return record2.value;
+  }
+  function send(value) {
+    if (error63) throw error63;
+    child.stdin.write(JSON.stringify(value) + "\n");
+  }
+  return {
+    next,
+    send,
+    text(value) {
+      if (error63) throw error63;
+      child.stdin.end(value);
+    },
+    async request(message, onMessage = () => {
+    }) {
+      const id = String(++serial);
+      send({ ...message, id });
+      for (; ; ) {
+        const reply = await next();
+        if (reply.id === id && !reply.method) {
+          if (reply.error || reply.success === false) throw taskError("agent_request_failed");
+          return reply.result ?? reply.data;
+        }
+        await onMessage(reply);
+      }
+    },
+    async close() {
+      clearTimeout(timeout);
+      signal?.removeEventListener("abort", abort);
+      child.stdin.end();
+      const terminate = setTimeout(() => child.kill("SIGTERM"), 2e3), kill = setTimeout(() => child.kill("SIGKILL"), 4e3);
+      try {
+        await exited;
+      } finally {
+        clearTimeout(terminate);
+        clearTimeout(kill);
+        child.stdin.destroy();
+        child.stdout.destroy();
+        child.stderr.destroy();
+      }
+    }
+  };
+}
+
+// helper/claude.mjs
+async function runClaude({ cwd, prompt, sessionId, onSession, signal, command: command2 = "claude", args = [] }) {
+  const id = sessionId ?? (0, import_node_crypto5.randomUUID)();
+  if (!uuid5(id)) throw taskError("invalid_session");
+  const process3 = agentProcess({ command: command2, cwd, signal, args: [
+    ...args,
+    "--print",
+    "--verbose",
+    "--output-format",
+    "stream-json",
+    "--permission-mode",
+    "default",
+    "--permission-prompts",
+    "none",
+    sessionId ? "--resume" : "--session-id",
+    id
+  ] });
+  try {
+    await onSession(id);
+    process3.text(prompt);
+    let denied = false;
+    for (; ; ) {
+      const message = await process3.next();
+      if (message.session_id && message.session_id !== id) throw taskError("invalid_session");
+      if (message.type === "system" && message.subtype === "permission_denied") denied = true;
+      if (message.type === "result") return {
+        sessionId: id,
+        status: denied || message.permission_denials?.length ? "needs_input" : message.is_error || message.subtype !== "success" ? "failed" : "completed",
+        text: typeof message.result === "string" ? message.result : ""
+      };
+    }
+  } finally {
+    await process3.close();
+  }
+}
+
+// helper/task-source.mjs
+var import_node_fs5 = require("node:fs");
+var import_node_path6 = require("node:path");
+
+// helper/task-api.mjs
+async function taskRequest(path, { body, maxBytes = 512 * 1024 } = {}) {
+  const config2 = await activeConfiguration();
+  if (config2.mode !== "connected") throw taskError("account_connection_required");
+  let response;
+  try {
+    response = await fetch(config2.url + "/v1/publishing/agent-tasks" + path, {
+      method: body === void 0 ? "GET" : "POST",
+      redirect: "error",
+      signal: AbortSignal.timeout(45e3),
+      headers: { authorization: `Bearer ${config2.token}`, ...body === void 0 ? {} : { "content-type": "application/json" } },
+      body: body === void 0 ? void 0 : JSON.stringify(body)
+    });
+    if (!response.ok) {
+      await response.body?.cancel();
+      throw Object.assign(taskError(response.status === 401 ? "reconnect_required" : response.status === 409 ? "task_conflict" : response.status === 404 ? "task_unavailable" : "task_request_failed"), { status: response.status });
+    }
+    const chunks = [];
+    let size = 0;
+    for await (const chunk of response.body) {
+      size += chunk.length;
+      if (size > maxBytes) throw taskError("invalid_task_response");
+      chunks.push(chunk);
+    }
+    return JSON.parse(Buffer.concat(chunks).toString("utf8"));
+  } catch (error63) {
+    if (error63.recovery) throw error63;
+    throw taskError("task_request_failed");
+  }
+}
+
+// helper/task-source.mjs
+function workspaceFor(task) {
+  const path = (0, import_node_path6.join)(taskDirectory(task.id), "workspace");
+  if ((0, import_node_fs5.existsSync)(path)) {
+    if (!(0, import_node_fs5.lstatSync)(path).isDirectory() || (0, import_node_fs5.lstatSync)(path).isSymbolicLink()) throw taskError("unsafe_task_directory");
+    const marker = JSON.parse((0, import_node_fs5.readFileSync)((0, import_node_path6.join)(path, "source.json"), "utf8"));
+    if (marker.bitId !== task.delivery.parentBitId || marker.versionId !== task.delivery.parentVersionId) throw taskError();
+  }
+  return path;
+}
+async function prepareTask(id) {
+  return withTask(id, async (task) => {
+    if (!task || task.state !== "received") throw taskError("task_not_received");
+    const config2 = configuration();
+    if (config2.mode !== "connected" || task.publisher !== config2.url) throw taskError("account_connection_required");
+    const workspace = workspaceFor(task);
+    if (!(0, import_node_fs5.existsSync)(workspace)) {
+      const source = await taskRequest(`/${id}/source?claimId=${task.claimId}`, { maxBytes: limits.wireBytes });
+      if (!source || source.bitId !== task.delivery.parentBitId || source.versionId !== task.delivery.parentVersionId) throw taskError("invalid_task_source");
+      let artifact;
+      try {
+        artifact = validateArtifact(source);
+      } catch {
+        throw taskError("invalid_task_source");
+      }
+      const names = /* @__PURE__ */ new Set();
+      for (const path of artifact.files.keys()) {
+        const key = path.toLowerCase();
+        if (names.has(key)) throw taskError("invalid_task_source");
+        names.add(key);
+      }
+      for (const path of names) {
+        const parts = path.split("/");
+        parts.pop();
+        while (parts.length) {
+          if (names.has(parts.join("/"))) throw taskError("invalid_task_source");
+          parts.pop();
+        }
+      }
+      const temporary = (0, import_node_fs5.mkdtempSync)((0, import_node_path6.join)(taskDirectory(id), "source-"));
+      try {
+        for (const [path, bytes] of artifact.files) {
+          const target = (0, import_node_path6.join)(temporary, "content", path);
+          (0, import_node_fs5.mkdirSync)((0, import_node_path6.dirname)(target), { recursive: true, mode: 448 });
+          (0, import_node_fs5.writeFileSync)(target, bytes, { flag: "wx", mode: 384 });
+        }
+        (0, import_node_fs5.writeFileSync)((0, import_node_path6.join)(temporary, "source.json"), JSON.stringify({ bitId: source.bitId, versionId: source.versionId, artifactId: artifact.artifactId }), { flag: "wx", mode: 384 });
+        (0, import_node_fs5.renameSync)(temporary, workspace);
+      } finally {
+        (0, import_node_fs5.rmSync)(temporary, { recursive: true, force: true });
+      }
+    }
+    task.prepared = true;
+    saveTask(task);
+    return { id, state: task.state, directory: (0, import_node_path6.join)(workspace, "content") };
+  });
+}
+
+// helper/task-agents.mjs
+var agents = /* @__PURE__ */ new Map([["codex", runCodex], ["claude-code", runClaude]]);
+function taskAgent(value = "codex") {
+  if (!agents.has(value)) throw taskError("unsupported_agent");
+  return value;
+}
+function executeAgent(agent, options) {
+  return agents.get(taskAgent(agent))(options);
+}
+function taskSessionLink(task) {
+  const agent = taskAgent(task.agent);
+  if (!uuid5(task.sessionId)) throw taskError("invalid_session");
+  return agent === "codex" ? sessionLink(task.sessionId) : { agent, sessionId: task.sessionId };
+}
+function resumeInvocation(task) {
+  const agent = taskAgent(task.agent);
+  if (!uuid5(task.sessionId)) throw taskError("invalid_session");
+  return { command: agent === "claude-code" ? "claude" : "codex", args: [agent === "codex" ? "resume" : "--resume", task.sessionId], cwd: workspaceFor(task) };
+}
+async function openTask(id) {
+  return withTask(id, async (task) => {
+    if (!task || !["needs_input", "completed", "failed"].includes(task.state)) throw taskError("agent_still_working");
+    const { command: command2, args, cwd } = resumeInvocation(task);
+    await new Promise((resolve5, reject) => {
+      const child = (0, import_node_child_process3.spawn)(command2, args, { cwd, stdio: "inherit", shell: false });
+      child.once("error", () => reject(taskError("agent_unavailable")));
+      child.once("exit", (code) => code === 0 ? resolve5() : reject(taskError("agent_disconnected")));
+    });
+  });
+}
+
+// helper/task-watch.mjs
+var import_node_fs7 = require("node:fs");
+var import_node_path8 = require("node:path");
+
+// helper/tasks.mjs
+var invalidCursor = () => problem("invalid_task_cursor", "The task cursor must be a nonnegative safe integer.", "Use tasks, or tasks --after with the next value from the previous page.");
+function taskCursor(args) {
+  if (args.length === 0) return 0;
+  if (args.length !== 2 || args[0] !== "--after" || !/^(0|[1-9]\d*)$/.test(args[1])) throw invalidCursor();
+  const after = Number(args[1]);
+  if (!Number.isSafeInteger(after)) throw invalidCursor();
+  return after;
+}
+var fields = (value, names) => value !== null && typeof value === "object" && !Array.isArray(value) && Object.keys(value).length === names.length && names.every((name) => Object.hasOwn(value, name));
+var taskID = /^agt_[a-f0-9]{64}$/;
+var invalidResponse = () => problem("invalid_task_response", "Control returned an invalid task page.", "Keep existing local task state and check that the plugin and Control versions agree.");
+async function pollTasks(after = 0) {
+  if (!Number.isSafeInteger(after) || after < 0) throw invalidCursor();
+  const config2 = await activeConfiguration();
+  if (config2.mode !== "connected") throw problem("account_connection_required", "Task polling requires a connected Differ account.", "Run connect and complete browser approval first.");
+  let page;
+  try {
+    page = await request(config2.url, `/v1/publishing/agent-tasks?after=${after}`, { bearer: config2.token });
+  } catch (error63) {
+    if (error63.status === 401) throw problem("reconnect_required", "The agent connection is no longer authorized.", "Reconnect this account before polling again.");
+    if (error63.status === 404) throw problem("task_delivery_unavailable", "Task delivery is not available on this Control service.", "Ask the service operator to enable task delivery.");
+    if (!error63.status && error63.code === "network_permission_required") throw problem("network_permission_required", "Network access to Control was refused.", "Allow access to the configured publisher, then retry.", { retryable: true });
+    throw problem("task_poll_failed", "Control could not list pending tasks.", "Retry later. Keep existing local task state.", { retryable: true });
+  }
+  if (!fields(page, ["tasks", "next"]) || !Array.isArray(page.tasks) || page.tasks.length > 50 || !Number.isSafeInteger(page.next) || page.next < 0 || page.next !== 0 && page.next <= after) throw invalidResponse();
+  const seen = /* @__PURE__ */ new Set();
+  for (const task of page.tasks) {
+    if (!fields(task, ["id", "version"]) || typeof task.id !== "string" || !taskID.test(task.id) || !Number.isSafeInteger(task.version) || task.version < 1 || seen.has(task.id)) throw invalidResponse();
+    seen.add(task.id);
+  }
+  return page;
+}
+
+// helper/task-receipt.mjs
+var import_node_crypto6 = require("node:crypto");
+function deliveryValid(delivery, task) {
+  return delivery && delivery.id === task.id && delivery.claimId === task.claimId && delivery.version === task.offerVersion + 1 && uuid5(delivery.parentBitId) && uuid5(delivery.parentVersionId) && Number.isFinite(Date.parse(delivery.expiresAt)) && typeof delivery.prompt === "string" && delivery.prompt.trim().length > 0 && Buffer.byteLength(delivery.prompt) <= 64 * 1024;
+}
+var taskSummary = (task) => ({ id: task.id, state: task.state });
+async function receiveTask(id, version2) {
+  if (!Number.isSafeInteger(version2) || version2 < 1) throw taskError("invalid_task_version");
+  const config2 = configuration();
+  if (config2.mode !== "connected") throw taskError("account_connection_required");
+  return withTask(id, async (task) => {
+    if (task && task.publisher !== config2.url) throw taskError("target_changed");
+    if (task && !["claiming", "saved"].includes(task.state)) return taskSummary(task);
+    if (!task || task.state === "claiming" && version2 > task.offerVersion) {
+      task = { schema: 1, id, publisher: config2.url, claimId: (0, import_node_crypto6.randomUUID)(), offerVersion: version2, state: "claiming" };
+      saveTask(task);
+    }
+    if (!task.delivery) {
+      const delivery = await taskRequest(`/${id}/claim`, { body: { claimId: task.claimId, version: task.offerVersion } });
+      if (!deliveryValid(delivery, task)) throw taskError("invalid_task_response");
+      task.delivery = delivery;
+      task.state = "saved";
+      saveTask(task);
+    }
+    let receipt;
+    try {
+      receipt = await taskRequest(`/${id}/receipt`, { body: { claimId: task.claimId } });
+    } catch (error63) {
+      if (error63.status === 409) {
+        task.state = "claiming";
+        delete task.delivery;
+        saveTask(task);
+      }
+      throw error63;
+    }
+    if (receipt?.id !== id || receipt.state !== "received" || receipt.version !== task.delivery.version + 1) throw taskError("invalid_task_response");
+    task.state = "received";
+    saveTask(task);
+    return taskSummary(task);
+  });
+}
+
+// helper/task-publication.mjs
+var import_node_fs6 = require("node:fs");
+var import_node_path7 = require("node:path");
+var import_node_crypto7 = require("node:crypto");
+function taskInput(task) {
+  let value;
+  try {
+    value = JSON.parse(task.delivery.prompt);
+  } catch {
+    throw taskError("invalid_task_instructions");
+  }
+  if (value?.schema !== 1 || value.publish !== true || typeof value.instructions !== "string" || !value.instructions.trim() || typeof value.caption !== "string" || !value.caption.trim() || [...value.caption].length > 200 || (value.caption.match(/\n/g) || []).length > 3)
+    throw taskError("invalid_task_instructions");
+  return value;
+}
+async function publishTask(task) {
+  const config2 = await activeConfiguration();
+  if (config2.mode !== "connected" || config2.url !== task.publisher) throw taskError("account_connection_required");
+  const path = (0, import_node_path7.join)(taskDirectory(task.id), "publication.json");
+  let saved2;
+  if ((0, import_node_fs6.existsSync)(path)) saved2 = JSON.parse((0, import_node_fs6.readFileSync)(path, "utf8"));
+  else {
+    const input2 = taskInput(task), artifact = pack((0, import_node_path7.join)(workspaceFor(task), "content"));
+    saved2 = { bitId: (0, import_node_crypto7.randomUUID)(), body: {
+      requestId: (0, import_node_crypto7.randomUUID)(),
+      publish: true,
+      caption: input2.caption,
+      expectedVersionId: null,
+      parentBitId: task.delivery.parentBitId,
+      parentVersionId: task.delivery.parentVersionId,
+      files: artifact.files
+    } };
+    savePrivate(path, saved2);
+  }
+  let receipt;
+  try {
+    receipt = await request(config2.url, `/v1/publishing/bits/${saved2.bitId}/versions`, { bearer: config2.token, body: saved2.body });
+  } catch (error63) {
+    if (error63.status >= 400 && error63.status < 500 && error63.status !== 401 && error63.code !== "upload_busy") throw taskError("task_publication_rejected");
+    throw taskError("task_publication_pending");
+  }
+  if (receipt?.state !== "succeeded" || receipt.draft || receipt.bitId !== saved2.bitId || !uuid5(receipt.versionId)) throw taskError("invalid_publication_response");
+  return { bitId: receipt.bitId, versionId: receipt.versionId };
+}
+
 // helper/task-runner.mjs
-var localTaskView = (task) => ({ id: task.id, state: task.state, ...task.sessionId && ["needs_input", "completed", "failed"].includes(task.state) ? sessionLink(task.sessionId) : {}, ...task.outcome ? { outcome: task.outcome } : {} });
+var localTaskView = (task) => ({ id: task.id, state: task.state, ...task.sessionId && ["needs_input", "completed", "failed"].includes(task.state) ? taskSessionLink(task) : {}, ...task.outcome ? { outcome: task.outcome } : {} });
 async function remoteTask(task) {
   const config2 = configuration();
   if (config2.mode !== "connected" || config2.url !== task.publisher) throw taskError("account_connection_required");
@@ -38036,8 +38217,8 @@ async function remoteTask(task) {
 async function progress(task, state) {
   if (!task.sessionId) return;
   const current = await remoteTask(task);
-  if (current.session?.id === task.sessionId && current.session.state === state) return;
-  await taskRequest(`/${task.id}/session`, { body: { claimId: task.claimId, version: current.version, session: { id: task.sessionId, state } } });
+  if (current.session?.id === task.sessionId && current.session.state === state && (current.session.agent || "codex") === (task.agent || "codex")) return;
+  await taskRequest(`/${task.id}/session`, { body: { claimId: task.claimId, version: current.version, session: { id: task.sessionId, state, agent: task.agent || "codex" } } });
 }
 function instructions(task) {
   const input2 = taskInput(task);
@@ -38048,7 +38229,8 @@ ${input2.instructions}
 The maker supplied this caption: ${JSON.stringify(input2.caption)}.
 When the work is complete, return ONLY JSON {"status":"ready"}. If it needs user input or permissions, return ONLY JSON {"status":"needs_input"}. Do not claim ready unless the requested work and checks are complete.`;
 }
-async function advanceTask(id, { signal, execute = runCodex } = {}) {
+async function advanceTask(id, { signal, execute, agent = "codex" } = {}) {
+  taskAgent(agent);
   let local = readTask(id);
   if (!local) throw taskError();
   if (["completed", "failed"].includes(local.state)) return localTaskView(local);
@@ -38092,12 +38274,14 @@ async function advanceTask(id, { signal, execute = runCodex } = {}) {
       }
     }
     if (["received", "needs_input"].includes(task.state)) {
+      task.agent ||= task.sessionId ? "codex" : agent;
+      const run = execute || ((options) => executeAgent(task.agent, options));
       const prompt = instructions(task);
       task.continuation = remote.continuation || 0;
       task.state = "running";
       saveTask(task);
       try {
-        const result = await execute({
+        const result = await run({
           cwd: workspaceFor(task),
           prompt,
           sessionId: task.sessionId,
@@ -38194,7 +38378,8 @@ function receiverLock() {
   return () => (0, import_node_fs7.unlinkSync)(path);
 }
 async function watchTasks({ signal, intervalMs = 5e3, report = () => {
-}, execute = advanceTask } = {}) {
+}, execute = advanceTask, agent = "codex" } = {}) {
+  taskAgent(agent);
   const unlock = receiverLock(), reported = /* @__PURE__ */ new Map();
   const emit = (key, value) => {
     const text = JSON.stringify(value);
@@ -38240,7 +38425,7 @@ async function watchTasks({ signal, intervalMs = 5e3, report = () => {
         for (const task of localTasks().filter((t) => !["claiming", "saved", "completed", "failed"].includes(t.state))) {
           if (signal?.aborted) break;
           try {
-            emit(task.id, await execute(task.id, { signal }));
+            emit(task.id, await execute(task.id, { signal, agent }));
           } catch (error63) {
             failure2(task.id, error63);
           }
@@ -38262,24 +38447,26 @@ async function watchTasks({ signal, intervalMs = 5e3, report = () => {
 var import_node_fs8 = require("node:fs");
 var import_node_os2 = require("node:os");
 var import_node_path9 = require("node:path");
-var import_node_child_process2 = require("node:child_process");
+var import_node_child_process4 = require("node:child_process");
 var label = "com.getdiffer.tasks";
 var xml = (value) => String(value).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
-function receiverPlist({ node: node2, helper, config: config2, publisher: publisher2, path, log }) {
+function receiverPlist({ node: node2, helper, config: config2, publisher: publisher2, path, log, agent = "codex" }) {
+  taskAgent(agent);
   return `<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd"><plist version="1.0"><dict>
-<key>Label</key><string>${label}</string><key>ProgramArguments</key><array><string>${xml(node2)}</string><string>${xml(helper)}</string><string>tasks-watch</string></array>
+<key>Label</key><string>${label}</string><key>ProgramArguments</key><array><string>${xml(node2)}</string><string>${xml(helper)}</string><string>tasks-watch</string><string>--agent</string><string>${xml(agent)}</string></array>
 <key>RunAtLoad</key><true/><key>KeepAlive</key><true/><key>ThrottleInterval</key><integer>15</integer>
 <key>EnvironmentVariables</key><dict><key>DIFFER_CONFIG</key><string>${xml(config2)}</string><key>DIFFER_PUBLISH_URL</key><string>${xml(publisher2)}</string><key>PATH</key><string>${xml(path)}</string></dict>
 <key>StandardOutPath</key><string>${xml(log)}</string><key>StandardErrorPath</key><string>${xml(log)}</string>
 </dict></plist>
 `;
 }
-function installReceiver(remove = false) {
+function installReceiver(remove = false, agent = "codex") {
+  taskAgent(agent);
   if (process.platform !== "darwin") throw taskError("use_tasks_watch");
   const file2 = (0, import_node_path9.join)((0, import_node_os2.homedir)(), "Library", "LaunchAgents", `${label}.plist`), domain2 = `gui/${process.getuid()}`;
   if (remove) {
     try {
-      (0, import_node_child_process2.execFileSync)("/bin/launchctl", ["bootout", `${domain2}/${label}`], { stdio: "ignore" });
+      (0, import_node_child_process4.execFileSync)("/bin/launchctl", ["bootout", `${domain2}/${label}`], { stdio: "ignore" });
     } catch {
     }
     try {
@@ -38300,13 +38487,13 @@ function installReceiver(remove = false) {
   (0, import_node_fs8.writeFileSync)(log, "", { flag: "a", mode: 384 });
   (0, import_node_fs8.chmodSync)(log, 384);
   (0, import_node_fs8.mkdirSync)((0, import_node_path9.join)((0, import_node_os2.homedir)(), "Library", "LaunchAgents"), { recursive: true });
-  (0, import_node_fs8.writeFileSync)(file2, receiverPlist({ node: process.execPath, helper, config: (0, import_node_path9.resolve)(configPath()), publisher: config2.url, path: process.env.PATH || "", log }), { mode: 384 });
+  (0, import_node_fs8.writeFileSync)(file2, receiverPlist({ node: process.execPath, helper, config: (0, import_node_path9.resolve)(configPath()), publisher: config2.url, path: process.env.PATH || "", log, agent }), { mode: 384 });
   try {
-    (0, import_node_child_process2.execFileSync)("/bin/launchctl", ["bootout", `${domain2}/${label}`], { stdio: "ignore" });
+    (0, import_node_child_process4.execFileSync)("/bin/launchctl", ["bootout", `${domain2}/${label}`], { stdio: "ignore" });
   } catch {
   }
   try {
-    (0, import_node_child_process2.execFileSync)("/bin/launchctl", ["bootstrap", domain2, file2], { stdio: "ignore" });
+    (0, import_node_child_process4.execFileSync)("/bin/launchctl", ["bootstrap", domain2, file2], { stdio: "ignore" });
   } catch {
     throw taskError("receiver_install_failed");
   }
@@ -38314,12 +38501,12 @@ function installReceiver(remove = false) {
 }
 
 // helper/media.mjs
-var import_node_child_process3 = require("node:child_process");
+var import_node_child_process5 = require("node:child_process");
 var import_node_fs9 = require("node:fs");
 var import_node_path10 = require("node:path");
 function command(name, args, options = {}) {
   try {
-    return (0, import_node_child_process3.execFileSync)(name, args, { timeout: 6e4, maxBuffer: 32 * 1024 * 1024, ...options });
+    return (0, import_node_child_process5.execFileSync)(name, args, { timeout: 6e4, maxBuffer: 32 * 1024 * 1024, ...options });
   } catch (error63) {
     throw problem(error63.code === "ENOENT" ? "missing_media_tool" : "media_tool_failed", `${name} ${error63.code === "ENOENT" ? "is not installed" : "could not process this file"}.`, `Use the official ${name === "cwebp" ? "WebP" : "FFmpeg"} tools when this optional operation is needed. Originals are unchanged.`);
   }
@@ -38414,7 +38601,7 @@ async function main() {
     case "doctor":
       return output2(await doctor());
     case "tasks-install":
-      return output2(installReceiver());
+      return output2(installReceiver(false, option("agent")));
     case "tasks-uninstall":
       return output2(installReceiver(true));
     case "tasks-watch": {
@@ -38423,14 +38610,16 @@ async function main() {
       process.once("SIGINT", stop);
       process.once("SIGTERM", stop);
       try {
-        return await watchTasks({ signal: controller.signal, report: output2 });
+        return await watchTasks({ signal: controller.signal, report: output2, agent: option("agent") });
       } finally {
         process.removeListener("SIGINT", stop);
         process.removeListener("SIGTERM", stop);
       }
     }
     case "task-run":
-      return output2(await advanceTask(args[0]));
+      return output2(await advanceTask(args[0], { agent: option("agent") }));
+    case "task-open":
+      return openTask(args[0]);
     case "task-status":
       return output2(localTaskView(readTask(args[0])));
     case "task-source":
@@ -38477,7 +38666,7 @@ async function main() {
       return;
     }
     default:
-      output2({ commands: ["doctor", "tasks [--after SEQUENCE]", "task-receive ID VERSION", "task-source ID", "task-run ID", "task-status ID", "tasks-watch", "tasks-install", "tasks-uninstall", "connect", "connection-status", "disconnect", "check APP_OR_CONTENT", "preview APP_OR_CONTENT [--port N]", "publish APP_OR_CONTENT [--caption CAPTION] [--new] [--parent-bit UUID --parent-version UUID]", "status APP_OR_CONTENT", "get-bit UUID", "bind APP_OR_CONTENT --bit UUID", "image-candidate FILE --output NEW.webp [--quality 85]", "inspect-video FILE", "mcp"], note: "Node 24+. App roots resolve content/. Keep differ-bit.json with source for team handoff; keep .differ state locally for retries. Guest publishing needs no setup. Connect optionally to publish as yourself. Never pass tokens in chat." });
+      output2({ commands: ["doctor", "tasks [--after SEQUENCE]", "task-receive ID VERSION", "task-source ID", "task-run ID [--agent codex|claude-code]", "task-open ID", "task-status ID", "tasks-watch [--agent codex|claude-code]", "tasks-install [--agent codex|claude-code]", "tasks-uninstall", "connect", "connection-status", "disconnect", "check APP_OR_CONTENT", "preview APP_OR_CONTENT [--port N]", "publish APP_OR_CONTENT [--caption CAPTION] [--new] [--parent-bit UUID --parent-version UUID]", "status APP_OR_CONTENT", "get-bit UUID", "bind APP_OR_CONTENT --bit UUID", "image-candidate FILE --output NEW.webp [--quality 85]", "inspect-video FILE", "mcp"], note: "Node 24+. App roots resolve content/. Keep differ-bit.json with source for team handoff; keep .differ state locally for retries. Guest publishing needs no setup. Connect optionally to publish as yourself. Never pass tokens in chat." });
   }
 }
 main().catch((e) => {

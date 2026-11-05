@@ -96,3 +96,33 @@ reports `execution_failed`. A definite publication rejection reports
 request identity for retry. Invalid local content stops for user input before
 upload. The macOS installer is covered by generated-plist tests; installing an
 actual login service is a separate user action, not part of package validation.
+
+## Select a local agent
+
+The receiver defaults to Codex. For Claude Code 2.1.259 or newer, use:
+
+```sh
+node /path/to/plugins/differ/scripts/differ.cjs tasks-watch --agent claude-code
+# Or install that choice as the macOS login service:
+node /path/to/plugins/differ/scripts/differ.cjs tasks-install --agent claude-code
+```
+
+Use the same connected account configuration as before. The selected agent must
+already be installed and signed in. The helper uses its configured model.
+Claude runs with normal permission rules and no interactive permission prompts.
+A denial returns `needs_input`, even if the model says its work is ready.
+Each task keeps its selected agent when the receiver restarts with a new default.
+Control stores only the agent name, chat ID, and progress state.
+
+To answer or continue in a terminal after the receiver releases the task:
+
+```sh
+node /path/to/plugins/differ/scripts/differ.cjs task-open TASK_ID
+```
+
+This opens the saved chat in its exact task folder. While that terminal is open,
+the receiver cannot change the same task. Close the terminal chat before selecting
+Continue in Differ. A completed diff stays immutable; later chat edits do not
+republish it automatically.
+
+Claude CLI contract: https://code.claude.com/docs/en/headless

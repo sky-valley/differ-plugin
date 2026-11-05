@@ -4,17 +4,20 @@ import { join, resolve } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { configuration, configPath } from './connection.mjs';
 import { privateDirectory, taskRoot, taskError } from './task-store.mjs';
+import {taskAgent} from './task-agents.mjs';
 const label='com.getdiffer.tasks';
 const xml=value=>String(value).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
-export function receiverPlist({node,helper,config,publisher,path,log}) {
+export function receiverPlist({node,helper,config,publisher,path,log,agent='codex'}) {
+  taskAgent(agent);
   return `<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd"><plist version="1.0"><dict>
-<key>Label</key><string>${label}</string><key>ProgramArguments</key><array><string>${xml(node)}</string><string>${xml(helper)}</string><string>tasks-watch</string></array>
+<key>Label</key><string>${label}</string><key>ProgramArguments</key><array><string>${xml(node)}</string><string>${xml(helper)}</string><string>tasks-watch</string><string>--agent</string><string>${xml(agent)}</string></array>
 <key>RunAtLoad</key><true/><key>KeepAlive</key><true/><key>ThrottleInterval</key><integer>15</integer>
 <key>EnvironmentVariables</key><dict><key>DIFFER_CONFIG</key><string>${xml(config)}</string><key>DIFFER_PUBLISH_URL</key><string>${xml(publisher)}</string><key>PATH</key><string>${xml(path)}</string></dict>
 <key>StandardOutPath</key><string>${xml(log)}</string><key>StandardErrorPath</key><string>${xml(log)}</string>
 </dict></plist>\n`;
 }
-export function installReceiver(remove=false) {
+export function installReceiver(remove=false,agent='codex') {
+  taskAgent(agent);
   if(process.platform!=='darwin')throw taskError('use_tasks_watch');
   const file=join(homedir(),'Library','LaunchAgents',`${label}.plist`),domain=`gui/${process.getuid()}`;
   if(remove){
@@ -31,7 +34,7 @@ export function installReceiver(remove=false) {
   writeFileSync(log,'',{flag:'a',mode:0o600});chmodSync(log,0o600);
   // LaunchAgents is a standard user directory and need not have private mode.
   mkdirSync(join(homedir(),'Library','LaunchAgents'),{recursive:true});
-  writeFileSync(file,receiverPlist({node:process.execPath,helper,config:resolve(configPath()),publisher:config.url,path:process.env.PATH||'',log}),{mode:0o600});
+  writeFileSync(file,receiverPlist({node:process.execPath,helper,config:resolve(configPath()),publisher:config.url,path:process.env.PATH||'',log,agent}),{mode:0o600});
   try{execFileSync('/bin/launchctl',['bootout',`${domain}/${label}`],{stdio:'ignore'});}catch{}
   try{execFileSync('/bin/launchctl',['bootstrap',domain,file],{stdio:'ignore'});}
   catch{throw taskError('receiver_install_failed');}
