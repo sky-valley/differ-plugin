@@ -80,7 +80,10 @@ for (const plugin of [local, remote]) {
   // The older compatibility validator predates the support, privacy and terms
   // links; current hosts read the complete inline extension above.
   const { supportURL, privacyPolicyURL, termsOfServiceURL, ...legacyInterface } = interfaceFields;
-  json(`${plugin}/.codex-plugin/plugin.json`, { ...identity, skills: './skills/', mcpServers: './.mcp.json', interface: legacyInterface });
+  // OpenAI's portal imports the review prompts only from this file (2026-11-05),
+  // although its docs say the root plugin.json takes precedence.
+  const codexOpenai = plugin === remote ? { extensions: { 'com.openai': { review, publication } } } : {};
+  json(`${plugin}/.codex-plugin/plugin.json`, { ...identity, skills: './skills/', mcpServers: './.mcp.json', interface: legacyInterface, ...codexOpenai });
   json(`${plugin}/.claude-plugin/plugin.json`, { ...identity, displayName: 'Differ', privacyPolicyUrl: interfaceFields.privacyPolicyURL });
 }
 json(`${local}/mcp.json`, { $schema: 'https://agent-plugins.org/schemas/1.0.0/mcp.schema.json', mcpServers: { differ: { type: 'stdio', command: 'node', args: ['${PLUGIN_ROOT}/scripts/differ.cjs', 'mcp'] } } });
