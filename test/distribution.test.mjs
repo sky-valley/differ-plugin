@@ -26,6 +26,8 @@ test('directory package connects remotely and preserves every verified skill', (
   assert.equal(openai.review.test_cases.positive.length, 5);
   assert.equal(openai.review.test_cases.negative.length, 3);
   assert.equal(openai.review.commerce, false);
+  const codex = json(join(directory, '.codex-plugin/plugin.json')).extensions['com.openai'];
+  assert.deepEqual(codex.review, openai.review, 'OpenAI imports the review prompts from .codex-plugin');
   assert.deepEqual(readSnapshot(directory), readLock(join(root, 'plugins/differ')));
   assert.ok(!existsSync(join(directory, 'scripts/differ.cjs')), 'remote package must not imply a local helper');
   for (const name of ['package.json', 'package-lock.json', 'node_modules', '.app.json', 'hooks']) {
