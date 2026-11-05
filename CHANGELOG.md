@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.5
+
+- Copy the OpenAI review and publication metadata into the directory
+  package's `.codex-plugin/plugin.json`: OpenAI's portal imports the test
+  case prompts only from there.
+
 ## 0.7.4
 
 - Declare the directory server's OpenAI authentication in `mcp.json`

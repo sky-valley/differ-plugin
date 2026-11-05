@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "differ",
-  "version": "0.7.4",
+  "version": "0.7.5",
   "description": "Make, publish and diff interactive bits on Differ.",
   "author": {
     "name": "Sky Valley",
@@ -97,7 +97,7 @@
         "commerce_description": "Differ does not sell anything or take payments."
       },
       "publication": {
-        "release_notes": "Differ 0.7.4: make, publish and diff bits; publish as a guest or connect a Differ account."
+        "release_notes": "Differ 0.7.5: make, publish and diff bits; publish as a guest or connect a Differ account."
       }
     }
   }
