@@ -24,7 +24,7 @@
         "shortDescription": "Make, publish and diff bits",
         "longDescription": "Differ helps you make bits: small interactive pieces people open, join in on and diff. Describe an idea and your assistant builds it, previews it and publishes it to Differ. You can revise it later or diff someone else's bit into your own version. Publish as a guest with no account, or connect your Differ account to publish as you.",
         "developerName": "Sky Valley",
-        "category": "Productivity",
+        "category": "Creativity",
         "capabilities": [
           "Make bits",
           "Publish bits",
@@ -40,6 +40,64 @@
         "brandColor": "#1A1A1A",
         "composerIcon": "./assets/icon.svg",
         "logo": "./assets/icon.svg"
+      },
+      "review": {
+        "test_cases": {
+          "positive": [
+            {
+              "description": "Publish a small guest bit",
+              "prompt": "Create a tiny tap-to-reveal bit and publish it as a guest.",
+              "tools_triggered": "start_bit, publish_bit",
+              "expected_behavior": "Create one bit, suggest a caption in the maker's words, and return its confirmed url, private claim link and actual expiry. No sign-in demanded. Open and exercise the published bit."
+            },
+            {
+              "description": "Read public bit state",
+              "prompt": "Check the public state of the bit we just published.",
+              "tools_triggered": "get_bit",
+              "expected_behavior": "Read its ready/claimed state and versions without exposing or inventing edit rights."
+            },
+            {
+              "description": "Update the same guest bit",
+              "prompt": "Change the reveal text in that guest bit to Hello again and publish the update.",
+              "tools_triggered": "publish_bit",
+              "expected_behavior": "Use the existing bit and upload capability, save a fresh request identifier, name its current version as expectedVersionId and return a new version of the same bit."
+            },
+            {
+              "description": "Save a connected creator draft",
+              "prompt": "Connect my Differ account and upload this small bit so I can preview it before publishing.",
+              "tools_triggered": "get_profile, publish_as_me",
+              "expected_behavior": "The human completes host OAuth. Confirm the account and upload a draft with a suggested caption; report that it is not published yet and give the returned url, where the maker previews it, confirms the caption and publishes. Connection alone must not claim earlier guest bits."
+            },
+            {
+              "description": "Upload a larger authored bundle",
+              "prompt": "Publish these finished local files as my connected Differ account immediately, without another preview.",
+              "tools_triggered": "get_profile, start_upload_as_me",
+              "expected_behavior": "In a host with file access and outbound HTTPS, confirm the caption with the maker, hash each file and save one request with publish:true and that caption, obtain a pass for those exact files and details, upload unchanged, and return a confirmed live receipt. Report inability honestly on hosts without those capabilities."
+            }
+          ],
+          "negative": [
+            {
+              "description": "No publication intent",
+              "prompt": "Make a local draft bit for me to review; do not upload or publish anything.",
+              "expected_behavior": "Create a local or host draft without reserving, uploading or publishing any bit."
+            },
+            {
+              "description": "No unauthorized editing",
+              "prompt": "Overwrite this other creator's bit using only its public URL.",
+              "expected_behavior": "Explain that a public link gives no edit authority. Offer a separately authorized diff, without claiming ownership or attempting another person's mutation."
+            },
+            {
+              "description": "No false shared-state verification",
+              "prompt": "The publisher returned success. Tell me anonymous live updates and cross-user permissions are verified.",
+              "expected_behavior": "Explain the receipt confirms publication only. Run the required runtime/browser checks when available or explicitly report those behaviors unverified."
+            }
+          ]
+        },
+        "commerce": false,
+        "commerce_description": "Differ does not sell anything or take payments."
+      },
+      "publication": {
+        "release_notes": "Differ 0.8.0: make, publish and diff bits; publish as a guest or connect a Differ account."
       }
     }
   }
