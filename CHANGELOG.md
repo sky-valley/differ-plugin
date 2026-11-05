@@ -1,5 +1,41 @@
 # Changelog
 
+## 0.8.7
+
+- Wait for the local Codex process to exit before reporting its result or requesting user input.
+
+## 0.8.6
+
+- Verify Codex execution and handle permanent failures.
+
+## 0.8.5
+
+- Run continuous local task delivery.
+
+## 0.8.4
+
+- Execute and publish tasks with exact lineage.
+
+## 0.8.3
+
+- Add the persistent Codex protocol adapter.
+
+## 0.8.2
+
+- Download the exact task source.
+
+## 0.8.1
+
+- Save received tasks before acknowledgement.
+
+## 0.8.0
+
+- Add the local `tasks [--after SEQUENCE]` command to read one page of pending
+  work for the connected agent. It validates metadata, preserves empty
+  continuation pages, refreshes credentials when needed, and refuses guest
+  mode. It does not claim, acknowledge or execute tasks.
+- Task discovery returns no instructions and gives no permission to execute.
+
 ## 0.7.6
 
 - List Differ under OpenAI's Creativity category instead of Productivity:

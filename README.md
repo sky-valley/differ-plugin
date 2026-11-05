@@ -55,6 +55,19 @@ remote tools. File creation, outbound HTTPS, and browser capabilities vary by ho
 You can independently connect `https://publish.getdiffer.com/mcp`. That installs
 the connector only, not this plugin's bundled skill files.
 
+## Pending tasks (local helper)
+
+After connecting an account, `node plugins/differ/scripts/differ.cjs tasks`
+reads one page of pending task offers from Control. It returns
+`{tasks:[{id,version}],next}`. When `next` is nonzero, call `tasks --after NEXT`,
+even if the page is empty. When `next` is zero, that polling cycle is complete;
+start a later cycle without `--after`. Do not save the cursor as a durable
+checkpoint: new prompts and expired claims can make earlier tasks available.
+
+This command reads metadata only. It does not claim tasks, download prompts,
+start an agent, or publish. There is no background polling process yet. Control
+must have task delivery enabled. The remote directory package has no local CLI.
+
 ## Use
 
 Ask for an interactive bit, preview it, and ask to publish when ready. Or run:
@@ -119,3 +132,13 @@ The skills remain authored in Control and are fetched from its public MCP
 endpoint with digest and size verification. See [contributing](CONTRIBUTING.md),
 [release maintenance](docs/releases.md), and the dated
 [directory submission guide](docs/submission.md).
+
+`task-receive ID VERSION` claims one offer and saves its instructions privately
+before acknowledging receipt. It returns only the task ID and local state.
+Repeat the same command after a network failure. Receipt alone does not run an
+agent. Task journals are kept beside the publisher configuration under `tasks/`.
+
+`task-source ID` downloads the received task's exact source into its private
+`workspace/content` folder. It checks the source identity, response size, static
+file limits, encoding, path traversal, duplicate paths and case aliases before
+writing files. A retry preserves an existing workspace, including local edits.
