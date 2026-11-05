@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.6
+
+- List Differ under OpenAI's Creativity category instead of Productivity:
+  the dashboard couldn't confirm Productivity for a plugin that makes
+  interactive bits.
+
 ## 0.7.5
 
 - Copy the OpenAI review and publication metadata into the directory
