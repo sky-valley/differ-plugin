@@ -1,3 +1,4 @@
+import { Parser } from 'htmlparser2';
 import { createHash } from 'node:crypto';
 import { extname, posix } from 'node:path';
 
@@ -53,11 +54,21 @@ export function validateArtifact(input) {
     if (/-----BEGIN (?:[A-Z ]+ )?PRIVATE KEY-----|\b(?:sk_live_|ghp_)[A-Za-z0-9]{16,}/.test(text))
       fail('possible_secret', `Possible credential in ${path}.`, 'Remove credentials; static content is public.');
     const refs = [];
+    let css = path.endsWith('.css') ? text : '';
     if (path.endsWith('.html')) {
-      for (const match of text.matchAll(/\b(?:src|href|poster)\s*=\s*["']([^"']+)["']/gi)) refs.push(match[1]);
+      let inStyle = false;
+      new Parser({
+        onopentag(name, attrs) {
+          inStyle = name === 'style';
+          for (const key of ['src', 'href', 'poster']) {
+            if (attrs[key]) refs.push(attrs[key]);
+          }
+          if (attrs.style) css += '\n' + attrs.style;
+        },
+        ontext(value) { if (inStyle) css += value; },
+        onclosetag(name) { if (name === 'style') inStyle = false; },
+      }).end(text);
     }
-    const css = path.endsWith('.css') ? text : path.endsWith('.html')
-      ? [...text.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style>/gi), ...text.matchAll(/\bstyle\s*=\s*["']([^"']*)["']/gi)].map(match => match[1]).join('\n') : '';
     for (const match of css.matchAll(/url\(\s*["']?([^\s"')]+)["']?\s*\)/gi)) refs.push(match[1]);
     if (/\.(js|mjs)$/.test(path)) for (const match of text.matchAll(/(?:\bfrom\s*|\bimport\s*\(?\s*)["']([^"']+)["']/g)) refs.push(match[1]);
     for (const ref of refs) {

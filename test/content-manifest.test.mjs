@@ -28,3 +28,10 @@ test('stateful bundles allow runtime URLs and reserve platform namespaces', () =
   assert.equal(validateArtifact(pack({ 'index.html': '<a href="preview.html">', 'preview.html': '<img src="pic.png">', 'pic.png': 'png' })).files.size, 3, 'preview.html is checked like any page');
   assert.throws(() => validateArtifact(pack({ 'index.html': '<p>', 'preview.html': '<img src="gone.png">' })), { code: 'missing_asset' });
 });
+
+test('inline script builds image URLs at runtime while external script sources are checked', () => {
+  const files = html => ({files: [{path:'index.html', content:Buffer.from(html).toString('base64')}]});
+  const script = '<script type="module">card.innerHTML = `<img src="${item.img}">`;</script>';
+  assert.doesNotThrow(() => validateArtifact(files(script)));
+  assert.throws(() => validateArtifact(files(script + '<script src="missing.js"></script>')), {code:'missing_asset'});
+});

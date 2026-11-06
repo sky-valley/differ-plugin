@@ -6,7 +6,7 @@ import { prepareTask, workspaceFor } from './task-source.mjs';
 import { taskInput, publishTask } from './task-publication.mjs';
 import {taskAgent,executeAgent,taskSessionLink} from './task-agents.mjs';
 
-export const localTaskView=task=>({id:task.id,state:task.state,...(task.sessionId&&['needs_input','completed','failed'].includes(task.state)?taskSessionLink(task):{}),...(task.outcome?{outcome:task.outcome}:{})});
+export const localTaskView=task=>({id:task.id,state:task.state,...(task.sessionId&&['needs_input','completed','failed'].includes(task.state)?taskSessionLink(task):{}),...(task.outcome?{outcome:task.outcome}:{}),...(task.sourceDiagnostic?{sourceDiagnostic:task.sourceDiagnostic}:{})});
 async function remoteTask(task) {
   const config=configuration();
   if(config.mode!=='connected'||config.url!==task.publisher)throw taskError('account_connection_required');
@@ -36,7 +36,12 @@ export async function advanceTask(id,{signal,execute,agent='codex'}={}) {
     await remoteTask(local); // Verify the original connection before a terminal failure.
     try{await prepareTask(id);}catch(error){
       if(![404,410].includes(error.status)&&error.code!=='invalid_task_source')throw error;
-      await withTask(id,async task=>{task.outcome={failure:'source_unavailable'};task.state='reporting';saveTask(task);});
+      await withTask(id, async task => {
+        task.sourceDiagnostic = error.sourceDiagnostic || {stage:'download', status:error.status};
+        task.outcome = {failure:'source_unavailable'};
+        task.state = 'reporting';
+        saveTask(task);
+      });
     }
   }
   return withTask(id,async task=>{

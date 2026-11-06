@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.8.13
+
+- Read asset references from HTML elements. A preview can build image URLs in JavaScript.
+- For a failed source download or validation, the receiver log and `task-status` show the HTTP status or validation code with the task ID.
+
 ## 0.8.12
 
 - On explicit Continue, accept a newer completed Codex desktop result from the

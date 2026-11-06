@@ -57,6 +57,13 @@ test('a removed source produces a fixed failure outcome instead of waiting forev
  f.state.reply=call=>call.path.includes('/source?')?{status:410,body:{error:'source_unavailable'}}:
   call.path.endsWith('/outcome')?{status:200,body:{id:task.id,state:'failed',version:4}}:{status:200,body:{id:task.id,state:'received',version:3}};
  const result=await advanceTask(task.id);assert.equal(result.state,'failed');
+ assert.deepEqual(result.sourceDiagnostic, {stage:'download', status:410});
+ f.state.reply=call=>call.path.includes('/source?')?{status:200,body:{bitId:bit,versionId:version,files:[{path:'index.html',content:Buffer.from('<img src="private-image.png">').toString('base64')}]}}:
+  call.path.endsWith('/outcome')?{status:200,body:{id:task.id,state:'failed',version:4}}:{status:200,body:{id:task.id,state:'received',version:3}};
+ saveTask({schema:1,id:task.id,claimId,publisher:f.url,state:'received',delivery:{parentBitId:bit,parentVersionId:version,prompt:'private'}});
+ const rejected=await advanceTask(task.id);
+ assert.deepEqual(rejected.sourceDiagnostic,{stage:'validate',code:'missing_asset'});
+ assert.deepEqual((await advanceTask(task.id)).sourceDiagnostic,rejected.sourceDiagnostic);
  const outcome=f.calls.find(c=>c.path.endsWith('/outcome'));assert.deepEqual(JSON.parse(outcome.body),{claimId,outcome:{failure:'source_unavailable'}});
 });
 
