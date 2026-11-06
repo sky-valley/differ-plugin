@@ -101,15 +101,25 @@ work down the draft's checks.
    then Rescan. It found all six tools with no findings. OpenAI rescans hosted
    tools daily, so the endpoint, its annotations and the domain token must keep
    working after approval.
-5. **Reviewer access.** Reviewers must not need to register. Use **Username and
-   password** with the dedicated Google Workspace reviewer account: 2-step
-   verification off, no phone number, already signed in to Differ once with a
-   handle chosen. Steps: open `https://app.getdiffer.com`, Continue with
-   Google, sign in with those credentials. A person types the password into the
-   portal; agents never handle it. The "email code
-   (mcp-review@theaicompany.org)" option needs that inbox's Differ account and
-   handle created ahead of time, which Control cannot do, so do not pick it.
+5. **Reviewer access.** Reviewers must not need to register or pass any extra
+   verification. Use **Username and password** with Differ's review account,
+   `app-review@getdiffer.com`, which already has a handle. Its six-digit email
+   code is never sent and never changes (gdiffer decision 0149); it goes in the
+   password field. Put it on the clipboard without showing it:
+   `op read "op://Shared/Differ Production Secrets/GDIFFER_PLAYER_API_TOKEN" |
+   (cd gdiffer/services/control && GDIFFER_PLAYER_API_TOKEN=$(cat) go run
+   ./cmd/reviewcode) | pbcopy` copies the address and the code. Steps for the reviewer: on the Differ connect page choose
+   **Continue with email**, enter the address, enter the code as the password,
+   then **Allow**. A person types the code into the portal.
+   Rejected 2026-11-06 with a Google Workspace account ("unable to complete
+   your sign-in or OAuth flow ... no additional setup or verification"):
+   Google challenges a sign-in from a new device, and that cannot be switched
+   off, so do not offer a Google account. Do not pick the "email code
+   (mcp-review@theaicompany.org)" option either: that inbox has no Differ
+   handle, and creating one is setup.
    Keep the account working after approval; reviewers return for updates.
+   Rotating the Player bearer changes the code, so update the portal's
+   reviewer credentials whenever it rotates.
 6. **Video.** A screen recording of the tested workflow, accessible by URL, with
    no claim links or credentials in it.
 7. **Attestations and Submit** are the publisher's (Noam's) to do.
