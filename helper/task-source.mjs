@@ -1,9 +1,13 @@
 import { existsSync, lstatSync, mkdirSync, writeFileSync, readFileSync, renameSync, rmSync, mkdtempSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { configuration } from './connection.mjs';
-import { limits, validateArtifact } from './artifact.mjs';
+import { limits, PublishError, validateArtifact } from './artifact.mjs';
 import { taskRequest } from './task-api.mjs';
 import { saveTask, withTask, taskDirectory, taskError } from './task-store.mjs';
+
+function invalidSource(code) {
+  return Object.assign(taskError('invalid_task_source'), {sourceDiagnostic: {stage:'validate', code}});
+}
 
 export function workspaceFor(task) {
   const path = join(taskDirectory(task.id), 'workspace');
@@ -24,19 +28,19 @@ export async function prepareTask(id) {
     // interrupted; never replace the agent's edited files on a later retry.
     if (!existsSync(workspace)) {
       const source = await taskRequest(`/${id}/source?claimId=${task.claimId}`, { maxBytes: limits.wireBytes });
-      if (!source || source.bitId !== task.delivery.parentBitId || source.versionId !== task.delivery.parentVersionId) throw taskError('invalid_task_source');
+      if (!source || source.bitId !== task.delivery.parentBitId || source.versionId !== task.delivery.parentVersionId) throw invalidSource('parent_mismatch');
       let artifact;
-      try { artifact = validateArtifact(source); } catch { throw taskError('invalid_task_source'); }
+      try { artifact = validateArtifact(source); } catch (error) { throw invalidSource(error instanceof PublishError ? error.code : 'invalid_artifact'); }
       // Reject case aliases and file/directory collisions on all platforms.
       const names = new Set();
       for (const path of artifact.files.keys()) {
         const key = path.toLowerCase();
-        if (names.has(key)) throw taskError('invalid_task_source');
+        if (names.has(key)) throw invalidSource('path_collision');
         names.add(key);
       }
       for (const path of names) {
         const parts = path.split('/'); parts.pop();
-        while (parts.length) { if (names.has(parts.join('/'))) throw taskError('invalid_task_source'); parts.pop(); }
+        while (parts.length) { if (names.has(parts.join('/'))) throw invalidSource('path_collision'); parts.pop(); }
       }
       const temporary = mkdtempSync(join(taskDirectory(id), 'source-'));
       try {
