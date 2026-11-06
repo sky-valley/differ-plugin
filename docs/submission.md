@@ -117,6 +117,11 @@ work down the draft's checks.
    off, so do not offer a Google account. Do not pick the "email code
    (mcp-review@theaicompany.org)" option either: that inbox has no Differ
    handle, and creating one is setup.
+   After a rejection, **Revise submission** reopens the same version as a
+   draft with no reviewer-credentials field: the submit dialog has only an
+   optional note, and the credentials from the first submission stay. Put
+   changed access in that note and in a reply to the rejection email. The
+   dialog submits on a stray keypress, so click into the note before typing.
    Keep the account working after approval; reviewers return for updates.
    Rotating the Player bearer changes the code, so update the portal's
    reviewer credentials whenever it rotates.
