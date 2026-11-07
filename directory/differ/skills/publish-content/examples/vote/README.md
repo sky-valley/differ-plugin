@@ -20,7 +20,7 @@ visitor stays anonymous. Opening does not append a vote; `participate()` and
 the write remain in the button handler.
 
 History is deliberate: removing the latest choice reveals an earlier remaining
-one. Player's Your participation removes individual contributions; removing all
+one. Differ's Your participation removes individual contributions; removing all
 of your choices leaves no vote. The creator can moderate contributions. The UI
 states these semantics. If your brief requires different withdrawal semantics,
 change and verify the model rather than copying it silently.
@@ -39,5 +39,5 @@ runtime; the platform's separate integration verifies restoration across logins.
 
 These checks have a specific contract. For a new activity, adapt its checks and
 prove them against deliberately defective variants before trusting green output.
-Browser and Player login checks remain separate. Never point mutation tests at
+Browser and Differ login checks remain separate. Never point mutation tests at
 production bits.

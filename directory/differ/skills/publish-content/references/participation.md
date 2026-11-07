@@ -25,7 +25,7 @@ existing entries; restoration never adds a contribution. Keep public reads and
 local play usable while it resolves. Do not infer ownership from localStorage.
 
 When someone explicitly chooses
-to contribute, call `await pagelike.participate()`. Player handles sign-in and
+to contribute, call `await pagelike.participate()`. Differ handles sign-in and
 participation, and the runtime sets its host-only HttpOnly partitioned cookie. The
 result is an opaque identity string stable within this bit. No email,
 handle or cross-bit identity is disclosed. Then use same-origin `fetch`:
@@ -94,7 +94,7 @@ on each contribution. Do not group votes by this marker or guess an author
 attribute from the stored HTML; the vote example binds its own identity field
 to `Context.request.auth.username` before accepting it.
 
-Player's **Your participation** opens `/-/manage`: visitors remove their own
+Differ's **Your participation** opens `/-/manage`: visitors remove their own
 contributions and report concerns; the creator can moderate all contributions.
 A contribution containing later nested participation requires creator moderation
 so withdrawing it cannot silently erase other people's additions. Contributors
@@ -137,6 +137,6 @@ substitute a mock runtime as authorization evidence.
 Analysis and diff stages use disposable one-hour origins, but all visitors there
 share one authenticated stage identity. They cannot prove anonymous access or
 cross-person authorization. The rehearsal tests the runtime with fixture identity;
-Player sign-in, consent and browser cookie behavior need separate verification.
+Differ sign-in, consent and browser cookie behavior need separate verification.
 Publication means the bundle was accepted, not that these checks passed.
 Do not add product analytics or paid worker calls.

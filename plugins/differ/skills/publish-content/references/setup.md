@@ -24,7 +24,7 @@ local one: its `GDIFFER_PUBLISHING_ORIGIN`, for example `http://127.0.0.1:8080`.
 Add `https://publish.getdiffer.com/mcp` as a remote MCP connector. Its guest
 tools need no account; its account tools use the host's browser sign-in (OAuth
 with PKCE). Host behavior varies: if a host insists on signing in before
-exposing any tools, use a prompt copied from the player's Create page instead.
+exposing any tools, use a prompt copied from Differ's Create page instead.
 
 The repository's directory distribution bundles these same skills with the
 remote connector, without the local helper. Use the connector reference for

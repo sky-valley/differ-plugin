@@ -2,23 +2,23 @@
 // every bit and stage host and puts it first in every page of a bit, so it
 // runs before the bit's own scripts. Bits never reference it themselves.
 //
-// It speaks the player protocol: every message is {type, v: 1, ...}; it
-// accepts a player's only from window.parent. Outside a player nothing is
+// It speaks the host protocol: every message is {type, v: 1, ...}; it
+// accepts a host's only from window.parent. Outside a host nothing is
 // sent, nothing is accepted and nothing throws.
 (function () {
   'use strict';
-  var player = window.parent;
-  var inPlayer = player !== window;
+  var host = window.parent;
+  var inFeed = host !== window;
   var page = /\/preview\.html$/.test(location.pathname) ? 'preview' : 'index';
-  var hidden = inPlayer;
+  var hidden = inFeed;
   // What a later subscriber is replayed: the last show or hide, and the last
   // open state ({state}) once the page is opened.
-  var visibility = inPlayer ? null : 'show';
-  var opened = !inPlayer && page === 'index' ? { state: null } : null;
+  var visibility = inFeed ? null : 'show';
+  var opened = !inFeed && page === 'index' ? { state: null } : null;
   var subscribers = { open: [], show: [], hide: [] };
 
   function send(message) {
-    if (inPlayer) player.postMessage(message, '*');
+    if (inFeed) host.postMessage(message, '*');
   }
 
   // A throwing subscriber is reported without stopping the others.
@@ -31,7 +31,7 @@
   }
 
   function open(state) {
-    if (!inPlayer || page !== 'preview') return;
+    if (!inFeed || page !== 'preview') return;
     var text = JSON.stringify(state === undefined ? null : state);
     if (text === undefined) throw new TypeError('differ.open takes a JSON value.');
     if (new TextEncoder().encode(text).length > 4096) throw new RangeError('differ.open state is over 4096 bytes.');
@@ -61,7 +61,7 @@
 
   window.differ = Object.freeze({
     page: page,
-    inPlayer: inPlayer,
+    inFeed: inFeed,
     get hidden() { return hidden; },
     open: open,
     close: close,
@@ -76,9 +76,9 @@
     if (element) open(element.getAttribute('data-differ-open') || null);
   }, true);
 
-  if (!inPlayer) return;
+  if (!inFeed) return;
 
-  // A player forwards a preview's gestures as differ:pointer. The SDK plays
+  // A host forwards a preview's gestures as differ:pointer. The SDK replays
   // each one back as touch pointer events and their mouse events at the
   // element under the press, which receives the rest of the gesture, and
   // clicks when the pointer stayed within 10 px and was not cancelled.
@@ -128,7 +128,7 @@
     });
     if (mouseTypes[phase]) dispatch(current.target, MouseEvent, mouseTypes[phase], x, y, 0, buttons, { detail: phase === 'move' ? 0 : 1 });
     if (phase === 'up' && !current.moved) dispatch(current.target, MouseEvent, 'click', x, y, 0, 0, { detail: 1 });
-    // A forwarded gesture is the bit's only once the player let it end here.
+    // A forwarded gesture is the bit's only once the host let it end here.
     if (phase === 'up') touched();
     if (phase === 'up' || phase === 'cancel') gesture = null;
   }
@@ -151,7 +151,7 @@
   // How often the bit is touched, told at most once a second, the first at
   // once. Nothing on the page is read. A touch is a real press or key, or a
   // forwarded gesture that ended with an up; the events the SDK plays back
-  // are not real, so a gesture the player kept (a swipe past the bit) and
+  // are not real, so a gesture the host kept (a swipe past the bit) and
   // cancelled never counts.
   var touches = 0, timer = 0;
   function report() {
