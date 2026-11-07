@@ -1,5 +1,5 @@
 // Disposable local rehearsal using the real pagelike executable. This identity
-// authority is a fixture, not Player login. No production credentials are used.
+// authority is a fixture, not Differ login. No production credentials are used.
 import http from 'node:http';
 import { once } from 'node:events';
 import { spawn } from 'node:child_process';
@@ -89,7 +89,7 @@ export async function runtime() {
     child = spawn(resolve(process.env.PAGELIKE_BINARY), ['host', '--data', scratch, '--listen', `127.0.0.1:${port}`], {
       env: { PATH: process.env.PATH, PAGELIKE_DOMAIN: 'rehearsal.test', PAGELIKE_ADMIN_TOKEN: admin,
         PAGELIKE_EDGE_TOKEN: edge, PAGELIKE_IDENTITY_TOKEN: identity,
-        PAGELIKE_IDENTITY_URL: `http://127.0.0.1:${issuerPort}`, PAGELIKE_FRAME_ORIGINS: 'https://player.test' },
+        PAGELIKE_IDENTITY_URL: `http://127.0.0.1:${issuerPort}`, PAGELIKE_FRAME_ORIGINS: 'https://app.test' },
       stdio: ['ignore', 'ignore', 'pipe'],
     });
     let failed, log = ''; child.on('error', error => { failed = error; });
@@ -148,7 +148,7 @@ export async function runtime() {
         } };
       }
       // A loopback transport for browser checks. The caller selects a fixture
-      // session; it does not simulate Player's Google sign-in or consent.
+      // session; it does not simulate Differ's Google sign-in or consent.
       async function browserURL(cookie) {
         const server = http.createServer(async (req, res) => {
           const controller = new AbortController();

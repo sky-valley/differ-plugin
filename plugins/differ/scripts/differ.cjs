@@ -39026,15 +39026,15 @@ function assetReport(artifact) {
 // helper/preview.mjs
 function sdk() {
   "use strict";
-  var player2 = window.parent;
-  var inPlayer = player2 !== window;
+  var host = window.parent;
+  var inFeed = host !== window;
   var page = /\/preview\.html$/.test(location.pathname) ? "preview" : "index";
-  var hidden = inPlayer;
-  var visibility = inPlayer ? null : "show";
-  var opened = !inPlayer && page === "index" ? { state: null } : null;
+  var hidden = inFeed;
+  var visibility = inFeed ? null : "show";
+  var opened = !inFeed && page === "index" ? { state: null } : null;
   var subscribers = { open: [], show: [], hide: [] };
   function send(message) {
-    if (inPlayer) player2.postMessage(message, "*");
+    if (inFeed) host.postMessage(message, "*");
   }
   function call(fn, value) {
     try {
@@ -39052,7 +39052,7 @@ function sdk() {
   }
   function open2(state) {
     if (page !== "preview") return console.info("[differ] open ignored: only preview.html opens the bit");
-    if (!inPlayer) return console.info("[differ] open ignored outside a player", state);
+    if (!inFeed) return console.info("[differ] open ignored outside Differ", state);
     var text = JSON.stringify(state === void 0 ? null : state);
     if (text === void 0) throw new TypeError("differ.open takes a JSON value.");
     if (new TextEncoder().encode(text).length > 4096) throw new RangeError("differ.open state is over 4096 bytes.");
@@ -39061,7 +39061,7 @@ function sdk() {
   }
   function close() {
     if (page !== "index") return console.info("[differ] close ignored: only index.html closes the bit");
-    console.info("[differ] close" + (inPlayer ? "" : " ignored outside a player"));
+    console.info("[differ] close" + (inFeed ? "" : " ignored outside Differ"));
     send({ type: "differ:close", v: 1 });
   }
   function on(name, fn) {
@@ -39078,14 +39078,14 @@ function sdk() {
       if (at >= 0) list.splice(at, 1);
     };
   }
-  window.differ = Object.freeze({ page, inPlayer, get hidden() {
+  window.differ = Object.freeze({ page, inFeed, get hidden() {
     return hidden;
   }, open: open2, close, on });
   document.addEventListener("click", function(event) {
     var element = event.target instanceof Element ? event.target.closest("[data-differ-open]") : null;
     if (element) open2(element.getAttribute("data-differ-open") || null);
   }, true);
-  if (!inPlayer) return;
+  if (!inFeed) return;
   var gesture = null;
   var nativeCapture = { set: Element.prototype.setPointerCapture, release: Element.prototype.releasePointerCapture, has: Element.prototype.hasPointerCapture };
   var synthetic = function(id) {
@@ -39160,7 +39160,7 @@ function sdk() {
 }
 var sdkStandIn = `(${sdk})();
 `;
-function player() {
+function feed() {
   var preview2 = document.getElementById("preview");
   var box = document.getElementById("open");
   var frames = { preview: preview2, index: null };
@@ -39169,7 +39169,7 @@ function player() {
     var line = document.createElement("li");
     line.textContent = (/* @__PURE__ */ new Date()).toLocaleTimeString() + "  " + text;
     document.getElementById("log").prepend(line);
-    console.info("[player] " + text);
+    console.info("[feed] " + text);
   }
   function tell(frame, message) {
     message.v = 1;
@@ -39191,7 +39191,7 @@ function player() {
     again.className = "reopen";
     again.textContent = "Closed. Open again";
     again.onclick = function() {
-      log("player: open");
+      log("feed: open");
       openIndex(null);
     };
     box.replaceChildren(again);
@@ -39218,7 +39218,7 @@ function player() {
   });
   var badge = document.getElementById("badge");
   if (badge) badge.onclick = function() {
-    log("player: open");
+    log("feed: open");
     openIndex(null);
   };
   var layer = document.getElementById("layer");
@@ -39282,8 +39282,8 @@ function previewPage({ preview: preview2 }) {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Differ preview</title><style>${style}</style></head><body>
 <main><section><h2>preview.html <span>390\xD7520, the feed's box</span></h2>${box}</section>
 <section><h2>index.html <span>390\xD7693, the open bit</span></h2><div class="open" id="open"></div></section></main>
-<footer><p>A local stand-in for Differ's player and SDK. Presses on the preview are forwarded as a player forwards them; vertical drags belong to the feed. Restart preview after editing. Nothing is uploaded.</p><ol id="log"></ol></footer>
-<script>(${player})();</script></body></html>`;
+<footer><p>A local stand-in for Differ's feed and SDK. Presses on the preview are forwarded as the feed forwards them; vertical drags belong to the feed. Restart preview after editing. Nothing is uploaded.</p><ol id="log"></ol></footer>
+<script>(${feed})();</script></body></html>`;
 }
 
 // helper/connection.mjs
@@ -39739,7 +39739,7 @@ var import_node_child_process3 = require("node:child_process");
 // package.json
 var package_default = {
   name: "differ-plugin",
-  version: "0.8.13",
+  version: "0.8.14",
   private: true,
   type: "module",
   engines: {

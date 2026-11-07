@@ -32,7 +32,7 @@ no install hooks, automatic publications, or added analytics in this
 plugin. Optional media commands invoke local `cwebp` or `ffprobe`. Rehearsal
 scripts explicitly start a disposable local pagelike instance and optionally a
 browser; they must not be pointed at production bits. Local preview serves the selected
-files on loopback only, with a stand-in SDK and player page written by the helper;
+files on loopback only, with a stand-in SDK and feed page written by the helper;
 it loads nothing from the network itself.
 
 The local `tasks` command reads pending task IDs, versions and a pagination

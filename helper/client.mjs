@@ -214,7 +214,7 @@ async function publishCreator(config, state, directory, artifact, caption, { new
   const live = await fetch(receipt.runtimeUrl, { redirect: 'error', signal: AbortSignal.timeout(15_000) }).then(r => r.ok).catch(() => false);
   return { ...claimReceipt(receipt, state), contentVerified: live, ...(live ? {} : { recovery: 'Publication committed; its public content could not be verified. Run status, never create a duplicate.' }) };
 }
-// The local preview plays the bit as a player would: preview.html in its
+// The local preview opens the bit as the feed does: preview.html in its
 // 390×520 box and index.html open at 390×693, side by side on one page at
 // /__differ/, each page given a stand-in for the SDK the content Worker
 // injects. Bundles cannot use __differ/, so its pages never shadow a file.

@@ -61,7 +61,7 @@ export async function checkVote(files, host) {
     assert.doesNotMatch(await (await site.request('/data/votes.html')).text(), /data-voter=/);
   });
   return { passed: checks.every(check => check.passed), checks,
-    unverified: ['Player Google login and consent', 'browser rendering and reconnect', 'arbitrary bits outside this example contract'] };
+    unverified: ['Differ Google login and consent', 'browser rendering and reconnect', 'arbitrary bits outside this example contract'] };
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

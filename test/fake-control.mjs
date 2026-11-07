@@ -56,7 +56,7 @@ export async function fakeControl() {
     close: () => new Promise(resolve => server.close(resolve)),
   };
   const challenge = () => ({ 'www-authenticate': `Bearer resource_metadata="${control.origin}/.well-known/oauth-protected-resource", scope="profile bits:write"` });
-  const bitURL = bit => bit.owner ? `https://player.test/@${bit.owner}/bit/${bit.id}` : `https://player.test/bit/${bit.id}`;
+  const bitURL = bit => bit.owner ? `https://app.test/@${bit.owner}/bit/${bit.id}` : `https://app.test/bit/${bit.id}`;
   const runtimeURL = (id, version) => `${control.origin}/runtime/${id}/v/${version}/`;
 
   function agent(bearer) {
@@ -159,7 +159,7 @@ export async function fakeControl() {
 
   function route(method, path, headers, body) {
     let match;
-    if (method === 'GET' && path === '/v1/publishing/capabilities') return [200, { playerOrigin: 'https://player.test', limits: { files: 256, bytes: 20 << 20, wireBytes: 29 << 20 } }];
+    if (method === 'GET' && path === '/v1/publishing/capabilities') return [200, { appOrigin: 'https://app.test', limits: { files: 256, bytes: 20 << 20, wireBytes: 29 << 20 } }];
     if (method === 'GET' && path === '/v1/publishing/account') return [200, { handle: agent(bearerOf(headers)) }];
     if (method === 'POST' && (match = /^\/v1\/publishing\/bits\/([^/]+)\/reservation$/.exec(path))) {
       strict(headers, body, ['ownerProof']);
@@ -179,7 +179,7 @@ export async function fakeControl() {
       if (body.resource !== `${control.origin}/mcp` || body.scope !== 'profile bits:write') oauthReject(400, 'invalid_target', 'Use the Differ MCP resource.');
       const code = hex(), id = hex();
       devices.set(code, {});
-      return [200, { device_code: code, user_code: 'ABCDE12345', verification_uri: 'https://player.test/connect', verification_uri_complete: `https://player.test/connect/${id}`, expires_in: 600, interval: 0 }];
+      return [200, { device_code: code, user_code: 'ABCDE12345', verification_uri: 'https://app.test/connect', verification_uri_complete: `https://app.test/connect/${id}`, expires_in: 600, interval: 0 }];
     }
     if (method === 'POST' && path === '/oauth/token') return [200, token(headers, body)];
     if (method === 'POST' && path === '/oauth/revoke') {

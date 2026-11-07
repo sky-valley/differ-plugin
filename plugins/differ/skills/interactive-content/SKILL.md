@@ -1,7 +1,7 @@
 ---
 name: interactive-content
 description: >-
-  Create or refine interactive social content, playable bits, and small browser
+  Create or refine interactive social content, live bits, and small browser
   experiences: hooks, gestures, payoffs, participation, sharing, and diffing.
   Use before choosing architecture. Excludes general SaaS interfaces,
   deployment-only work, and read-only app analysis.
@@ -54,7 +54,7 @@ Infer from the brief; ask only about consequential gaps.
 - Design for the actual surface: immediate mobile readability, reachable touch
   targets, intact focal subjects, and deliberate desktop/iframe adaptation.
   Keep authoring controls and implementation details off the consuming surface
-  unless needed there; respect the player's existing navigation and sharing.
+  unless needed there; respect Differ's existing navigation and sharing.
 - On Differ the open bit fills the phone, so make it responsive and check it
   at 390×693 CSS px. Its root `preview.html`, when it has one, is the 390×520
   interactive preview the feed shows, the piece's first impression: give it

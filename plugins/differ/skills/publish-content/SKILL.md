@@ -1,6 +1,6 @@
 ---
 name: publish-content
-description: Publish, update, diff, or prepare interactive bits on Differ/app-player. Not Git pushes or generic hosting.
+description: Publish, update, diff, or prepare interactive bits on Differ. Not Git pushes or generic hosting.
 ---
 # Publish content
 
@@ -45,14 +45,14 @@ A bundle has a root `index.html`, the open bit, and may have a root
   belong to the feed. Use pointer events only, never touch events. No native
   range, select or text inputs, no scrolling area, and nothing that needs
   `:hover` or `:active`. No sound, permission requests, keyboard or
-  participation. Keep the top-right 48×48 px free for the player's open
+  participation. Keep the top-right 48×48 px free for Differ's open
   button. Keep it light: it loads while people scroll.
 
 Differ adds its SDK to every page of a bit as the global `differ`; never
 include or reference anything under `/__differ/`.
 
 - `differ.page` is `'preview'` on `preview.html`, else `'index'`;
-  `differ.inPlayer` is true inside a player; `differ.hidden` is the current
+  `differ.inFeed` is true inside Differ; `differ.hidden` is the current
   visibility.
 - On the preview, `differ.open(state)` opens the bit. `state` is any JSON
   value of at most 4096 bytes; the open bit receives it. A click on an element
@@ -60,18 +60,18 @@ include or reference anything under `/__differ/`.
   `differ.open(value || null)` with that attribute's value.
 - On the open bit, `differ.close()` returns to the feed.
 - `differ.on('open', fn)` calls `fn(state)` when the bit opens (`null` when
-  the player's own control opened it); `differ.on('show', fn)` and
+  Differ's own control opened it); `differ.on('show', fn)` and
   `differ.on('hide', fn)` follow visibility. Each returns a function that
   unsubscribes.
-- Inside a player a page starts hidden and not opened, so start motion, sound
+- Inside Differ a page starts hidden and not opened, so start motion, sound
   and timers on `show` and pause them on `hide`, and read the open state from
   `open`. A late subscriber still gets the last show or hide and the last open
-  once. Outside a player the page starts shown, the open bit counts as opened
+  once. Outside Differ the page starts shown, the open bit counts as opened
   with `null`, and `open` and `close` do nothing.
 
 ## Choose the path
 
-- If the human supplied a player prompt with a reserved bit and upload pass,
+- If the human supplied a Differ prompt with a reserved bit and upload pass,
   follow that prompt's upload instructions. Do not create a second bit; its
   original browser owns the claim, and the upload pass cannot claim it.
 - With the Differ helper (the plugin's `publish_directory` tool or its
@@ -85,7 +85,7 @@ include or reference anything under `/__differ/`.
   machine, so in a cloud or disposable sandbox it is lost when the session
   ends. Do not start the helper's connection there.
 - With neither, say publishing needs the Differ helper, the Differ connector or
-  a prompt copied from the player's Create page. Never invent an upload URL.
+  a prompt copied from Differ's Create page. Never invent an upload URL.
 
 To install the helper or add the connector, read [setup](references/setup.md).
 Each path's reference says how to connect an account.
@@ -126,13 +126,13 @@ Each path's reference says how to connect an account.
 6. Check the actual frames: the preview at 390×520 and the open bit at
    390×693, as the helper's preview shows them; in your own Playwright checks
    `scripts/browser.mjs` opens them with `previewer` and `viewer`. The
-   player's controls sit
+   Differ's controls sit
    outside the content. Separate committed publication, HTTP verification, and
    interaction actually observed in a browser.
 
 Follow connection errors' recovery. Restricted networking needs normal network
 permission, not new credentials: see [when Differ can't be reached](#when-differ-cant-be-reached). Do not routinely patch the publisher, edit DNS,
-rebuild the player or switch hosts during content work. Preserve files and
+rebuild Differ or switch hosts during content work. Preserve files and
 pending identity when blocked; local readiness is not publication.
 
 ## When Differ can't be reached
@@ -148,5 +148,5 @@ then Edit, then Network access). Keep the files and the saved request, and
 retry the identical request once it is allowed. Until then, a bit small enough
 for the connector's call can still publish that way, since the call travels
 through the host rather than the sandbox; otherwise give the human a .zip of
-the content with `index.html` at its root, which they can drop on the player's
+the content with `index.html` at its root, which they can drop on Differ's
 Create page, or in a bit's Update dialog to save it as a draft.
