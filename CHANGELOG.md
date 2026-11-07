@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.8.14
+
+- The local preview's stand-in SDK says `differ.inFeed`, matching Control's SDK,
+  and its host page is the feed.
+
 ## 0.8.13
 
 - Read asset references from HTML elements. A preview can build image URLs in JavaScript.
