@@ -66,7 +66,7 @@ test('guest publishing reserves once, sends the upload pass as a bearer and the 
 
   assert.equal(first.state, 'succeeded');
   assert.equal(first.versionId, h.control.bit(id).versions[0].id);
-  assert.equal(first.url, `https://player.test/bit/${id}`);
+  assert.equal(first.url, `https://app.test/bit/${id}`);
   assert.equal(first.claimUrl, h.control.claimUrl(id, reserve.body.ownerProof));
   assert.equal(first.claimLinkPrivate, true);
   assert.equal(first.expiresAt, h.control.bit(id).expiresAt);
@@ -191,7 +191,7 @@ test('connecting uses the device grant, saves the account handle and uploads dra
   assert.deepEqual(Object.keys(upload.body).sort(), ['expectedVersionId', 'files', 'requestId'], 'without --caption the draft carries no caption, and the page title is never one');
   assert.equal(upload.body.expectedVersionId, null);
   assert.equal(receipt.claimed, true);
-  assert.equal(receipt.url, `https://player.test/@maker/bit/${receipt.bitId}/draft`);
+  assert.equal(receipt.url, `https://app.test/@maker/bit/${receipt.bitId}/draft`);
   assert.equal(receipt.claimUrl, undefined);
   assert.deepEqual(h.state(directory).bit, { id: receipt.bitId, mode: 'connected', accountHandle: 'maker' });
   assert.deepEqual(json(join(directory, 'differ-bit.json')), { version: 1, publisher: h.control.origin, bitId: receipt.bitId, versionId: receipt.versionId, caption: '' });
@@ -224,7 +224,7 @@ test('a claimed guest bit refuses its upload pass and is updated as its connecte
     ['POST', `/v1/publishing/bits/${guest.bitId}/versions`, `Bearer ${token}`],
   ]);
   assert.equal(updated.claimed, true);
-  assert.equal(updated.url, `https://player.test/@maker/bit/${guest.bitId}/draft`);
+  assert.equal(updated.url, `https://app.test/@maker/bit/${guest.bitId}/draft`);
   assert.equal(updated.claimUrl, undefined);
   assert.deepEqual([h.state(mine).bit.mode, h.state(mine).bit.accountHandle], ['connected', 'maker']);
 
@@ -266,7 +266,7 @@ test('refresh keeps the handle, unclaimed guest drafts keep their pass, a refuse
   ]);
   assert.equal(guestVersion.claimUrl, h.state(draft).bit.claimUrl);
 
-  // Control revokes the connection, for example from the player's connections page.
+  // Control revokes the connection, for example from the web app's connections page.
   h.control.revokeAll();
   writeFileSync(join(draft, 'index.html'), '<title>Draft</title>v3');
   h.control.reset();

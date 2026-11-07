@@ -19,7 +19,7 @@ async function serve(t, files) {
   return { mount, pages, get };
 }
 
-test('preview frames preview.html at 390×520 and index.html at 390×693 on a player page bundles cannot shadow', async t => {
+test('preview frames preview.html at 390×520 and index.html at 390×693 on a feed page bundles cannot shadow', async t => {
   const index = '<!doctype html><html><HEAD lang="en"><title>Bit</title></HEAD><body>open</body></html>';
   const { mount, pages, get } = await serve(t, { 'index.html': index, 'preview.html': '<p>tap</p>' });
   assert.equal(mount, '/__differ/');
@@ -44,7 +44,7 @@ test('preview frames preview.html at 390×520 and index.html at 390×693 on a pl
   assert.equal((await get('/__differ/other.js')).status, 404);
 });
 
-test('without preview.html the player page says what the feed shows instead', async t => {
+test('without preview.html the feed page says what the feed shows instead', async t => {
   const { pages, get } = await serve(t, { 'index.html': '<p>only</p>' });
   assert.deepEqual(pages, ['index.html']);
   const page = await (await get('/__differ/')).text();

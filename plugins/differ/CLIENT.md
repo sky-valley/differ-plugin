@@ -3,7 +3,7 @@
 The local bridge exposes publisher_status, check_content, publish_directory,
 publication_status, get_bit, connect_account, connection_status and
 disconnect_account, plus optional media helpers. It transfers local asset bytes
-without making the model transcribe them. Copied player prompts retain their
+without making the model transcribe them. Copied web app prompts retain their
 reserved bit and upload pass; do not replace them with a fresh plugin publication.
 
 Control is the publisher. The helper addresses https://publish.getdiffer.com, or
@@ -74,9 +74,9 @@ check refuses files under them and any reference to /__differ/ or /__dfr/. Diffe
 SDK, /__differ/sdk.js, to every page of a bit itself.
 
 preview serves the bundle on loopback with a stand-in for that SDK at the head
-of every page a browser opens or frames, and a player page at /__differ/ that
+of every page a browser opens or frames, and a feed page at /__differ/ that
 frames preview.html at 390×520 and index.html at 390×693. It follows the
-player protocol: a frame hears nothing before its differ:ready, then
+feed protocol: a frame hears nothing before its differ:ready, then
 differ:show, and the open index.html then hears differ:open with the state a
 preview opened it with, or null. Presses on the preview are forwarded as
 differ:pointer; a vertical drag is the feed's and cancels the gesture.
@@ -90,7 +90,7 @@ preview instead.
 GET /v1/publishing/bits/{id} is public: {id, ready, claimed, expiresAt, url,
 bit}; bit names its owner's handle only once claimed. No public binding, bit,
 feed, runtime or URL grants ownership. Opening the claim link claims nothing;
-the player's verified sign-in binds the bit to that person's handle with the
+the web app's verified sign-in binds the bit to that person's handle with the
 caption they confirm, keeps every bit and version ID and ends the guest pass.
 Later guest versions are refused (owner_conflict); an exact earlier request
 still returns its receipt.
@@ -114,7 +114,7 @@ expiresAt, accountHandle}. No tokens appear in receipts or normal tool output.
 A token Control refuses (401 reconnect_required) stops publishing; the helper
 never falls back to guest. A connection saved for another publisher fails with
 target_changed: run connect. Disconnect revokes the grant before selecting
-guest mode. The player /connect page can revoke other connections.
+guest mode. The web app's /connect page can revoke other connections.
 
 Remote MCP at <publisher>/mcp offers get_profile, start_bit, publish_bit,
 get_bit, publish_as_me and start_upload_as_me, whose inputs name caption,

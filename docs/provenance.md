@@ -10,7 +10,7 @@ folders. Development dependencies moved to the root, outside installable
 packages. The local plugin retains the bundled helper. The generated directory
 package shares its skills and identity but declares remote MCP.
 
-`assets/icon.svg` is Differ's existing application mark from app-player's
+`assets/icon.svg` is Differ's existing application mark from differ-app's
 `public/icons/differ-app-icon.svg`. It is not an Anthropic or OpenAI mark.
 The MIT license grants rights to code and documentation, not endorsement or
 permission to misrepresent a fork as Sky Valley's official service.
