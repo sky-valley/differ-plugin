@@ -35,14 +35,14 @@ model call or the installed desktop app's visible behavior.
 `task-run ID` prepares its source and starts the selected agent (Codex by default). `task-status ID` shows the
 local state, with the desktop link and terminal resume command only after
 the receiver releases the work. The task prompt is a
-versioned JSON envelope: `{schema:1,instructions,caption,publish:true}`. Diff
+versioned JSON envelope: `{schema:1,instructions,caption,publish:false}`. Diff
 constructs this only after the creator supplies a caption and selects the
 button that explicitly authorizes publication. The text stays in temporary
 Control storage and the private local task journal, never the event log.
 
 A successful agent turn must return `{"status":"ready"}`. The helper then
-validates the content, freezes the upload bytes and request UUID, and publishes
-with `publish:true` and the received parent IDs. Upload retries use exactly
+validates the content, freezes the upload bytes and request UUID, and saves a draft
+with `publish:false` and the received parent IDs. Upload retries use exactly
 those saved bytes and IDs. It reports completion only after Control verifies
 the live result's ownership and lineage. It does not copy the source caption.
 Static checks and an agent's ready result are not independent quality proof.
@@ -51,7 +51,7 @@ Interrupted work and user-input requests show `needs_input`. Open the saved
 session, give the agent the missing information, then select Continue in Diff.
 The receiver consumes that continuation once. For Codex, it first reads the
 saved chat without taking ownership. If a newer completed desktop turn in the
-same workspace returned `{"status":"ready"}`, it validates and publishes the
+same workspace returned `{"status":"ready"}`, it validates and saves a draft of the
 files without reopening the chat. Otherwise it tries to resume the same session;
 another app still holding it leaves the task waiting for input.
 It does not repeat an uncertain turn automatically. Control needs the session
@@ -189,3 +189,21 @@ Official contract: https://code.claude.com/docs/en/desktop#coming-from-the-cli
 The local helper test with Claude Code 2.1.318 exited successfully and reported
 that it opened the saved test session in Desktop. The user confirmed that the
 correct chat was visible and the message box was editable.
+
+## Review before publishing
+
+New requests save a private draft. Select **Review draft** in Player or Diff,
+try the result, and select **Publish** only when it is ready. The caption remains
+editable on that review page.
+
+For further changes, open the same agent chat and ask it to update the files in
+`content/` and save another draft using the normal Differ helper. The receiver
+writes `content/differ-bit.json` after upload so the helper updates this child
+bit and uses the previous draft's version for the update check. Do not use
+`--new` or create another diff for these edits. Refresh the draft page to inspect
+the new result before publishing. The completed task records the initial draft;
+it does not restart or automatically publish later edits.
+
+Control must accept draft outcomes before this plugin and the new Player/Diff
+request format are enabled. Previous requests with explicit `publish:true`
+retain their original behavior; old receivers reject new draft requests.

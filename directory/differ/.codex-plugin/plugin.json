@@ -1,6 +1,6 @@
 {
   "name": "differ",
-  "version": "0.8.13",
+  "version": "0.8.14",
   "description": "Make, publish and diff interactive bits on Differ.",
   "author": {
     "name": "Sky Valley",
@@ -95,7 +95,7 @@
         "commerce_description": "Differ does not sell anything or take payments."
       },
       "publication": {
-        "release_notes": "Differ 0.8.13: make, publish and diff bits; publish as a guest or connect a Differ account."
+        "release_notes": "Differ 0.8.14: make, publish and diff bits; publish as a guest or connect a Differ account."
       }
     }
   }

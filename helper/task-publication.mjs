@@ -6,13 +6,13 @@ import { pack } from './client.mjs';
 import { workspaceFor } from './task-source.mjs';
 import { taskDirectory, taskError, uuid, savePrivate } from './task-store.mjs';
 
-// The request from Diff authorizes publication with the maker's exact caption.
+// New requests save a draft for the maker to review. Earlier requests may publish.
 // It is carried inside the temporary prompt; no caption or instructions are
 // added to Control's durable task event.
 export function taskInput(task) {
   let value;
   try { value=JSON.parse(task.delivery.prompt); } catch { throw taskError('invalid_task_instructions'); }
-  if(value?.schema!==1 || value.publish!==true || typeof value.instructions!=='string' || !value.instructions.trim()
+  if(value?.schema!==1 || typeof value.publish!=='boolean' || typeof value.instructions!=='string' || !value.instructions.trim()
     || typeof value.caption!=='string' || !value.caption.trim() || [...value.caption].length>200 || (value.caption.match(/\n/g)||[]).length>3)
     throw taskError('invalid_task_instructions');
   return value;
@@ -25,7 +25,7 @@ export async function publishTask(task) {
   if(existsSync(path))saved=JSON.parse(readFileSync(path,'utf8'));
   else{
     const input=taskInput(task),artifact=pack(join(workspaceFor(task),'content'));
-    saved={bitId:randomUUID(),body:{requestId:randomUUID(),publish:true,caption:input.caption,expectedVersionId:null,
+    saved={bitId:randomUUID(),body:{requestId:randomUUID(),publish:input.publish,caption:input.caption,expectedVersionId:null,
       parentBitId:task.delivery.parentBitId,parentVersionId:task.delivery.parentVersionId,files:artifact.files}};
     // Freeze the exact bytes and idempotency identity before the first upload.
     savePrivate(path,saved);
@@ -36,6 +36,10 @@ export async function publishTask(task) {
     if(error.status>=400&&error.status<500&&error.status!==401&&error.code!=='upload_busy')throw taskError('task_publication_rejected');
     throw taskError('task_publication_pending');
   }
-  if(receipt?.state!=='succeeded'||receipt.draft||receipt.bitId!==saved.bitId||!uuid(receipt.versionId))throw taskError('invalid_publication_response');
-  return {bitId:receipt.bitId,versionId:receipt.versionId};
+  if(receipt?.state!=='succeeded'||Boolean(receipt.draft)!==!saved.body.publish||receipt.bitId!==saved.bitId||!uuid(receipt.versionId))throw taskError('invalid_publication_response');
+  // Bind subsequent agent edits to this child, never to the published parent.
+  savePrivate(join(workspaceFor(task),'content','differ-bit.json'), {
+    version:1,publisher:config.url,bitId:receipt.bitId,versionId:receipt.versionId,caption:saved.body.caption
+  });
+  return {bitId:receipt.bitId,versionId:receipt.versionId,...(receipt.draft?{draft:true}:{})};
 }

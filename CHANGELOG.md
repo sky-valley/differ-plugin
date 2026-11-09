@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.8.14
+
+- Save data-task results as private drafts when requested, for review before publication.
+- Keep a local binding so later agent edits update the same draft.
+
 ## 0.8.13
 
 - Read asset references from HTML elements. A preview can build image URLs in JavaScript.
