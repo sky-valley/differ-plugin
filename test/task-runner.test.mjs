@@ -94,3 +94,36 @@ test('local task status offers chat links only after the receiver releases the w
   assert.equal(view.url,`codex://threads/${bit}`);
  }
 });
+
+test('new bit starts with an empty workspace and returns an unparented private draft', async t => {
+ const {advanceTask}=await import('../helper/task-runner.mjs');
+ const {deliveryValid}=await import('../helper/task-receipt.mjs');
+ const f=await fixture(t);
+ const before={DIFFER_CONFIG:process.env.DIFFER_CONFIG,DIFFER_PUBLISH_URL:process.env.DIFFER_PUBLISH_URL};
+ Object.assign(process.env,{DIFFER_CONFIG:f.config,DIFFER_PUBLISH_URL:f.url});
+ t.after(()=>{for(const[k,v]of Object.entries(before)){if(v===undefined)delete process.env[k];else process.env[k]=v;}});
+ const delivery={id:task.id,claimId,version:2,expiresAt:new Date(Date.now()+60000).toISOString(),parentBitId:'',parentVersionId:'',prompt:JSON.stringify({schema:1,instructions:'Make a marble game',caption:'',publish:false})};
+ assert.equal(deliveryValid(delivery,{id:task.id,claimId,offerVersion:1}),true);
+ assert.equal(deliveryValid({...delivery,parentBitId:bit},{id:task.id,claimId,offerVersion:1}),false);
+ saveTask({schema:1,id:task.id,claimId,publisher:f.url,state:'received',delivery});
+ let uploaded;
+ f.state.reply=call=>{
+  assert.ok(!call.path.includes('/source?'), 'new work must not download a parent');
+  if(call.path.endsWith('/versions')){uploaded=JSON.parse(call.body);return {status:200,body:{state:'succeeded',bitId:call.path.split('/')[4],versionId:version,draft:true}};}
+  if(call.path.endsWith('/outcome'))return {status:200,body:{id:task.id,state:'completed',version:5}};
+  if(call.path==='/v1/publishing/account')return {status:200,body:{handle:'maker'}};
+  return {status:200,body:{id:task.id,state:'received',version:3}};
+ };
+ const result=await advanceTask(task.id,{execute:async options=>{
+  assert.match(options.prompt,/new bit/);
+  assert.match(options.prompt,/index.html/);
+  assert.match(options.prompt,/private draft/);
+  writeFileSync(join(options.cwd,'content','index.html'),'<h1>Marble game</h1>');
+  await options.onSession(bit);
+  return {status:'completed',text:'{"status":"ready"}'};
+ }});
+ assert.equal(result.state,'completed');assert.equal(result.outcome.draft,true);
+ assert.equal(uploaded.publish,false);assert.equal(uploaded.caption,'');
+ assert.ok(!uploaded.parentBitId && !uploaded.parentVersionId);
+ assert.equal(Buffer.from(uploaded.files[0].content,'base64').toString(),'<h1>Marble game</h1>');
+});

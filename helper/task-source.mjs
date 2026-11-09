@@ -27,10 +27,11 @@ export async function prepareTask(id) {
     // The directory rename is the commit. Recover it if saving the journal was
     // interrupted; never replace the agent's edited files on a later retry.
     if (!existsSync(workspace)) {
-      const source = await taskRequest(`/${id}/source?claimId=${task.claimId}`, { maxBytes: limits.wireBytes });
+      const fresh = task.delivery.parentBitId === '' && task.delivery.parentVersionId === '';
+      const source = fresh ? {bitId:'', versionId:''} : await taskRequest(`/${id}/source?claimId=${task.claimId}`, { maxBytes: limits.wireBytes });
       if (!source || source.bitId !== task.delivery.parentBitId || source.versionId !== task.delivery.parentVersionId) throw invalidSource('parent_mismatch');
       let artifact;
-      try { artifact = validateArtifact(source); } catch (error) { throw invalidSource(error instanceof PublishError ? error.code : 'invalid_artifact'); }
+      try { artifact = fresh ? {files:new Map()} : validateArtifact(source); } catch (error) { throw invalidSource(error instanceof PublishError ? error.code : 'invalid_artifact'); }
       // Reject case aliases and file/directory collisions on all platforms.
       const names = new Set();
       for (const path of artifact.files.keys()) {
@@ -44,6 +45,7 @@ export async function prepareTask(id) {
       }
       const temporary = mkdtempSync(join(taskDirectory(id), 'source-'));
       try {
+        mkdirSync(join(temporary, 'content'), {mode:0o700});
         for (const [path, bytes] of artifact.files) {
           const target = join(temporary, 'content', path);
           mkdirSync(dirname(target), { recursive:true, mode:0o700 });

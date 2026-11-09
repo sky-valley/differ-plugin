@@ -12,8 +12,9 @@ import { taskDirectory, taskError, uuid, savePrivate } from './task-store.mjs';
 export function taskInput(task) {
   let value;
   try { value=JSON.parse(task.delivery.prompt); } catch { throw taskError('invalid_task_instructions'); }
+  const fresh = task.delivery.parentBitId === '' && task.delivery.parentVersionId === '';
   if(value?.schema!==1 || typeof value.publish!=='boolean' || typeof value.instructions!=='string' || !value.instructions.trim()
-    || typeof value.caption!=='string' || !value.caption.trim() || [...value.caption].length>200 || (value.caption.match(/\n/g)||[]).length>3)
+    || typeof value.caption!=='string' || (!value.caption.trim() && !fresh) || (fresh && value.publish) || [...value.caption].length>200 || (value.caption.match(/\n/g)||[]).length>3)
     throw taskError('invalid_task_instructions');
   return value;
 }
