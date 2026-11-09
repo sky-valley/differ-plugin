@@ -1,9 +1,14 @@
 # Changelog
 
-## 0.8.14
+## 0.8.15
 
 - Save data-task results as private drafts when requested, for review before publication.
 - Keep a local binding so later agent edits update the same draft.
+
+## 0.8.14
+
+- The local preview's stand-in SDK says `differ.inFeed`, matching Control's SDK,
+  and its host page is the feed.
 
 ## 0.8.13
 

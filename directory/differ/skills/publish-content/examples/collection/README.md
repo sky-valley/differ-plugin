@@ -8,7 +8,7 @@ submits a real image file, never a data URL. Runtime decoding/re-encoding remove
 metadata and bounds formats and dimensions. The trigger also refuses path
 traversal and encoded-path tricks in image references.
 
-Player provides own-removal and moderation. A photo and gallery entry are two
+Differ provides own-removal and moderation. A photo and gallery entry are two
 contributions: removing one does not automatically remove the other. The UI
 explains how to clean up an upload when the entry write fails. This example
 does not claim an atomic multi-request transaction.

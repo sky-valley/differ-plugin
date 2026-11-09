@@ -37,14 +37,14 @@ local state, with the desktop link and terminal resume command only after
 the receiver releases the work. The task prompt is a
 versioned JSON envelope: `{schema:1,instructions,caption,publish:false}`. Diff
 constructs this only after the creator supplies a caption and selects the
-button that explicitly authorizes publication. The text stays in temporary
+Create draft button. The text stays in temporary
 Control storage and the private local task journal, never the event log.
 
 A successful agent turn must return `{"status":"ready"}`. The helper then
 validates the content, freezes the upload bytes and request UUID, and saves a draft
 with `publish:false` and the received parent IDs. Upload retries use exactly
 those saved bytes and IDs. It reports completion only after Control verifies
-the live result's ownership and lineage. It does not copy the source caption.
+the draft result's ownership and lineage. It does not copy the source caption.
 Static checks and an agent's ready result are not independent quality proof.
 
 Interrupted work and user-input requests show `needs_input`. Open the saved

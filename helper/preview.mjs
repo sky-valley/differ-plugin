@@ -1,25 +1,25 @@
 // The local preview's two pieces: a stand-in for the SDK the content Worker
 // puts first in every page of a bit (gdiffer services/content-delivery/sdk/
-// differ.js), and the player page that frames the bit's pages as Differ does.
+// differ.js), and the feed page that frames the bit's pages as Differ does.
 
 // The stand-in has the SDK's API, lifecycle and messages, and also logs every
 // differ.open and differ.close to the console, framed or not. It is served as
 // this function's source text, so it may use only browser globals.
 function sdk() {
   'use strict';
-  var player = window.parent;
-  var inPlayer = player !== window;
+  var host = window.parent;
+  var inFeed = host !== window;
   var page = /\/preview\.html$/.test(location.pathname) ? 'preview' : 'index';
-  var hidden = inPlayer;
-  var visibility = inPlayer ? null : 'show';
-  var opened = !inPlayer && page === 'index' ? { state: null } : null;
+  var hidden = inFeed;
+  var visibility = inFeed ? null : 'show';
+  var opened = !inFeed && page === 'index' ? { state: null } : null;
   var subscribers = { open: [], show: [], hide: [] };
-  function send(message) { if (inPlayer) player.postMessage(message, '*'); }
+  function send(message) { if (inFeed) host.postMessage(message, '*'); }
   function call(fn, value) { try { fn(value); } catch (error) { setTimeout(function () { throw error; }); } }
   function emit(name, value) { subscribers[name].slice().forEach(function (entry) { call(entry.fn, value); }); }
   function open(state) {
     if (page !== 'preview') return console.info('[differ] open ignored: only preview.html opens the bit');
-    if (!inPlayer) return console.info('[differ] open ignored outside a player', state);
+    if (!inFeed) return console.info('[differ] open ignored outside Differ', state);
     var text = JSON.stringify(state === undefined ? null : state);
     if (text === undefined) throw new TypeError('differ.open takes a JSON value.');
     if (new TextEncoder().encode(text).length > 4096) throw new RangeError('differ.open state is over 4096 bytes.');
@@ -28,7 +28,7 @@ function sdk() {
   }
   function close() {
     if (page !== 'index') return console.info('[differ] close ignored: only index.html closes the bit');
-    console.info('[differ] close' + (inPlayer ? '' : ' ignored outside a player'));
+    console.info('[differ] close' + (inFeed ? '' : ' ignored outside Differ'));
     send({ type: 'differ:close', v: 1 });
   }
   function on(name, fn) {
@@ -39,12 +39,12 @@ function sdk() {
     if (replay) Promise.resolve().then(function () { if (list.indexOf(entry) >= 0) call(fn, replay.state); });
     return function () { var at = list.indexOf(entry); if (at >= 0) list.splice(at, 1); };
   }
-  window.differ = Object.freeze({ page: page, inPlayer: inPlayer, get hidden() { return hidden; }, open: open, close: close, on: on });
+  window.differ = Object.freeze({ page: page, inFeed: inFeed, get hidden() { return hidden; }, open: open, close: close, on: on });
   document.addEventListener('click', function (event) {
     var element = event.target instanceof Element ? event.target.closest('[data-differ-open]') : null;
     if (element) open(element.getAttribute('data-differ-open') || null);
   }, true);
-  if (!inPlayer) return;
+  if (!inFeed) return;
 
   var gesture = null;
   var nativeCapture = { set: Element.prototype.setPointerCapture, release: Element.prototype.releasePointerCapture, has: Element.prototype.hasPointerCapture };
@@ -107,12 +107,12 @@ function sdk() {
 }
 export const sdkStandIn = `(${sdk})();\n`;
 
-// The player: it sends a frame nothing before its differ:ready, then
+// The feed: it sends a frame nothing before its differ:ready, then
 // differ:show, and differ:open to the open index.html. It forwards presses
 // on the preview as differ:pointer, hands vertical drags to the feed, honours
 // differ:open only from the preview within a second of a forwarded release
 // and differ:close only from the index, and opens each time in a new frame.
-function player() {
+function feed() {
   var preview = document.getElementById('preview');
   var box = document.getElementById('open');
   var frames = { preview: preview, index: null };
@@ -121,7 +121,7 @@ function player() {
     var line = document.createElement('li');
     line.textContent = new Date().toLocaleTimeString() + '  ' + text;
     document.getElementById('log').prepend(line);
-    console.info('[player] ' + text);
+    console.info('[feed] ' + text);
   }
   function tell(frame, message) { message.v = 1; frame.contentWindow.postMessage(message, location.origin); }
   function openIndex(value) {
@@ -135,7 +135,7 @@ function player() {
     frames.index = null;
     var again = document.createElement('button');
     again.className = 'reopen'; again.textContent = 'Closed. Open again';
-    again.onclick = function () { log('player: open'); openIndex(null); };
+    again.onclick = function () { log('feed: open'); openIndex(null); };
     box.replaceChildren(again);
   }
   window.addEventListener('message', function (event) {
@@ -159,7 +159,7 @@ function player() {
     }
   });
   var badge = document.getElementById('badge');
-  if (badge) badge.onclick = function () { log('player: open'); openIndex(null); };
+  if (badge) badge.onclick = function () { log('feed: open'); openIndex(null); };
   var layer = document.getElementById('layer');
   var gesture = null, ids = 0;
   function forward(phase, event) {
@@ -225,6 +225,6 @@ export function previewPage({ preview }) {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Differ preview</title><style>${style}</style></head><body>
 <main><section><h2>preview.html <span>390×520, the feed's box</span></h2>${box}</section>
 <section><h2>index.html <span>390×693, the open bit</span></h2><div class="open" id="open"></div></section></main>
-<footer><p>A local stand-in for Differ's player and SDK. Presses on the preview are forwarded as a player forwards them; vertical drags belong to the feed. Restart preview after editing. Nothing is uploaded.</p><ol id="log"></ol></footer>
-<script>(${player})();</script></body></html>`;
+<footer><p>A local stand-in for Differ's feed and SDK. Presses on the preview are forwarded as the feed forwards them; vertical drags belong to the feed. Restart preview after editing. Nothing is uploaded.</p><ol id="log"></ol></footer>
+<script>(${feed})();</script></body></html>`;
 }

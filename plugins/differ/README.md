@@ -22,7 +22,7 @@ is the bit as it opens, checked at 390×693 and responsive on every phone;
 an optional `preview.html` is the 390×520 interactive preview the feed shows,
 and `check` warns without one. Differ adds its SDK to every page; bundles never
 include or reference `__differ/`, and `__dfr/`, `-/`, `v/` and `uploads/` are
-reserved too. `preview` serves a player page that frames `preview.html` at
+reserved too. `preview` serves a feed page that frames `preview.html` at
 390×520 and `index.html` at 390×693 with a stand-in for the SDK, forwarding
 presses on the preview and logging `differ.open` and `differ.close`. It
 uploads nothing. Restart it after edits. Publishing requires human intent.
@@ -71,7 +71,7 @@ the helper at another Control, such as a local one on loopback HTTP.
 Remote MCP: `https://publish.getdiffer.com/mcp`. Guest tools work without an account;
 protected account tools discover Differ OAuth, use browser consent and PKCE,
 and receive scoped credentials. Host-specific connector setup can still insist
-on upfront login; the copied player prompt remains a no-install guest fallback.
+on upfront login; the copied web app prompt remains a no-install guest fallback.
 Mobile/cloud hosts must support creating a bundle and transferring it; package
 installation alone does not grant those capabilities. See [setup](skills/publish-content/references/setup.md).
 
