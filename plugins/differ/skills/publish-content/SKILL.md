@@ -125,7 +125,8 @@ Each path's reference says how to connect an account.
    change its meaning only in a diff.
 6. Check the actual frames: the preview at 390×520 and the open bit at
    390×693, as the helper's preview shows them; in your own Playwright checks
-   `scripts/browser.mjs` opens them with `previewer` and `viewer`. The
+   `scripts/browser.mjs` (see "Get the example code" in
+   references/participation.md) opens them with `previewer` and `viewer`. The
    Differ's controls sit
    outside the content. Separate committed publication, HTTP verification, and
    interaction actually observed in a browser.

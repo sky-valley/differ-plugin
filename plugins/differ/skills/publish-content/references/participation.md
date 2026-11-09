@@ -108,6 +108,27 @@ stops delivering the removed bit and accepting its writes.
 
 ## Complete example and rehearsal
 
+### Get the example code
+
+The examples' code and the rehearsal scripts (`scripts/` and every `.mjs`,
+`.js` and `.html` file under `examples/`) may not be in your copy of this
+skill: plugin directories accept instructions only. Over MCP, Differ serves
+them as `skill://publish-content/...` resources. Differ also publishes them,
+from the same source and with each file's SHA-256, at
+`https://app.getdiffer.com/agent/participation-examples.json`. To run the
+examples and checks, write them into a checking workspace outside the bit's
+content directory with this one command (replace `<workspace>`):
+
+```sh
+node -e 'const fs=require("fs"),p=require("path"),h=require("crypto");fetch("https://app.getdiffer.com/agent/participation-examples.json").then(r=>r.json()).then(j=>{for(const[f,{sha256,text}]of Object.entries(j.files)){if(h.createHash("sha256").update(text).digest("hex")!==sha256)throw Error("digest mismatch: "+f);const t=p.join(process.argv[1],f);fs.mkdirSync(p.dirname(t),{recursive:true});fs.writeFileSync(t,text)}console.log(Object.keys(j.files).length+" files")})' <workspace>
+```
+
+Paths below that name a `.mjs`, `.js` or `.html` file mean the copies in
+`<workspace>`, or in the skill directory when your copy has them. If the
+download is refused before Differ answers, follow
+[when Differ can't be reached](SKILL.md#when-differ-cant-be-reached) for
+`app.getdiffer.com`.
+
 Read [the changeable-vote example](examples/vote/README.md). It includes every
 publishable file and executable checks, not just a grant fragment. Its trigger
 rejects forged identities and multi-entry payloads; the UI counts each identity's
@@ -118,7 +139,7 @@ not mandatory categories or interchangeable permission templates.
 
 The skill also serves `scripts/runtime.mjs`, a dependency-free Node rehearsal
 fixture. Set `PAGELIKE_BINARY` to a built pagelike executable, then run
-`node <skill-directory>/examples/vote/check.mjs`. It starts a fresh loopback runtime
+`node <workspace>/examples/vote/check.mjs`. It starts a fresh loopback runtime
 with separate anonymous, Alice, Bob and creator identities and removes its data
 afterward. Its browser transport serves the Differ SDK at `/__differ/sdk.js` and
 puts it first in every page, as the content Worker does, so the global `differ`
@@ -127,7 +148,7 @@ a passing vote check does not certify an unrelated bit. Run browser checks too.
 The collection and board each provide `check.mjs` with actual browser interactions;
 install Playwright in the checking workspace, or set `PLAYWRIGHT_MODULE` to its
 absolute `index.mjs`, and run the chosen example's check with `PAGELIKE_BINARY`.
-Hosts without a filesystem can read all files through MCP resources. If they
+Hosts without a filesystem can read every file through MCP resources or in that JSON. If they
 cannot run the runtime, report participation as unverified and provide the
 bundle and checks for a capable host; do not claim a static preview proved it.
 If `PAGELIKE_BINARY` or browser tooling is unavailable, stop that verification

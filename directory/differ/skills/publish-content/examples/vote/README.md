@@ -7,6 +7,8 @@ database. Publish only `examples/vote/content/`.
 Read `examples/vote/content/index.html`, `app.mjs`, `vote.mjs`, `rules.html` and
 `data/votes.html`. Paths after the first are relative to that content directory.
 MCP hosts can read each as `skill://publish-content/examples/vote/content/<path>`.
+If your copy of the skill has no code files, get them first, as "Get the
+example code" in [participation](references/participation.md) describes.
 
 The client appends a choice. The authored trigger checks every submitted entry
 against `Context.request.auth.username`, rejects multiple/nested entries, and

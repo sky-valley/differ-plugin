@@ -1,5 +1,8 @@
 # The shared wall
 
+If your copy of the skill has no code files, get them first, as "Get the
+example code" in [participation](references/participation.md) describes.
+
 Publish `examples/board/content/`: `index.html`, `app.mjs`, `rules.html` and
 `data/notes.html`. This is intentionally collaborative: every signed-in visitor
 may add, rewrite or remove anyone's note. The UI says so before participation.

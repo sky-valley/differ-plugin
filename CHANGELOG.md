@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.17
+
+- Ship the skills' instructions only. The participation examples and rehearsal
+  scripts are fetched, digest-checked, from Differ's hosted examples or over
+  MCP, so the directory package carries no code files.
+
 ## 0.8.16
 
 - Receive new-bit ideas from Create without a parent source.

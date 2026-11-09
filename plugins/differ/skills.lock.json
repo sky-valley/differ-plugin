@@ -12,108 +12,23 @@
     },
     {
       "uri": "skill://publish-content/SKILL.md",
-      "digest": "sha256:9034019b2e0bf12b2d23102cf90a3d7a48f181cae67035c91fd18f5e40ba331f",
-      "size": 9008
+      "digest": "sha256:a62dfcb84942f8fdac09b251a90f8054e5b6597fe8bebf7efe9a66f3ab575363",
+      "size": 9071
     },
     {
       "uri": "skill://publish-content/examples/board/README.md",
-      "digest": "sha256:ba9cd71905d62fad89e2f5ab47c2b3d87c12c343ea563017e3f0bab0ad52111a",
-      "size": 1319
-    },
-    {
-      "uri": "skill://publish-content/examples/board/check.mjs",
-      "digest": "sha256:98f63048ca510521e7447e21dd49e9a20d312146a4c09b0f17cc2d6ffd2b544c",
-      "size": 2515
-    },
-    {
-      "uri": "skill://publish-content/examples/board/content/app.mjs",
-      "digest": "sha256:40d4c3fa158163694dacb6db682d3d5c131d84c41c7e33a843acaac470780cb3",
-      "size": 2795
-    },
-    {
-      "uri": "skill://publish-content/examples/board/content/data/notes.html",
-      "digest": "sha256:7f6623c9e00ce1c73f272f2d616c83b9c5fade49023824207068faf4e2328820",
-      "size": 21
-    },
-    {
-      "uri": "skill://publish-content/examples/board/content/index.html",
-      "digest": "sha256:0c1ea9418b3325ba2ec7951798611bc688d8cc6392d6d6e4cfc57d8e31f1970b",
-      "size": 998
-    },
-    {
-      "uri": "skill://publish-content/examples/board/content/rules.html",
-      "digest": "sha256:6b4c65cfa990a22cb294951373e7831cf74fbe2e4e25576288e54d884efdff4c",
-      "size": 1335
+      "digest": "sha256:cd1de4ca9fa0a1273b3245d0adab76082740c857d690b62a98eb94c710ea9cd0",
+      "size": 1466
     },
     {
       "uri": "skill://publish-content/examples/collection/README.md",
-      "digest": "sha256:5fafcefb01311e5dbdc06b06b4fb8642e9cf97692b6396b889d81aa891629430",
-      "size": 1420
-    },
-    {
-      "uri": "skill://publish-content/examples/collection/check.mjs",
-      "digest": "sha256:c6b7bfdeab52738bebade2062aaf974c27ecfbd1e0f27fc41eef9123ff388c58",
-      "size": 4220
-    },
-    {
-      "uri": "skill://publish-content/examples/collection/content/app.mjs",
-      "digest": "sha256:430b16b604ab8dace6394bb07e200d9656694990cff5cdd7b16a59223ea8d1f1",
-      "size": 2625
-    },
-    {
-      "uri": "skill://publish-content/examples/collection/content/data/skies.html",
-      "digest": "sha256:3db28705d262b89c720453eeac25614092ebc4837dff83dd16c65aa129494591",
-      "size": 21
-    },
-    {
-      "uri": "skill://publish-content/examples/collection/content/index.html",
-      "digest": "sha256:bdbf1ff58e31581e7a5199e8dabf367a48943c70dd6bf09cf6d7a81584cd9e5b",
-      "size": 1103
-    },
-    {
-      "uri": "skill://publish-content/examples/collection/content/rules.html",
-      "digest": "sha256:efa60f1da4eb4ce6897652153a682fdf3da74591683fd718dc29cf1a591c2202",
-      "size": 2149
+      "digest": "sha256:58ab0e89418e7ed605a0c449ed59a1ca84801957158f4d19aa325833c90fd316",
+      "size": 1567
     },
     {
       "uri": "skill://publish-content/examples/vote/README.md",
-      "digest": "sha256:4cc87c2a2cfe747c8e00b56c58d3c938fbbe11358a68d3abf73968b33ac93926",
-      "size": 2586
-    },
-    {
-      "uri": "skill://publish-content/examples/vote/check-browser.mjs",
-      "digest": "sha256:44f2d6c31a07f59ae8cb0ed7655d06309b6cffb38081d27baf27cb6b7d8f5b79",
-      "size": 1819
-    },
-    {
-      "uri": "skill://publish-content/examples/vote/check.mjs",
-      "digest": "sha256:9605e02bb09ee8436f86b60a7f11b9f6b8793363fa7eb87381a27c171945050a",
-      "size": 5169
-    },
-    {
-      "uri": "skill://publish-content/examples/vote/content/app.mjs",
-      "digest": "sha256:237ee0de7f0968ec43f19ffc21fd5077e8d0778cf9f49b38d9102a68a167596e",
-      "size": 2321
-    },
-    {
-      "uri": "skill://publish-content/examples/vote/content/data/votes.html",
-      "digest": "sha256:947a8027c7771765c496c2d07a578d2ee324c5041c310cb611de61a960105b78",
-      "size": 21
-    },
-    {
-      "uri": "skill://publish-content/examples/vote/content/index.html",
-      "digest": "sha256:bc8153444f3319420a31a9748a2562ff64ba603b2af4ec9fe83a2f3f981383ea",
-      "size": 1168
-    },
-    {
-      "uri": "skill://publish-content/examples/vote/content/rules.html",
-      "digest": "sha256:bde431027b20da2af5f6792532ade8b74fa7730b1098abf187b9101ca1cd0654",
-      "size": 2346
-    },
-    {
-      "uri": "skill://publish-content/examples/vote/content/vote.mjs",
-      "digest": "sha256:1eeac58ec35de44f18b68064a0de2da6e30e13d6486a7c29f197397295f23fa1",
-      "size": 978
+      "digest": "sha256:e839180a965e1ef18f28865e75db4a1f3c8c310927dc6431b719f907442f9af3",
+      "size": 2732
     },
     {
       "uri": "skill://publish-content/references/connector.md",
@@ -127,28 +42,13 @@
     },
     {
       "uri": "skill://publish-content/references/participation.md",
-      "digest": "sha256:bf9422b404371b8126c4e0185f8d5c6f7341511d744496567b18eee360f08771",
-      "size": 8384
+      "digest": "sha256:9ad40fd746c1cc6304156a9a0f67811b1bad127fd98bf3e1436d2e1cd62fb3ed",
+      "size": 9780
     },
     {
       "uri": "skill://publish-content/references/setup.md",
       "digest": "sha256:179c39f8ef299d0add5ee2814ae65b36a049739fb24af9ea92a07ed9d6006c37",
       "size": 2203
-    },
-    {
-      "uri": "skill://publish-content/scripts/browser.mjs",
-      "digest": "sha256:780ea36ef7f84b5f4a36b008c9caef9280159cc03c00cdbb8cfae86c00fb4674",
-      "size": 1387
-    },
-    {
-      "uri": "skill://publish-content/scripts/differ.js",
-      "digest": "sha256:44945af10f10e9b4a4a11df6acf352a71291083ba1528ca6706fd5b953f83cd1",
-      "size": 7408
-    },
-    {
-      "uri": "skill://publish-content/scripts/runtime.mjs",
-      "digest": "sha256:4f82def256904ee05aace97d94ebb4f93e0d24c28aa9df69a1086e431aaed616",
-      "size": 11083
     }
   ]
 }
