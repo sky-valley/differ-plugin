@@ -12,6 +12,13 @@ import { z } from 'zod';
 const extension = 'io.modelcontextprotocol/skills';
 const segment = /^[A-Za-z0-9._-]+$/;
 
+// Anthropic's plugin directory takes only Markdown, text, JSON, YAML and
+// images from publishers it has not verified. Control also serves the skills'
+// code (examples and rehearsal scripts); the snapshot leaves it out, and the
+// skills tell agents to fetch it from Control or Differ's hosted examples.
+const instructionTypes = /\.(md|txt|json|ya?ml|png|jpe?g|gif|webp|ico)$/i;
+export const instructionFile = uri => instructionTypes.test(uri) || uri.endsWith('/LICENSE');
+
 const byURI = (a, b) => (a.uri < b.uri ? -1 : a.uri > b.uri ? 1 : 0);
 const digest = bytes => 'sha256:' + createHash('sha256').update(bytes).digest('hex');
 
@@ -42,7 +49,7 @@ const listResult = z.object({ skills: z.array(z.object({
   resources: z.array(z.object({ uri: z.string(), digest: z.string(), size: z.number() })),
 })), nextCursor: z.string().optional() }).passthrough();
 
-// Every file Control's skills list, and with `read`, their bytes, each checked
+// Every instruction file Control's skills list, and with `read`, their bytes, each checked
 // against its advertised digest and size before anything is written.
 export async function served(endpoint, { read = false } = {}) {
   const client = new Client({ name: 'differ-skills-sync', version: '1' });
@@ -60,7 +67,7 @@ export async function served(endpoint, { read = false } = {}) {
         for (const file of skill.resources) {
           const path = file.uri.slice('skill://'.length).split('/');
           if (!file.uri.startsWith(`skill://${name}/`) || !path.every(part => segment.test(part) && part !== '.' && part !== '..')) throw new Error(`${file.uri} is not a file of ${name}`);
-          files.push({ uri: file.uri, digest: file.digest, size: file.size });
+          if (instructionFile(file.uri)) files.push({ uri: file.uri, digest: file.digest, size: file.size });
         }
       }
       if (page.nextCursor && seen.has(page.nextCursor)) throw new Error(`${endpoint} repeats a skills cursor`);
