@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, existsSync, rmSync, readdirSync, lstatSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, existsSync, rmSync, readdirSync, lstatSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import test from 'node:test';
@@ -57,11 +57,21 @@ test('release ZIPs are reproducible, contain only runtime files and work after e
           assert.ok(!lstatSync(file).isSymbolicLink());
           assert.ok(!['node_modules', 'test', '.git', '.env', 'package-lock.json'].includes(name), file);
           if (lstatSync(file).isDirectory()) visit(file);
+          else if (variant === 'directory') {
+            // What Anthropic's directory accepts from a publisher it has not verified.
+            assert.match(name, /\.(md|txt|json|ya?ml|png|jpe?g|gif|webp|ico|svg)$|^LICENSE$/i, `${file} is a type the directory refuses`);
+            assert.ok(!readFileSync(file).subarray(0, 2).equals(Buffer.from('#!')), `${file} starts with #!`);
+          }
         }
       };
       visit(plugin);
       if (variant === 'local') {
-        const output = execFileSync(process.execPath, [join(plugin, 'scripts/differ.cjs'), 'check', join(plugin, 'skills/publish-content/examples/vote/content')], { encoding: 'utf8', cwd: temporary });
+        const bit = join(temporary, 'vote');
+        mkdirSync(join(bit, 'data'), { recursive: true });
+        writeFileSync(join(bit, 'index.html'), '<h1>Vote</h1>');
+        writeFileSync(join(bit, 'rules.html'), '<p>Rules</p>');
+        writeFileSync(join(bit, 'data/votes.html'), '<ul id="votes"></ul>');
+        const output = execFileSync(process.execPath, [join(plugin, 'scripts/differ.cjs'), 'check', bit], { encoding: 'utf8', cwd: temporary });
         assert.equal(JSON.parse(output).participation.state, 'unverified');
       }
     }
