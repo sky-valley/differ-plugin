@@ -5,7 +5,7 @@ import { saveTask, withTask, uuid, taskError } from './task-store.mjs';
 
 export function deliveryValid(delivery, task) {
   return delivery && delivery.id === task.id && delivery.claimId === task.claimId
-    && delivery.version === task.offerVersion + 1 && uuid(delivery.parentBitId) && uuid(delivery.parentVersionId)
+    && delivery.version === task.offerVersion + 1 && ((delivery.parentBitId === '' && delivery.parentVersionId === '') || (uuid(delivery.parentBitId) && uuid(delivery.parentVersionId)))
     && Number.isFinite(Date.parse(delivery.expiresAt)) && typeof delivery.prompt === 'string'
     && delivery.prompt.trim().length > 0 && Buffer.byteLength(delivery.prompt) <= 64 * 1024;
 }

@@ -207,3 +207,13 @@ it does not restart or automatically publish later edits.
 Control must accept draft outcomes before this plugin and the new Player/Diff
 request format are enabled. Previous requests with explicit `publish:true`
 retain their original behavior; old receivers reject new draft requests.
+
+## Make something new
+
+With Control's new-bit task support and plugin 0.8.16, Create can send an idea
+without parent IDs. The receiver creates an empty `content/` workspace and asks
+the selected agent to build `index.html`. It saves a private draft with no parent
+lineage. The maker tries it and supplies a caption on the draft review page.
+The task receiver must be running; an approved connection alone does not prove
+that it is online. Questions and later edits use the same saved agent session.
+New-bit requests cannot set `publish:true`.

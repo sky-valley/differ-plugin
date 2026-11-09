@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.16
+
+- Receive new-bit ideas from Create without a parent source.
+- Start an empty content workspace and return a private draft for review.
+- Keep the same agent chat for questions and later changes.
+
 ## 0.8.15
 
 - Save data-task results as private drafts when requested, for review before publication.
