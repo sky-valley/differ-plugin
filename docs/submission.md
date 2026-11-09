@@ -60,6 +60,15 @@ Portal: <https://claude.ai/directory/manage>. Two submissions.
   lacked `privacyPolicyUrl`. It now has it, and the validator says "No action
   needed".
 
+- **Only instruction files.** Unless Anthropic has made the publisher a
+  Verified organization, the directory refuses any file that isn't Markdown,
+  text, JSON, YAML or an image, or that starts with `#!` (`LOCAL_CODE_FILE_TYPE`,
+  v0.8.14, 2026-11-07). Nobody can apply for verification. So the skills sync
+  keeps only those types; the examples' code and rehearsal scripts stay on
+  Control's MCP and at `https://app.getdiffer.com/agent/participation-examples.json`,
+  and `references/participation.md` tells agents how to fetch them (gdiffer#342,
+  decision 0151). The distribution test fails on any other type.
+
 **MCP connector** (required separately for a plugin that names its own server)
 
 - URL `https://publish.getdiffer.com/mcp`.

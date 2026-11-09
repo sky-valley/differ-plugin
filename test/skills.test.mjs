@@ -103,17 +103,20 @@ test('syncing replaces the snapshot with exactly what Control serves, and refuse
   try {
     mkdirSync(join(plugin, 'skills/retired'), { recursive: true });
     writeFileSync(join(plugin, 'skills/retired/SKILL.md'), 'old');
-    const files = { 'tidy/SKILL.md': '---\nname: tidy\n---\n', 'tidy/references/how.md': 'how' };
+    const files = { 'tidy/SKILL.md': '---\nname: tidy\n---\n', 'tidy/references/how.md': 'how', 'tidy/scripts/run.mjs': 'code', 'tidy/examples/a/index.html': '<p>' };
     const control = await fakeControl({ files });
     try {
       assert.equal((await sync(control.url, plugin)).ok, true);
       assert.equal(existsSync(join(plugin, 'skills/retired')), false);
       assert.equal(readFileSync(join(plugin, 'skills/tidy/references/how.md'), 'utf8'), 'how');
-      assert.deepEqual(readLock(plugin).map(file => file.uri), ['skill://tidy/SKILL.md', 'skill://tidy/references/how.md']);
+      assert.deepEqual(readLock(plugin).map(file => file.uri), ['skill://tidy/SKILL.md', 'skill://tidy/references/how.md'], 'code Control serves stays out of the snapshot');
+      assert.equal(existsSync(join(plugin, 'skills/tidy/scripts')), false);
       assert.deepEqual(readSnapshot(plugin), readLock(plugin));
       assert.deepEqual(readdirSync(plugin).sort(), ['skills', 'skills.lock.json']);
       assert.equal((await sync(control.url, plugin, '--check')).ok, true);
 
+      files['tidy/scripts/run.mjs'] = 'code, revised';
+      assert.equal((await sync(control.url, plugin, '--check')).ok, true, 'code changes do not touch the snapshot');
       files['tidy/references/how.md'] = 'how, revised';
       const drift = await sync(control.url, plugin, '--check');
       assert.equal(drift.ok, false);
