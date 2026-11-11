@@ -18,6 +18,13 @@ the Differ creator plugin. It does not own the hosted publisher or pagelike.
 - Every released change needs a version bump. See `docs/releases.md`.
 - Use temporary directories and a local HTTP server for tests. Do not publish
   bits, connect a real account, or mutate production during ordinary tests.
+- **This repository is public.** Everything in it, and every commit message,
+  PR title, PR description, review and comment on it, is world-readable. Never
+  write a secret, nor its name (`GDIFFER_..._TOKEN` and the like), nor where it
+  is kept (vaults, items or secret-manager references), nor how a credential is
+  derived or fetched. Say "the private production runbook" and put the details
+  in gdiffer. `test/public.test.mjs` fails on the common shapes; PR text has no
+  check, so reread it before posting.
 - Do not commit tokens, guest journals, private claim links, reviewer credentials,
   or generated content. `differ-bit.json` is public identity, not edit authority.
 - Do not claim portal acceptance, account OAuth, or live behavior from package
