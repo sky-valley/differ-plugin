@@ -110,15 +110,28 @@ work down the draft's checks.
    then Rescan. It found all six tools with no findings. OpenAI rescans hosted
    tools daily, so the endpoint, its annotations and the domain token must keep
    working after approval.
-5. **Reviewer access.** Reviewers must not need to register. Use **Username and
-   password** with the dedicated Google Workspace reviewer account: 2-step
-   verification off, no phone number, already signed in to Differ once with a
-   handle chosen. Steps: open `https://app.getdiffer.com`, Continue with
-   Google, sign in with those credentials. A person types the password into the
-   portal; agents never handle it. The "email code
-   (mcp-review@theaicompany.org)" option needs that inbox's Differ account and
-   handle created ahead of time, which Control cannot do, so do not pick it.
+5. **Reviewer access.** Reviewers must not need to register or pass any extra
+   verification. Use **Username and password** with Differ's review account,
+   `app-review@getdiffer.com`, which already has a handle. Its six-digit email
+   code is never sent; it goes in the password field. Where to get the code is
+   in Differ's private production runbook, not here. Steps for the reviewer: on
+   the Differ connect page choose **Continue with email**, enter the address,
+   enter the code as the password, then **Allow**. A person types the code into
+   the portal.
+   Rejected 2026-11-06 with a Google Workspace account ("unable to complete
+   your sign-in or OAuth flow ... no additional setup or verification"):
+   Google challenges a sign-in from a new device, and that cannot be switched
+   off, so do not offer a Google account. Do not pick the "email code
+   (mcp-review@theaicompany.org)" option either: that inbox has no Differ
+   handle, and creating one is setup.
+   After a rejection, **Revise submission** reopens the same version as a
+   draft with no reviewer-credentials field: the submit dialog has only an
+   optional note, and the credentials from the first submission stay. Put
+   changed access in that note and in a reply to the rejection email. The
+   dialog submits on a stray keypress, so click into the note before typing.
    Keep the account working after approval; reviewers return for updates.
+   The code can change, so check the portal's reviewer credentials still work
+   before each update.
 6. **Video.** A screen recording of the tested workflow, accessible by URL, with
    no claim links or credentials in it.
 7. **Attestations and Submit** are the publisher's (Noam's) to do.
