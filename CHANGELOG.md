@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.9.0 (unreleased)
+## 0.9.0
 
 - The task receiver runs a creator's prompt from Diff's editor with their own
   agent. An edit task names its editor session and turn; the agent changes the
