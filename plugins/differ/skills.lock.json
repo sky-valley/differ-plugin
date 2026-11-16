@@ -12,8 +12,8 @@
     },
     {
       "uri": "skill://publish-content/SKILL.md",
-      "digest": "sha256:a62dfcb84942f8fdac09b251a90f8054e5b6597fe8bebf7efe9a66f3ab575363",
-      "size": 9071
+      "digest": "sha256:97fa525aed375242db7439448dbb51b03fe65ba23041d72da6a9da3cbab1f944",
+      "size": 9419
     },
     {
       "uri": "skill://publish-content/examples/board/README.md",
@@ -32,18 +32,23 @@
     },
     {
       "uri": "skill://publish-content/references/connector.md",
-      "digest": "sha256:a91147983788eb71589047d4ad8056173c2cfc35342664dd3c9ceadcc835cdcd",
-      "size": 4582
+      "digest": "sha256:73f791d5e68933cd8cce5b3acda971acacfba32c8af584dcc479becc636877e8",
+      "size": 5193
     },
     {
       "uri": "skill://publish-content/references/helper.md",
-      "digest": "sha256:18e6892dcd98f06573860ec19e3b6d983a1aafc25cf793c731280b3d87b5fe23",
-      "size": 3237
+      "digest": "sha256:a616ffd9cc6f947d6f2f1b95d223d828108c130e83e62fbb96259d43e368cbe2",
+      "size": 3783
     },
     {
       "uri": "skill://publish-content/references/participation.md",
       "digest": "sha256:9ad40fd746c1cc6304156a9a0f67811b1bad127fd98bf3e1436d2e1cd62fb3ed",
       "size": 9780
+    },
+    {
+      "uri": "skill://publish-content/references/place.md",
+      "digest": "sha256:1ce2f816cc9e562889300090205a91efd074484bbd2afa2f85773cd974dd96f5",
+      "size": 7398
     },
     {
       "uri": "skill://publish-content/references/setup.md",

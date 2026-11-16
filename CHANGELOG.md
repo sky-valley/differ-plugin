@@ -8,6 +8,9 @@
 - `place APP` (`publish_place`) uploads the connected creator's place as its
   draft, and `place-publish` (`publish_place_draft`) publishes that draft;
   `place APP --publish` does both at once. Places need a connected account.
+- Sync Control's skills: publish-content gains `references/place.md`, a guide
+  to making a creator's place, and names the place tools of the helper and of
+  the connector (`upload_place_as_me`, `publish_place_as_me`).
 
 ## 0.8.17
 

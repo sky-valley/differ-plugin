@@ -1,6 +1,6 @@
 ---
 name: publish-content
-description: Publish, update, diff, or prepare interactive bits on Differ. Not Git pushes or generic hosting.
+description: Publish, update, diff, or prepare interactive bits on Differ, or a creator's place behind their profile. Not Git pushes or generic hosting.
 ---
 # Publish content
 
@@ -69,6 +69,12 @@ include or reference anything under `/__differ/`.
   once. Outside Differ the page starts shown, the open bit counts as opened
   with `null`, and `open` and `close` do nothing.
 
+## A creator's place
+
+A connected creator also has one place: their own page, shown full screen
+behind their profile. It isn't a bit and has no caption. To make or update
+it, read [place](references/place.md).
+
 ## Choose the path
 
 - If the human supplied a Differ prompt with a reserved bit and upload pass,
@@ -107,7 +113,8 @@ Each path's reference says how to connect an account.
    caption and publish: [url]”, using the receipt's `url`. The draft keeps
    the caption you suggested. Set `publish` only when the human explicitly
    asked to publish now without previewing; it then needs the caption they
-   confirmed.
+   confirmed. A place's upload is a draft too, until the creator publishes it
+   or explicitly asks you to.
 3. Connecting an account makes future new bits the creator's. It never claims
    earlier guest bits; those still need their own claim links. A claimed bit
    refuses its guest upload pass; update it as its connected owner. An expired

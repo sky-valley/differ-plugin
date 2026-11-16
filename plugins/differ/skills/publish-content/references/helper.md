@@ -22,8 +22,15 @@ To install it, read [setup](references/setup.md).
 4. `publish_directory` / `publish APP --caption CAPTION` packages files, saves
    the request before mutation, publishes and stores the receipt. The caption
    is the maker's own words: suggest it and let them confirm it. Without one
-   it reuses the caption saved for the bit.
+   it reuses the caption saved for the bit. A connected creator's upload is a
+   draft; add `publish: true` (`--publish`) only when the human explicitly
+   asked to publish now without previewing, with the caption they confirmed.
 5. Return the result as the skill's rules require.
+6. A connected creator's place, made as [place](references/place.md) says, uploads with
+   `publish_place` / `place APP` as its draft; `publish_place_draft` /
+   `place-publish` publishes that draft when the human asks. Add
+   `publish: true` (`--publish`) to the upload only when they explicitly
+   asked to publish the place now without looking at it first.
 
 ## Connecting an account
 
