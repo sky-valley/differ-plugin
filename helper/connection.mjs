@@ -102,22 +102,33 @@ export async function connect() {
 }
 export async function connectionStatus() {
   const unlock = connectionLock();
+  let config;
   try {
-    const config = saved(); const pending = config.pendingConnection;
-    if (!pending) return config.mode === 'connected' ? { state: 'connected', handle: config.accountHandle } : { state: 'guest' };
-    if (pending.expiresAt <= Date.now()) throw problem('connection_expired', 'This connection request expired.', 'Run connect again.');
-    if (pending.nextPollAt > Date.now()) return { state: 'awaiting_approval', retryAfter: Math.ceil((pending.nextPollAt - Date.now()) / 1000) };
-    pending.nextPollAt = Date.now() + 5000; atomic(configPath(), config);
-    let tokens;
-    try { tokens = await request(pending.url, '/oauth/token', { body: { grant_type: 'urn:ietf:params:oauth:grant-type:device_code', client_id: client, device_code: pending.deviceCode, resource: `${pending.url}/mcp` } }); }
-    catch (error) { if (['authorization_pending', 'slow_down'].includes(error.code)) return { state: 'awaiting_approval', retryAfter: 5 }; throw error; }
-    // Save immediately so a failure reading the account cannot lose tokens.
-    const connected = connection(pending.url, tokens);
-    atomic(configPath(), connected);
-    const account = await request(pending.url, '/v1/publishing/account', { bearer: connected.accessToken });
-    atomic(configPath(), { ...connected, accountHandle: account.handle });
-    return { state: 'connected', handle: account.handle, notice: 'Future bits are yours. Earlier guest bits still need their own claim link.' };
+    config = saved();
+    if (config.pendingConnection) return await finishPairing(config);
   } finally { unlock(); }
+  if (config.mode !== 'connected') return { state: 'guest' };
+  // The file only remembers a grant that Control may since have revoked or
+  // expired. Ask Control, so a dead connection is never reported as connected.
+  const active = await activeConfiguration();
+  const account = await request(active.url, '/v1/publishing/account', { bearer: active.token });
+  return { state: 'connected', handle: account.handle };
+}
+// Polls the device grant; the caller holds the connection lock.
+async function finishPairing(config) {
+  const pending = config.pendingConnection;
+  if (pending.expiresAt <= Date.now()) throw problem('connection_expired', 'This connection request expired.', 'Run connect again.');
+  if (pending.nextPollAt > Date.now()) return { state: 'awaiting_approval', retryAfter: Math.ceil((pending.nextPollAt - Date.now()) / 1000) };
+  pending.nextPollAt = Date.now() + 5000; atomic(configPath(), config);
+  let tokens;
+  try { tokens = await request(pending.url, '/oauth/token', { body: { grant_type: 'urn:ietf:params:oauth:grant-type:device_code', client_id: client, device_code: pending.deviceCode, resource: `${pending.url}/mcp` } }); }
+  catch (error) { if (['authorization_pending', 'slow_down'].includes(error.code)) return { state: 'awaiting_approval', retryAfter: 5 }; throw error; }
+  // Save immediately so a failure reading the account cannot lose tokens.
+  const connected = connection(pending.url, tokens);
+  atomic(configPath(), connected);
+  const account = await request(pending.url, '/v1/publishing/account', { bearer: connected.accessToken });
+  atomic(configPath(), { ...connected, accountHandle: account.handle });
+  return { state: 'connected', handle: account.handle, notice: 'Future bits are yours. Earlier guest bits still need their own claim link.' };
 }
 export async function disconnect() {
   const unlock = connectionLock();
