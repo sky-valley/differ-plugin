@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.8.20
+
+- `connection-status` (`connection_status`) checks a saved connection with
+  Differ instead of reporting the file. A connection revoked or expired on
+  Differ now answers `reconnect_required`, so an agent asked to reuse a valid
+  connection runs `connect` instead of saying it is connected when the app
+  shows no agent.
+
 ## 0.8.19
 
 - Sync Control's skills: publish-content gains `references/place.md`, a guide

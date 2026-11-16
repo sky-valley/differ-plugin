@@ -39415,29 +39415,36 @@ async function connect() {
 }
 async function connectionStatus() {
   const unlock = connectionLock();
+  let config2;
   try {
-    const config2 = saved();
-    const pending = config2.pendingConnection;
-    if (!pending) return config2.mode === "connected" ? { state: "connected", handle: config2.accountHandle } : { state: "guest" };
-    if (pending.expiresAt <= Date.now()) throw problem("connection_expired", "This connection request expired.", "Run connect again.");
-    if (pending.nextPollAt > Date.now()) return { state: "awaiting_approval", retryAfter: Math.ceil((pending.nextPollAt - Date.now()) / 1e3) };
-    pending.nextPollAt = Date.now() + 5e3;
-    atomic(configPath(), config2);
-    let tokens;
-    try {
-      tokens = await request(pending.url, "/oauth/token", { body: { grant_type: "urn:ietf:params:oauth:grant-type:device_code", client_id: client, device_code: pending.deviceCode, resource: `${pending.url}/mcp` } });
-    } catch (error63) {
-      if (["authorization_pending", "slow_down"].includes(error63.code)) return { state: "awaiting_approval", retryAfter: 5 };
-      throw error63;
-    }
-    const connected = connection(pending.url, tokens);
-    atomic(configPath(), connected);
-    const account2 = await request(pending.url, "/v1/publishing/account", { bearer: connected.accessToken });
-    atomic(configPath(), { ...connected, accountHandle: account2.handle });
-    return { state: "connected", handle: account2.handle, notice: "Future bits are yours. Earlier guest bits still need their own claim link." };
+    config2 = saved();
+    if (config2.pendingConnection) return await finishPairing(config2);
   } finally {
     unlock();
   }
+  if (config2.mode !== "connected") return { state: "guest" };
+  const active = await activeConfiguration();
+  const account2 = await request(active.url, "/v1/publishing/account", { bearer: active.token });
+  return { state: "connected", handle: account2.handle };
+}
+async function finishPairing(config2) {
+  const pending = config2.pendingConnection;
+  if (pending.expiresAt <= Date.now()) throw problem("connection_expired", "This connection request expired.", "Run connect again.");
+  if (pending.nextPollAt > Date.now()) return { state: "awaiting_approval", retryAfter: Math.ceil((pending.nextPollAt - Date.now()) / 1e3) };
+  pending.nextPollAt = Date.now() + 5e3;
+  atomic(configPath(), config2);
+  let tokens;
+  try {
+    tokens = await request(pending.url, "/oauth/token", { body: { grant_type: "urn:ietf:params:oauth:grant-type:device_code", client_id: client, device_code: pending.deviceCode, resource: `${pending.url}/mcp` } });
+  } catch (error63) {
+    if (["authorization_pending", "slow_down"].includes(error63.code)) return { state: "awaiting_approval", retryAfter: 5 };
+    throw error63;
+  }
+  const connected = connection(pending.url, tokens);
+  atomic(configPath(), connected);
+  const account2 = await request(pending.url, "/v1/publishing/account", { bearer: connected.accessToken });
+  atomic(configPath(), { ...connected, accountHandle: account2.handle });
+  return { state: "connected", handle: account2.handle, notice: "Future bits are yours. Earlier guest bits still need their own claim link." };
 }
 async function disconnect() {
   const unlock = connectionLock();
@@ -39758,7 +39765,7 @@ var import_node_child_process3 = require("node:child_process");
 // package.json
 var package_default = {
   name: "differ-plugin",
-  version: "0.8.19",
+  version: "0.8.20",
   private: true,
   type: "module",
   engines: {
@@ -40934,7 +40941,7 @@ async function mcp() {
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: true }
   }, wrap(publishPlaceDraft));
   server.registerTool("connect_account", { description: "When the human asks to sign in/connect, start browser approval and return its private link and verification code. Do not approve it on their behalf. This authorizes future bits, not claims of earlier guest bits.", inputSchema: {}, annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false } }, wrap(connect));
-  server.registerTool("connection_status", { description: "After the human approves the connection link, finish connecting. Respect retryAfter; do not poll in a tight loop.", inputSchema: {}, annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false } }, wrap(connectionStatus));
+  server.registerTool("connection_status", { description: "Check the saved connection with Differ, or finish connecting after the human approves the connection link. Respect retryAfter; do not poll in a tight loop.", inputSchema: {}, annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false } }, wrap(connectionStatus));
   server.registerTool("disconnect_account", { description: "Only when the human requests it, revoke this agent connection and explicitly return future publishing to guest mode. Existing bits keep their ownership.", inputSchema: {}, annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false } }, wrap(disconnect));
   server.registerTool("publication_status", { description: "Recover a pending publication or verify the saved receipt for a local directory.", inputSchema: { directory }, annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false } }, wrap(({ directory: directory2 }) => status(directory2)));
   server.registerTool("get_bit", { description: "Inspect a remote bit and its versions before conflict recovery or diffing.", inputSchema: { bitId: external_exports.string().uuid() }, annotations }, wrap(({ bitId }) => getBit(bitId)));

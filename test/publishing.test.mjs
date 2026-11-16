@@ -177,9 +177,11 @@ test('connecting uses the device grant, saves the account handle and uploads dra
   assert.deepEqual({ ...saved, expiresAt: typeof saved.expiresAt },
     { url: h.control.origin, mode: 'connected', accessToken: tokens.access_token, refreshToken: tokens.refresh_token, expiresAt: 'number', accountHandle: 'maker' });
 
+  // A saved connection is checked with Control, never reported from the file alone.
   h.control.reset();
   assert.deepEqual(await h.cli('connection-status'), { state: 'connected', handle: 'maker' });
-  assert.deepEqual(h.control.calls(), []);
+  assert.deepEqual(h.control.calls().map(r => [r.method, r.path, r.authorization]), [['GET', '/v1/publishing/account', `Bearer ${tokens.access_token}`]]);
+  h.control.reset();
 
   const directory = h.bit('mine', { 'index.html': '<title>Mine</title>made by me' });
   const receipt = await h.cli('publish', directory);
@@ -268,6 +270,11 @@ test('refresh keeps the handle, unclaimed guest drafts keep their pass, a refuse
 
   // Control revokes the connection, for example from the web app's connections page.
   h.control.revokeAll();
+  h.control.reset();
+  const status = await h.cli('connection-status');
+  assert.deepEqual([status.state, status.code], [undefined, 'reconnect_required'], 'a revoked connection is not reported as connected');
+  assert.match(status.recovery, /Run connect/);
+  assert.deepEqual(lines(h.control.calls()), ['GET /v1/publishing/account']);
   writeFileSync(join(draft, 'index.html'), '<title>Draft</title>v3');
   h.control.reset();
   const refused = await h.cli('publish', draft);
