@@ -115,7 +115,10 @@ Use the same connected account configuration as before. The selected agent must
 already be installed and signed in. The helper uses its configured model.
 Claude uses `acceptEdits` for work in the task folder. Other permission rules
 still apply, and interactive permission prompts are not auto-approved.
-A denial returns `needs_input`, even if the model says its work is ready.
+A denied call the agent worked around does not stop a successful turn whose final
+answer is exactly ready: the result is still a draft or an edit the creator
+reviews. A denial returns `needs_input` when the final answer is not ready, the
+turn failed, or the task would publish at once (`publish:true`).
 Each task keeps its selected agent when the receiver restarts with a new default.
 Control stores only the agent name, chat ID, and progress state.
 
@@ -217,3 +220,34 @@ lineage. The maker tries it and supplies a caption on the draft review page.
 The task receiver must be running; an approved connection alone does not prove
 that it is online. Questions and later edits use the same saved agent session.
 New-bit requests cannot set `publish:true`.
+
+## Edit an app in Diff's editor
+
+With plugin 0.9.0 and Control's edit task support, a creator can send a prompt
+in Diff's editor to their own agent. The claim then carries `editorSessionId`
+and `editorTurnId` (both or neither), and the parent IDs are the session's
+published version. The prompt is
+`{schema:2,kind:"edit",instructions,selections:[{label?,selector?,text?,region?:{x,y,width,height}}]}`,
+with no caption and no publish. A schema 2 prompt without the editor keys, or
+schema 1 with them, fails as `execution_failed` without running the agent.
+
+The source is the editor session's current files, not the published version.
+The receiver writes them to `content/` and up to four attached screenshots
+(PNG, JPEG or WebP, at most 2 MiB each, plain file names whose extension matches
+the type) to `images/`, outside the app. The agent is told what the creator
+picked, where the screenshots are, to keep `content/index.html` working, and to
+add no new binary files, since the editor records edits as text. Claude Code is
+also told that only its file tools (Read, Edit, Write, Glob, Grep) are available
+and that shell commands are denied, so it does not try them.
+
+When the agent returns `{"status":"ready"}`, the receiver packs `content/`,
+freezes the files in the task's `edit.json` before the first post, and posts
+them to the task's `/edit` route. A retry after an uncertain response sends the
+same bytes, and Control answers it with the same edit. That post completes the
+task; there is no outcome call and no draft bit or `differ-bit.json`. Content
+the helper cannot pack (a hidden file, a scratch folder, more than 20 MiB)
+waits for input before anything is posted. A 409 or 422 is Control refusing
+the files: the editor turn has failed, and the receiver records the task as
+failed with Control's code and never posts again. A failed agent turn reports
+`execution_failed` as before. Continuation and `needs_input` work as for other
+tasks.

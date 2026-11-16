@@ -127,3 +127,17 @@ test('new bit starts with an empty workspace and returns an unparented private d
  assert.ok(!uploaded.parentBitId && !uploaded.parentVersionId);
  assert.equal(Buffer.from(uploaded.files[0].content,'base64').toString(),'<h1>Marble game</h1>');
 });
+
+test('a worked-around denial still waits for input on a task that would publish at once', async t => {
+ const {advanceTask}=await import('../helper/task-runner.mjs');const f=await fixture(t);
+ const before={DIFFER_CONFIG:process.env.DIFFER_CONFIG,DIFFER_PUBLISH_URL:process.env.DIFFER_PUBLISH_URL};
+ Object.assign(process.env,{DIFFER_CONFIG:f.config,DIFFER_PUBLISH_URL:f.url});
+ t.after(()=>{for(const[k,v]of Object.entries(before)){if(v===undefined)delete process.env[k];else process.env[k]=v;}});
+ const dir=taskDirectory(task.id);mkdirSync(join(dir,'workspace','content'),{recursive:true,mode:0o700});
+ writeFileSync(join(dir,'workspace','content','index.html'),'<h1>Data</h1>');
+ writeFileSync(join(dir,'workspace','source.json'),JSON.stringify({bitId:bit,versionId:version}));
+ saveTask({schema:1,id:task.id,claimId,publisher:f.url,state:'received',prepared:true,delivery:{parentBitId:bit,parentVersionId:version,prompt:JSON.stringify({schema:1,instructions:'Use my data',caption:'Live now',publish:true})}});
+ f.state.reply=call=>call.path.endsWith('/versions')?assert.fail('a denied turn must not publish at once'):{status:200,body:{id:task.id,state:'received',version:4}};
+ const result=await advanceTask(task.id,{agent:'claude-code',execute:async options=>{await options.onSession(bit);return {status:'completed',text:'{"status":"ready"}',denied:true};}});
+ assert.equal(result.state,'needs_input');
+});

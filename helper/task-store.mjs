@@ -7,6 +7,9 @@ import { problem } from './diagnostics.mjs';
 export const validTaskID = id => typeof id === 'string' && /^agt_[a-f0-9]{64}$/.test(id);
 export const uuid = value => typeof value === 'string' && /^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(value);
 export const taskError = (code = 'invalid_task_state') => problem(code, 'The task could not proceed.', 'Keep its local files. Check the account and task status before retrying.');
+// An editor edit names the Diff editor session and turn that asked for it. Its
+// files return to that session as its next edit, never as a bit or a draft.
+export const editTask = task => Boolean(task.delivery?.editorSessionId);
 export const taskRoot = () => join(dirname(configPath()), 'tasks');
 export function privateDirectory(path) {
   mkdirSync(path, { recursive: true, mode: 0o700 });
