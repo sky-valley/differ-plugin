@@ -72,6 +72,17 @@ Anything but a small bit as the creator uploads over HTTPS:
    returns its receipt through the new pass, and one that did not can be
    sent unchanged.
 
+## The creator's place
+
+`upload_place_as_me` uploads the connected creator's place, made as
+[place](references/place.md) says, with every file base64 encoded in the call and the
+whole call under 4 MiB. It is saved as the place's draft, replacing any draft
+before it, and the answer's `reviewUrl` is where the creator looks at it in
+their profile's frame and publishes it. When they ask you to publish the
+draft, call `publish_place_as_me`. Add `"publish": true` to the upload only
+when the human explicitly asked to publish the place now without looking at
+it first; it then replaces their live place at once.
+
 ## Reading and diffing
 
 `get_bit` reads a bit's public state and version identifiers; it grants

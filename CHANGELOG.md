@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.19
+
+- Sync Control's skills: publish-content gains `references/place.md`, a guide
+  to making a creator's place, and names the place tools of the helper and of
+  the connector (`upload_place_as_me`, `publish_place_as_me`).
+
 ## 0.8.18
 
 - `publish --publish` (`publish: true` on `publish_directory`) puts a connected
