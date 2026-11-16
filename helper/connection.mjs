@@ -43,10 +43,10 @@ const recoveries = {
 };
 // Publishing errors are {code, message}; OAuth errors are {error, error_description}.
 // A bearer travels only in the Authorization header, never in a URL or body.
-export async function request(url, path, { bearer, body } = {}) {
+export async function request(url, path, { bearer, body, method = body === undefined ? 'GET' : 'POST' } = {}) {
   let response;
   try {
-    response = await fetch(url + path, { method: body === undefined ? 'GET' : 'POST', redirect: 'error', signal: AbortSignal.timeout(45_000),
+    response = await fetch(url + path, { method, redirect: 'error', signal: AbortSignal.timeout(45_000),
       headers: { ...(bearer ? { authorization: `Bearer ${bearer}` } : {}), ...(body === undefined ? {} : { 'content-type': 'application/json' }) },
       body: body === undefined ? undefined : JSON.stringify(body) });
   } catch (error) { throw connectionError(error, body === undefined ? 'account' : 'publication', url + path); }

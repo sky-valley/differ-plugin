@@ -96,14 +96,16 @@ export async function status(directory) {
 }
 // The caption is the maker's words for this version: the one supplied, or
 // the one differ-bit.json saved for the bit when it updates the same bit. The maker confirms it in Differ
-// before the bit goes public, so an upload may carry none.
-export async function publish(directory, caption, { newBit = false, parentBitId, parentVersionId } = {}) {
+// before the bit goes public, so an upload may carry none. A connected upload
+// goes live at once only when asked to (now), with the caption the maker confirmed.
+export async function publish(directory, caption, { newBit = false, parentBitId, parentVersionId, publish: now = false } = {}) {
   directory = contentDirectory(directory);
   if (!!parentBitId !== !!parentVersionId) throw problem('invalid_diff', 'A diff requires the source bit and version IDs.', 'Read the source bit first.');
   // A new bit or a diff starts with no words: a child never copies its parent's.
   const words = caption !== undefined ? checkCaption(caption) : newBit || parentBitId ? '' : readBinding(directory)?.caption || '';
+  if (now && !words) throw problem('caption_required', 'Publishing now needs the caption the maker confirmed.', 'Ask the maker to confirm a caption and pass it with --caption, or upload a draft they publish in Differ.');
   const config = await activeConfiguration(); const artifact = pack(directory); const unlock = lock(directory);
-  try { return await publishCreator(config, stateFor(directory, config), directory, artifact, words, { newBit, parentBitId, parentVersionId }); }
+  try { return await publishCreator(config, stateFor(directory, config), directory, artifact, words, { newBit, parentBitId, parentVersionId, now }); }
   finally { unlock(); }
 }
 export async function getBit(bitId) {
@@ -156,8 +158,8 @@ function claimReceipt(receipt, state) {
     ? { ...receipt, claimUrl: state.bit.claimUrl, claimLinkPrivate: true } : receipt;
 }
 // The path names the bit and the bearer its author; the body carries neither.
-const draft = ({ requestId, caption, expectedVersionId, parentBitId, parentVersionId }, files) =>
-  ({ requestId, ...(caption ? { caption } : {}), expectedVersionId, files, ...(parentBitId ? { parentBitId, parentVersionId } : {}) });
+const draft = ({ requestId, caption, expectedVersionId, parentBitId, parentVersionId, publish }, files) =>
+  ({ requestId, ...(caption ? { caption } : {}), expectedVersionId, files, ...(parentBitId ? { parentBitId, parentVersionId } : {}), ...(publish ? { publish } : {}) });
 // Control refuses with a 4xx before committing anything, so that request is
 // dropped. A retry refused for its credential or a busy upload slot may follow
 // an attempt that did commit; those, network failures and 5xx keep the request.
@@ -174,12 +176,12 @@ async function creatorStatus(config, state, directory, me) {
   }
   return claimReceipt(receipt, state);
 }
-async function publishCreator(config, state, directory, artifact, caption, { newBit, parentBitId, parentVersionId }) {
+async function publishCreator(config, state, directory, artifact, caption, { newBit, parentBitId, parentVersionId, now }) {
   const me = await account(config);
   if (state.pending) {
     const recovered = await creatorStatus(config, state, directory, me);
     if (recovered.state === 'succeeded') return { ...recovered, recovered: true, recovery: 'Recovered the previous upload. Run publish again only if more edits were requested.' };
-    if (state.pending.artifactId !== artifact.artifactId || state.pending.caption !== caption) throw problem('pending_changed', 'Pending publication belongs to different content.', 'Restore the pending content/caption and retry; never discard uncertain state.');
+    if (state.pending.artifactId !== artifact.artifactId || state.pending.caption !== caption || !!state.pending.publish !== now) throw problem('pending_changed', 'Pending publication belongs to different content.', 'Restore the pending content/caption and retry; never discard uncertain state.');
   }
   if (!state.pending && (newBit || parentBitId)) {
     state.previous = [...(state.previous ?? []), { bit: state.bit, receipt: state.receipt, lastInput: state.lastInput }];
@@ -197,10 +199,12 @@ async function publishCreator(config, state, directory, artifact, caption, { new
     state.bit.uploadToken = reserved.uploadToken; state.bit.claimUrl = reserved.claimUrl;
     atomic(statePath(directory), state);
   }
-  if (!state.pending && state.receipt?.artifactId === artifact.artifactId && state.lastInput?.caption === caption) return creatorStatus(config, state, directory, me);
+  // The same content again answers from its receipt, unless it is a draft
+  // that is now to be published.
+  if (!state.pending && state.receipt?.artifactId === artifact.artifactId && state.lastInput?.caption === caption && !(now && state.receipt.draft)) return creatorStatus(config, state, directory, me);
   const bearer = await bearerFor(config, state, me);
   const input = state.pending ?? { requestId: randomUUID(), artifactId: artifact.artifactId, caption,
-    expectedVersionId: state.receipt?.versionId ?? null, ...(parentBitId ? { parentBitId, parentVersionId } : {}) };
+    expectedVersionId: state.receipt?.versionId ?? null, ...(parentBitId ? { parentBitId, parentVersionId } : {}), ...(now ? { publish: true } : {}) };
   state.pending = input; atomic(statePath(directory), state);
   let receipt;
   try { receipt = await request(config.url, `/v1/publishing/bits/${state.bit.id}/versions`, { bearer, body: draft(input, artifact.files) }); }
@@ -213,6 +217,28 @@ async function publishCreator(config, state, directory, artifact, caption, { new
   if (receipt.draft) return claimReceipt(receipt, state);
   const live = await fetch(receipt.runtimeUrl, { redirect: 'error', signal: AbortSignal.timeout(15_000) }).then(r => r.ok).catch(() => false);
   return { ...claimReceipt(receipt, state), contentVerified: live, ...(live ? {} : { recovery: 'Publication committed; its public content could not be verified. Run status, never create a duplicate.' }) };
+}
+// A connected creator's place: their own page behind their profile. It is
+// not a bit, so it has no journal: an upload replaces the place's draft, and
+// an uncertain one is sent again. There are no guest places.
+const placeBytes = 8 << 20;
+async function placeConfiguration() {
+  const config = await activeConfiguration();
+  if (config.mode !== 'connected') throw problem('connection_required', 'A place belongs to a connected creator.', 'Run connect to publish as yourself, then upload the place again.');
+  return config;
+}
+const placeResult = place => ({ ...place, notice: place.draft
+  ? "Saved as a draft, not published yet. Open reviewUrl to look at it in your profile's frame and publish it."
+  : 'Published. Visitors see it behind your profile on their next visit.' });
+export async function uploadPlace(directory, { publish: now = false } = {}) {
+  const artifact = pack(directory);
+  if (artifact.bytes > placeBytes) throw problem('place_too_large', 'A place is at most 8 MiB.', 'Compress media or remove unused assets.');
+  const config = await placeConfiguration();
+  return placeResult(await request(config.url, '/v1/publishing/place/draft', { bearer: config.token, method: 'PUT', body: { files: artifact.files, ...(now ? { publish: true } : {}) } }));
+}
+export async function publishPlaceDraft() {
+  const config = await placeConfiguration();
+  return placeResult(await request(config.url, '/v1/publishing/place/draft/publish', { bearer: config.token, body: {} }));
 }
 // The local preview opens the bit as the feed does: preview.html in its
 // 390×520 box and index.html open at 390×693, side by side on one page at

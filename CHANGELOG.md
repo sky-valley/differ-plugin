@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.8.18
+
+- `publish --publish` (`publish: true` on `publish_directory`) puts a connected
+  creator's upload live at once, with the caption they confirmed, when they
+  explicitly ask to skip the draft. A draft they approved publishes the same way.
+- `place APP` (`publish_place`) uploads the connected creator's place as its
+  draft, and `place-publish` (`publish_place_draft`) publishes that draft;
+  `place APP --publish` does both at once. Places need a connected account.
+
 ## 0.8.17
 
 - Ship the skills' instructions only. The participation examples and rehearsal

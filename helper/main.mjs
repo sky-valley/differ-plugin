@@ -1,7 +1,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
-import { doctor, check, preview, publish, status, getBit, bind, connect, connectionStatus, disconnect } from './client.mjs';
+import { doctor, check, preview, publish, status, getBit, bind, connect, connectionStatus, disconnect, uploadPlace, publishPlaceDraft } from './client.mjs';
 import { errorResult } from './diagnostics.mjs';
 import {openTask} from './task-agents.mjs';
 import { watchTasks } from './task-watch.mjs';
@@ -30,9 +30,18 @@ async function mcp() {
     description: 'Upload content when the human asks. Works as a guest without sign-in, or as the deliberately connected creator. A new directory creates a bit; its saved identity uploads a new version of that bit. Connected uploads are drafts: when the receipt has draft:true, say it is not published yet and show its url, where the maker previews it, confirms its caption and publishes it. For guests show the url, private claim link, expiry and unclaimed notice; never hide them or block publishing to demand sign-in.',
     inputSchema: { directory,
       caption: z.string().optional().describe("The maker's own words shown over the bit: 1–200 characters, at most 3 line breaks, checked before upload. Suggest it and let the maker confirm it; they confirm it again in Differ before the bit goes public. Defaults to the caption differ-bit.json saved for this bit."),
-      newBit: z.boolean().optional(), parentBitId: z.string().uuid().optional(), parentVersionId: z.string().uuid().optional() },
+      newBit: z.boolean().optional(), parentBitId: z.string().uuid().optional(), parentVersionId: z.string().uuid().optional(),
+      publish: z.boolean().optional().describe('Connected creators only: true only when the human explicitly asked to publish now without previewing, with the caption they confirmed. Otherwise omit it, and the upload waits as a draft.') },
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: true },
   }, wrap(({ directory, caption, ...options }) => publish(directory, caption, options)));
+  server.registerTool('publish_place', {
+    description: "Upload the connected creator's place, their own page behind their profile, when the human asks. It is saved as the place's draft and changes nothing visitors see: say it is not published yet and show its reviewUrl, where they look at it in their profile's frame and publish it. There are no guest places.",
+    inputSchema: { directory,
+      publish: z.boolean().optional().describe('true only when the human explicitly asked to publish the place now without looking at it first; it then replaces their live place at once.') },
+    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: true },
+  }, wrap(({ directory, publish }) => uploadPlace(directory, { publish })));
+  server.registerTool('publish_place_draft', { description: "Publish the connected creator's place draft, replacing their live place. Only when the human asks to publish the place they looked at.", inputSchema: {},
+    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: true } }, wrap(publishPlaceDraft));
   server.registerTool('connect_account', { description: 'When the human asks to sign in/connect, start browser approval and return its private link and verification code. Do not approve it on their behalf. This authorizes future bits, not claims of earlier guest bits.', inputSchema: {}, annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false } }, wrap(connect));
   server.registerTool('connection_status', { description: 'After the human approves the connection link, finish connecting. Respect retryAfter; do not poll in a tight loop.', inputSchema: {}, annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false } }, wrap(connectionStatus));
   server.registerTool('disconnect_account', { description: 'Only when the human requests it, revoke this agent connection and explicitly return future publishing to guest mode. Existing bits keep their ownership.', inputSchema: {}, annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false } }, wrap(disconnect));
@@ -71,7 +80,9 @@ async function main() {
     case 'bind': return output(await bind(args[0], option('bit')));
     case 'image-candidate': return output(imageCandidate(args[0], option('output'), option('quality') === undefined ? 85 : Number(option('quality'))));
     case 'inspect-video': return output(inspectVideo(args[0]));
-    case 'publish': return output(await publish(args[0], option('caption'), { newBit: args.includes('--new'), parentBitId: option('parent-bit'), parentVersionId: option('parent-version') }));
+    case 'publish': return output(await publish(args[0], option('caption'), { newBit: args.includes('--new'), parentBitId: option('parent-bit'), parentVersionId: option('parent-version'), publish: args.includes('--publish') }));
+    case 'place': return output(await uploadPlace(args[0], { publish: args.includes('--publish') }));
+    case 'place-publish': return output(await publishPlaceDraft());
     case 'preview': {
       const { server, mount, pages } = preview(args[0], Number(option('port') || 0));
       server.on('error', error => {
@@ -85,7 +96,7 @@ async function main() {
       });
       return;
     }
-    default: output({ commands: ['doctor', 'tasks [--after SEQUENCE]', 'task-receive ID VERSION', 'task-source ID', 'task-run ID [--agent codex|claude-code|pi|opencode]', 'task-open ID [--interface terminal|desktop]', 'task-status ID', 'tasks-watch [--agent codex|claude-code|pi|opencode]', 'tasks-install [--agent codex|claude-code|pi|opencode]', 'tasks-uninstall', 'connect', 'connection-status', 'disconnect', 'check APP_OR_CONTENT', 'preview APP_OR_CONTENT [--port N]', 'publish APP_OR_CONTENT [--caption CAPTION] [--new] [--parent-bit UUID --parent-version UUID]', 'status APP_OR_CONTENT', 'get-bit UUID', 'bind APP_OR_CONTENT --bit UUID', 'image-candidate FILE --output NEW.webp [--quality 85]', 'inspect-video FILE', 'mcp'], note: 'Node 24+. App roots resolve content/. Keep differ-bit.json with source for team handoff; keep .differ state locally for retries. Guest publishing needs no setup. Connect optionally to publish as yourself. Never pass tokens in chat.' });
+    default: output({ commands: ['doctor', 'tasks [--after SEQUENCE]', 'task-receive ID VERSION', 'task-source ID', 'task-run ID [--agent codex|claude-code|pi|opencode]', 'task-open ID [--interface terminal|desktop]', 'task-status ID', 'tasks-watch [--agent codex|claude-code|pi|opencode]', 'tasks-install [--agent codex|claude-code|pi|opencode]', 'tasks-uninstall', 'connect', 'connection-status', 'disconnect', 'check APP_OR_CONTENT', 'preview APP_OR_CONTENT [--port N]', 'publish APP_OR_CONTENT [--caption CAPTION] [--new] [--parent-bit UUID --parent-version UUID] [--publish]', 'place APP_OR_CONTENT [--publish]', 'place-publish', 'status APP_OR_CONTENT', 'get-bit UUID', 'bind APP_OR_CONTENT --bit UUID', 'image-candidate FILE --output NEW.webp [--quality 85]', 'inspect-video FILE', 'mcp'], note: 'Node 24+. App roots resolve content/. Keep differ-bit.json with source for team handoff; keep .differ state locally for retries. Guest publishing needs no setup. Connect optionally to publish as yourself. Never pass tokens in chat.' });
   }
 }
 main().catch(e => { output(error(e)); process.exitCode = 1; });
