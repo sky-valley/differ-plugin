@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.9.0 (unreleased)
+
+- The task receiver runs a creator's prompt from Diff's editor with their own
+  agent. An edit task names its editor session and turn; the agent changes the
+  session's current files in `content/`, can open the screenshots the creator
+  attached in `images/`, and the receiver posts the resulting files back to the
+  editor as its next edit instead of saving a draft bit. A refused edit fails
+  the task without a retry. Ordinary tasks are unchanged.
+- Release only after Control serves the matching edit task routes.
+
 ## 0.8.20
 
 - `connection-status` (`connection_status`) checks a saved connection with

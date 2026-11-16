@@ -3,8 +3,16 @@ import { configuration } from './connection.mjs';
 import { taskRequest } from './task-api.mjs';
 import { saveTask, withTask, uuid, taskError } from './task-store.mjs';
 
+// An editor edit names its Diff editor session and turn, both or neither, and
+// always has a parent: the session's published version.
+const editorID = (value, prefix) => typeof value === 'string' && new RegExp(`^${prefix}_[A-Za-z0-9_-]{1,64}$`).test(value);
+function editorValid(delivery) {
+  const session = delivery.editorSessionId ?? '', turn = delivery.editorTurnId ?? '';
+  if (session === '' && turn === '') return true;
+  return editorID(session, 'eds') && editorID(turn, 'edt') && uuid(delivery.parentBitId) && uuid(delivery.parentVersionId);
+}
 export function deliveryValid(delivery, task) {
-  return delivery && delivery.id === task.id && delivery.claimId === task.claimId
+  return delivery && delivery.id === task.id && delivery.claimId === task.claimId && editorValid(delivery)
     && delivery.version === task.offerVersion + 1 && ((delivery.parentBitId === '' && delivery.parentVersionId === '') || (uuid(delivery.parentBitId) && uuid(delivery.parentVersionId)))
     && Number.isFinite(Date.parse(delivery.expiresAt)) && typeof delivery.prompt === 'string'
     && delivery.prompt.trim().length > 0 && Buffer.byteLength(delivery.prompt) <= 64 * 1024;
