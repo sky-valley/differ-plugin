@@ -193,3 +193,27 @@ test('an edit whose content cannot be packed waits for input, and a failed turn 
   assert.equal(failed.state, 'failed');
   assert.deepEqual(JSON.parse(f.calls.find(c => c.path.endsWith('/outcome')).body), { claimId, outcome: { failure: 'execution_failed' } });
 });
+
+test('a Claude Code edit is told the shell is denied and posts a ready answer despite a worked-around denial', async t => {
+  const f = await connected(t); saveTask(record(f));
+  const { advanceTask } = await import('../helper/task-runner.mjs');
+  let posts = 0;
+  editControl(f, () => (++posts, { status: 200, body: { id: task.id, state: 'completed', outcome: { edit: 1 } } }));
+  let prompt;
+  const result = await advanceTask(task.id, { agent: 'claude-code', execute: async options => {
+    prompt = options.prompt; await options.onSession(bit);
+    writeFileSync(join(options.cwd, 'content', 'index.html'), '<h1>Red ball</h1>');
+    return { status: 'completed', text: '{"status":"ready"}', denied: true };
+  } });
+  assert.match(prompt, /Only file tools \(Read, Edit, Write, Glob, Grep\) are available here\. Shell commands are denied, so do not try them/);
+  assert.equal(result.state, 'completed'); assert.equal(posts, 1);
+});
+
+test('only Claude Code edit prompts carry the file-tools rule', async t => {
+  const f = await connected(t); saveTask(record(f));
+  const { advanceTask } = await import('../helper/task-runner.mjs');
+  editControl(f, () => ({ status: 200, body: { id: task.id, state: 'completed', outcome: { edit: 1 } } }));
+  let prompt;
+  await advanceTask(task.id, { execute: async options => { prompt = options.prompt; await options.onSession(bit); return { status: 'completed', text: '{"status":"ready"}' }; } });
+  assert.doesNotMatch(prompt, /Shell commands are denied/);
+});

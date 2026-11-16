@@ -2,6 +2,7 @@ import {randomUUID} from 'node:crypto';
 import {agentProcess} from './agent-process.mjs';
 import {uuid,taskError} from './task-store.mjs';
 
+const ready=text=>{try{return JSON.parse(text)?.status==='ready';}catch{return false;}};
 // Use the installed CLI's login, model and workspace edit permission. Pending
 // approvals are denied by headless mode and returned to the person, not granted.
 export async function runClaude({cwd,prompt,sessionId,onSession,signal,command='claude',args=[]}) {
@@ -15,9 +16,13 @@ export async function runClaude({cwd,prompt,sessionId,onSession,signal,command='
   for(;;){const message=await process.next();
    if(message.session_id&&message.session_id!==id)throw taskError('invalid_session');
    if(message.type==='system'&&message.subtype==='permission_denied')denied=true;
-   if(message.type==='result')return {sessionId:id,
-    status:denied||message.permission_denials?.length?'needs_input':message.is_error||message.subtype!=='success'?'failed':'completed',
-    text:typeof message.result==='string'?message.result:''};
+   if(message.type==='result'){
+    const text=typeof message.result==='string'?message.result:'',failed=message.is_error||message.subtype!=='success';
+    const blocked=denied||message.permission_denials?.length>0;
+    // A denied call the agent worked around does not hold back a successful turn
+    // whose final answer is ready; the runner decides whether that may publish.
+    return {sessionId:id,status:blocked&&(failed||!ready(text))?'needs_input':failed?'failed':'completed',text,...(blocked?{denied:true}:{})};
+   }
   }
  }finally{await process.close();}
 }

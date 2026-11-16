@@ -115,7 +115,10 @@ Use the same connected account configuration as before. The selected agent must
 already be installed and signed in. The helper uses its configured model.
 Claude uses `acceptEdits` for work in the task folder. Other permission rules
 still apply, and interactive permission prompts are not auto-approved.
-A denial returns `needs_input`, even if the model says its work is ready.
+A denied call the agent worked around does not stop a successful turn whose final
+answer is exactly ready: the result is still a draft or an edit the creator
+reviews. A denial returns `needs_input` when the final answer is not ready, the
+turn failed, or the task would publish at once (`publish:true`).
 Each task keeps its selected agent when the receiver restarts with a new default.
 Control stores only the agent name, chat ID, and progress state.
 
@@ -233,7 +236,9 @@ The receiver writes them to `content/` and up to four attached screenshots
 (PNG, JPEG or WebP, at most 2 MiB each, plain file names whose extension matches
 the type) to `images/`, outside the app. The agent is told what the creator
 picked, where the screenshots are, to keep `content/index.html` working, and to
-add no new binary files, since the editor records edits as text.
+add no new binary files, since the editor records edits as text. Claude Code is
+also told that only its file tools (Read, Edit, Write, Glob, Grep) are available
+and that shell commands are denied, so it does not try them.
 
 When the agent returns `{"status":"ready"}`, the receiver packs `content/`,
 freezes the files in the task's `edit.json` before the first post, and posts

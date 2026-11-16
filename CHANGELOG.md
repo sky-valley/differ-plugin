@@ -8,6 +8,10 @@
   attached in `images/`, and the receiver posts the resulting files back to the
   editor as its next edit instead of saving a draft bit. A refused edit fails
   the task without a retry. Ordinary tasks are unchanged.
+- With Claude Code, a denied tool call the agent worked around no longer holds
+  back a successful turn whose final answer is ready, unless the task would
+  publish at once. Edit tasks tell Claude Code that only file tools are
+  available and shell commands are denied.
 - Release only after Control serves the matching edit task routes.
 
 ## 0.8.20
