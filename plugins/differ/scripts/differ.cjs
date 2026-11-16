@@ -39328,11 +39328,11 @@ var recoveries = {
   version_conflict: "Compare get-bit ID with your files, then deliberately bind DIR --bit ID and publish again.",
   bit_expired: "Unclaimed guest bits expire after 24 hours. Publish again with --new to start a new bit."
 };
-async function request(url2, path, { bearer, body } = {}) {
+async function request(url2, path, { bearer, body, method = body === void 0 ? "GET" : "POST" } = {}) {
   let response;
   try {
     response = await fetch(url2 + path, {
-      method: body === void 0 ? "GET" : "POST",
+      method,
       redirect: "error",
       signal: AbortSignal.timeout(45e3),
       headers: { ...bearer ? { authorization: `Bearer ${bearer}` } : {}, ...body === void 0 ? {} : { "content-type": "application/json" } },
@@ -39557,15 +39557,16 @@ async function status(directory) {
     unlock();
   }
 }
-async function publish(directory, caption2, { newBit = false, parentBitId, parentVersionId } = {}) {
+async function publish(directory, caption2, { newBit = false, parentBitId, parentVersionId, publish: now = false } = {}) {
   directory = contentDirectory(directory);
   if (!!parentBitId !== !!parentVersionId) throw problem("invalid_diff", "A diff requires the source bit and version IDs.", "Read the source bit first.");
   const words = caption2 !== void 0 ? caption(caption2) : newBit || parentBitId ? "" : readBinding(directory)?.caption || "";
+  if (now && !words) throw problem("caption_required", "Publishing now needs the caption the maker confirmed.", "Ask the maker to confirm a caption and pass it with --caption, or upload a draft they publish in Differ.");
   const config2 = await activeConfiguration();
   const artifact = pack(directory);
   const unlock = lock(directory);
   try {
-    return await publishCreator(config2, stateFor(directory, config2), directory, artifact, words, { newBit, parentBitId, parentVersionId });
+    return await publishCreator(config2, stateFor(directory, config2), directory, artifact, words, { newBit, parentBitId, parentVersionId, now });
   } finally {
     unlock();
   }
@@ -39618,7 +39619,7 @@ function claimReceipt(receipt, state) {
   if (receipt.draft) return { ...receipt, contentVerified: false, notice: "Saved as a draft, not published yet. Open the returned url to preview it, confirm its caption and publish it." };
   return receipt.state === "succeeded" && !receipt.claimed && state.bit?.claimUrl ? { ...receipt, claimUrl: state.bit.claimUrl, claimLinkPrivate: true } : receipt;
 }
-var draft = ({ requestId, caption: caption2, expectedVersionId, parentBitId, parentVersionId }, files) => ({ requestId, ...caption2 ? { caption: caption2 } : {}, expectedVersionId, files, ...parentBitId ? { parentBitId, parentVersionId } : {} });
+var draft = ({ requestId, caption: caption2, expectedVersionId, parentBitId, parentVersionId, publish: publish2 }, files) => ({ requestId, ...caption2 ? { caption: caption2 } : {}, expectedVersionId, files, ...parentBitId ? { parentBitId, parentVersionId } : {}, ...publish2 ? { publish: publish2 } : {} });
 var outcomeUnknown = (error63) => !(error63.status >= 400 && error63.status < 500) || ["reconnect_required", "upload_busy"].includes(error63.code);
 async function creatorStatus(config2, state, directory, me) {
   if (state.pending && !state.bit) throw problem("invalid_state", "The pending publication has no saved publishing identity.", "Keep the private journal and recover its publishing identity before retrying.");
@@ -39635,12 +39636,12 @@ async function creatorStatus(config2, state, directory, me) {
   }
   return claimReceipt(receipt, state);
 }
-async function publishCreator(config2, state, directory, artifact, caption2, { newBit, parentBitId, parentVersionId }) {
+async function publishCreator(config2, state, directory, artifact, caption2, { newBit, parentBitId, parentVersionId, now }) {
   const me = await account(config2);
   if (state.pending) {
     const recovered = await creatorStatus(config2, state, directory, me);
     if (recovered.state === "succeeded") return { ...recovered, recovered: true, recovery: "Recovered the previous upload. Run publish again only if more edits were requested." };
-    if (state.pending.artifactId !== artifact.artifactId || state.pending.caption !== caption2) throw problem("pending_changed", "Pending publication belongs to different content.", "Restore the pending content/caption and retry; never discard uncertain state.");
+    if (state.pending.artifactId !== artifact.artifactId || state.pending.caption !== caption2 || !!state.pending.publish !== now) throw problem("pending_changed", "Pending publication belongs to different content.", "Restore the pending content/caption and retry; never discard uncertain state.");
   }
   if (!state.pending && (newBit || parentBitId)) {
     state.previous = [...state.previous ?? [], { bit: state.bit, receipt: state.receipt, lastInput: state.lastInput }];
@@ -39663,14 +39664,15 @@ async function publishCreator(config2, state, directory, artifact, caption2, { n
     state.bit.claimUrl = reserved2.claimUrl;
     atomic(statePath(directory), state);
   }
-  if (!state.pending && state.receipt?.artifactId === artifact.artifactId && state.lastInput?.caption === caption2) return creatorStatus(config2, state, directory, me);
+  if (!state.pending && state.receipt?.artifactId === artifact.artifactId && state.lastInput?.caption === caption2 && !(now && state.receipt.draft)) return creatorStatus(config2, state, directory, me);
   const bearer = await bearerFor(config2, state, me);
   const input2 = state.pending ?? {
     requestId: (0, import_node_crypto3.randomUUID)(),
     artifactId: artifact.artifactId,
     caption: caption2,
     expectedVersionId: state.receipt?.versionId ?? null,
-    ...parentBitId ? { parentBitId, parentVersionId } : {}
+    ...parentBitId ? { parentBitId, parentVersionId } : {},
+    ...now ? { publish: true } : {}
   };
   state.pending = input2;
   atomic(statePath(directory), state);
@@ -39693,6 +39695,23 @@ async function publishCreator(config2, state, directory, artifact, caption2, { n
   if (receipt.draft) return claimReceipt(receipt, state);
   const live = await fetch(receipt.runtimeUrl, { redirect: "error", signal: AbortSignal.timeout(15e3) }).then((r) => r.ok).catch(() => false);
   return { ...claimReceipt(receipt, state), contentVerified: live, ...live ? {} : { recovery: "Publication committed; its public content could not be verified. Run status, never create a duplicate." } };
+}
+var placeBytes = 8 << 20;
+async function placeConfiguration() {
+  const config2 = await activeConfiguration();
+  if (config2.mode !== "connected") throw problem("connection_required", "A place belongs to a connected creator.", "Run connect to publish as yourself, then upload the place again.");
+  return config2;
+}
+var placeResult = (place) => ({ ...place, notice: place.draft ? "Saved as a draft, not published yet. Open reviewUrl to look at it in your profile's frame and publish it." : "Published. Visitors see it behind your profile on their next visit." });
+async function uploadPlace(directory, { publish: now = false } = {}) {
+  const artifact = pack(directory);
+  if (artifact.bytes > placeBytes) throw problem("place_too_large", "A place is at most 8 MiB.", "Compress media or remove unused assets.");
+  const config2 = await placeConfiguration();
+  return placeResult(await request(config2.url, "/v1/publishing/place/draft", { bearer: config2.token, method: "PUT", body: { files: artifact.files, ...now ? { publish: true } : {} } }));
+}
+async function publishPlaceDraft() {
+  const config2 = await placeConfiguration();
+  return placeResult(await request(config2.url, "/v1/publishing/place/draft/publish", { bearer: config2.token, body: {} }));
 }
 function preview(directory, port = 0) {
   const artifact = pack(directory);
@@ -39739,7 +39758,7 @@ var import_node_child_process3 = require("node:child_process");
 // package.json
 var package_default = {
   name: "differ-plugin",
-  version: "0.8.17",
+  version: "0.8.18",
   private: true,
   type: "module",
   engines: {
@@ -40896,10 +40915,24 @@ async function mcp() {
       caption: external_exports.string().optional().describe("The maker's own words shown over the bit: 1\u2013200 characters, at most 3 line breaks, checked before upload. Suggest it and let the maker confirm it; they confirm it again in Differ before the bit goes public. Defaults to the caption differ-bit.json saved for this bit."),
       newBit: external_exports.boolean().optional(),
       parentBitId: external_exports.string().uuid().optional(),
-      parentVersionId: external_exports.string().uuid().optional()
+      parentVersionId: external_exports.string().uuid().optional(),
+      publish: external_exports.boolean().optional().describe("Connected creators only: true only when the human explicitly asked to publish now without previewing, with the caption they confirmed. Otherwise omit it, and the upload waits as a draft.")
     },
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: true }
   }, wrap(({ directory: directory2, caption: caption2, ...options }) => publish(directory2, caption2, options)));
+  server.registerTool("publish_place", {
+    description: "Upload the connected creator's place, their own page behind their profile, when the human asks. It is saved as the place's draft and changes nothing visitors see: say it is not published yet and show its reviewUrl, where they look at it in their profile's frame and publish it. There are no guest places.",
+    inputSchema: {
+      directory,
+      publish: external_exports.boolean().optional().describe("true only when the human explicitly asked to publish the place now without looking at it first; it then replaces their live place at once.")
+    },
+    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: true }
+  }, wrap(({ directory: directory2, publish: publish2 }) => uploadPlace(directory2, { publish: publish2 })));
+  server.registerTool("publish_place_draft", {
+    description: "Publish the connected creator's place draft, replacing their live place. Only when the human asks to publish the place they looked at.",
+    inputSchema: {},
+    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: true }
+  }, wrap(publishPlaceDraft));
   server.registerTool("connect_account", { description: "When the human asks to sign in/connect, start browser approval and return its private link and verification code. Do not approve it on their behalf. This authorizes future bits, not claims of earlier guest bits.", inputSchema: {}, annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false } }, wrap(connect));
   server.registerTool("connection_status", { description: "After the human approves the connection link, finish connecting. Respect retryAfter; do not poll in a tight loop.", inputSchema: {}, annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false } }, wrap(connectionStatus));
   server.registerTool("disconnect_account", { description: "Only when the human requests it, revoke this agent connection and explicitly return future publishing to guest mode. Existing bits keep their ownership.", inputSchema: {}, annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false } }, wrap(disconnect));
@@ -40967,7 +41000,11 @@ async function main() {
     case "inspect-video":
       return output2(inspectVideo(args[0]));
     case "publish":
-      return output2(await publish(args[0], option("caption"), { newBit: args.includes("--new"), parentBitId: option("parent-bit"), parentVersionId: option("parent-version") }));
+      return output2(await publish(args[0], option("caption"), { newBit: args.includes("--new"), parentBitId: option("parent-bit"), parentVersionId: option("parent-version"), publish: args.includes("--publish") }));
+    case "place":
+      return output2(await uploadPlace(args[0], { publish: args.includes("--publish") }));
+    case "place-publish":
+      return output2(await publishPlaceDraft());
     case "preview": {
       const { server, mount, pages } = preview(args[0], Number(option("port") || 0));
       server.on("error", (error63) => {
@@ -40986,7 +41023,7 @@ async function main() {
       return;
     }
     default:
-      output2({ commands: ["doctor", "tasks [--after SEQUENCE]", "task-receive ID VERSION", "task-source ID", "task-run ID [--agent codex|claude-code|pi|opencode]", "task-open ID [--interface terminal|desktop]", "task-status ID", "tasks-watch [--agent codex|claude-code|pi|opencode]", "tasks-install [--agent codex|claude-code|pi|opencode]", "tasks-uninstall", "connect", "connection-status", "disconnect", "check APP_OR_CONTENT", "preview APP_OR_CONTENT [--port N]", "publish APP_OR_CONTENT [--caption CAPTION] [--new] [--parent-bit UUID --parent-version UUID]", "status APP_OR_CONTENT", "get-bit UUID", "bind APP_OR_CONTENT --bit UUID", "image-candidate FILE --output NEW.webp [--quality 85]", "inspect-video FILE", "mcp"], note: "Node 24+. App roots resolve content/. Keep differ-bit.json with source for team handoff; keep .differ state locally for retries. Guest publishing needs no setup. Connect optionally to publish as yourself. Never pass tokens in chat." });
+      output2({ commands: ["doctor", "tasks [--after SEQUENCE]", "task-receive ID VERSION", "task-source ID", "task-run ID [--agent codex|claude-code|pi|opencode]", "task-open ID [--interface terminal|desktop]", "task-status ID", "tasks-watch [--agent codex|claude-code|pi|opencode]", "tasks-install [--agent codex|claude-code|pi|opencode]", "tasks-uninstall", "connect", "connection-status", "disconnect", "check APP_OR_CONTENT", "preview APP_OR_CONTENT [--port N]", "publish APP_OR_CONTENT [--caption CAPTION] [--new] [--parent-bit UUID --parent-version UUID] [--publish]", "place APP_OR_CONTENT [--publish]", "place-publish", "status APP_OR_CONTENT", "get-bit UUID", "bind APP_OR_CONTENT --bit UUID", "image-candidate FILE --output NEW.webp [--quality 85]", "inspect-video FILE", "mcp"], note: "Node 24+. App roots resolve content/. Keep differ-bit.json with source for team handoff; keep .differ state locally for retries. Guest publishing needs no setup. Connect optionally to publish as yourself. Never pass tokens in chat." });
   }
 }
 main().catch((e) => {

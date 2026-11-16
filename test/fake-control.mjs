@@ -15,7 +15,7 @@ const sha256 = data => createHash('sha256').update(data).digest('hex');
 const only = (value, keys) => value && typeof value === 'object' && !Array.isArray(value) && Object.keys(value).every(key => keys.includes(key));
 
 export async function fakeControl() {
-  const requests = [], bits = new Map(), grants = new Map(), devices = new Map(), failures = [];
+  const requests = [], bits = new Map(), grants = new Map(), devices = new Map(), failures = [], places = new Map();
   const server = createServer((req, res) => {
     const chunks = [];
     req.on('data', chunk => chunks.push(chunk));
@@ -44,6 +44,7 @@ export async function fakeControl() {
     calls: () => requests.filter(r => !r.path.startsWith('/runtime/')),
     reset() { requests.length = 0; },
     bit: id => bits.get(id),
+    place: handle => places.get(handle),
     // Deliberately not derivable from capabilities: the plugin must use the one it was given.
     claimUrl: (id, proof) => `https://claims.test/private/${id}#${proof}`,
     failNextVersion(status, code, { commit = false } = {}) { failures.push({ status, code, commit }); },
@@ -89,8 +90,8 @@ export async function fakeControl() {
   const receiptView = (bit, receipt) => receipt.draft
     ? { ...receipt, claimed: true, url: `${bitURL(bit)}/draft`, expiresAt: bit.draft.expiresAt }
     : { ...receipt, runtimeUrl: runtimeURL(bit.id, receipt.versionId), url: bitURL(bit), ...(bit.owner ? { claimed: true } : { expiresAt: bit.expiresAt }) };
-  // Control's caption rule, checked only when a caption is sent: an upload's
-  // caption is optional (the agent's suggestion), as nothing here sets publish.
+  // Control's caption rule, checked when a caption is sent: an upload's
+  // caption is optional (the agent's suggestion) unless a person publishes it now.
   const validCaption = caption => typeof caption === 'string' && !!caption.trim() && [...caption].length <= 200 && Buffer.byteLength(caption) <= 800
     && !/[\u0000-\u0009\u000b-\u001f\u007f-\u009f]/.test(caption) && caption.split('\n').length <= 4;
   function publish(id, headers, body) {
@@ -98,10 +99,13 @@ export async function fakeControl() {
     strict(headers, body, ['requestId', 'caption', 'expectedVersionId', 'files', 'parentBitId', 'parentVersionId', 'publish']);
     if (!uuid.test(body.requestId) || !Array.isArray(body.files) || !body.files.every(file => only(file, ['path', 'content']))) reject(400, 'invalid_publication', 'Supply valid bit, request and expected version identifiers.');
     if (body.caption !== undefined && !validCaption(body.caption)) reject(400, 'invalid_caption', 'Supply a caption of 1–200 characters.');
+    if (body.publish !== undefined && typeof body.publish !== 'boolean') reject(400, 'invalid_json', 'Supply one valid JSON request.');
+    const now = !!body.publish && !!as.handle;
+    if (now && body.caption === undefined) reject(400, 'caption_required', "Supply a caption: the maker's own words, 1–200 characters.");
     const failure = failures.shift();
     if (failure && !failure.commit) reject(failure.status, failure.code, 'Injected failure.');
     const artifact = artifactId(body.files);
-    const fingerprint = JSON.stringify([artifact, body.caption ?? '', body.expectedVersionId, body.parentBitId ?? '', body.parentVersionId ?? '']);
+    const fingerprint = JSON.stringify([artifact, body.caption ?? '', body.expectedVersionId, body.parentBitId ?? '', body.parentVersionId ?? '', now]);
     const saved = bit?.receipts.get(body.requestId);
     if (saved) {
       if (saved.fingerprint !== fingerprint) reject(409, 'request_conflict', 'This request identifier belongs to a different publication.');
@@ -113,9 +117,11 @@ export async function fakeControl() {
     bits.set(id, target);
     const versionId = randomUUID();
     const version = { id: versionId, caption: body.caption ?? '', createdAt: new Date().toISOString() };
-    if (as.handle) target.draft = { ...version, expiresAt: new Date(Date.now() + 7 * 86_400_000).toISOString() };
-    else target.versions.push(version);
-    const receipt = { state: 'succeeded', requestId: body.requestId, bitId: id, versionId, artifactId: artifact, ...(as.handle ? { draft: true } : {}) };
+    // A person's upload waits as the bit's draft unless it publishes now,
+    // which replaces the draft.
+    if (as.handle && !now) target.draft = { ...version, expiresAt: new Date(Date.now() + 7 * 86_400_000).toISOString() };
+    else { target.versions.push(version); delete target.draft; }
+    const receipt = { state: 'succeeded', requestId: body.requestId, bitId: id, versionId, artifactId: artifact, ...(as.handle && !now ? { draft: true } : {}) };
     target.receipts.set(body.requestId, { fingerprint, receipt });
     if (failure) reject(failure.status, failure.code, 'Injected failure after commit.');
     return receiptView(target, receipt);
@@ -156,6 +162,28 @@ export async function fakeControl() {
     return issue(device.handle);
   }
   const bearerOf = headers => /^Bearer (.+)$/.exec(headers.authorization ?? '')?.[1];
+  // A creator's place, as Control's places_agents.go answers it: an upload
+  // carries its reviewUrl while it waits as a draft; a publish does not.
+  const placeView = (handle, place) => ({ url: `https://${handle}.places.test`, live: !!place.live, draft: !!place.draft,
+    ...(place.live ? { publishedAt: place.publishedAt } : {}) });
+  function uploadPlace(headers, body) {
+    const handle = agent(bearerOf(headers));
+    strict(headers, body, ['files', 'publish']);
+    if (!Array.isArray(body.files) || !body.files.every(file => only(file, ['path', 'content'])) || !body.files.some(file => file.path === 'index.html')) reject(400, 'invalid_publication', 'Supply the place\'s files with index.html at the root.');
+    const place = places.get(handle) ?? {};
+    places.set(handle, place);
+    place.draft = artifactId(body.files);
+    if (!body.publish) return { ...placeView(handle, place), reviewUrl: 'https://app.test/create/place' };
+    return publishPlace(headers, {}, handle);
+  }
+  function publishPlace(headers, body, handle = agent(bearerOf(headers))) {
+    strict(headers, body, []);
+    const place = places.get(handle);
+    if (!place?.draft) reject(404, 'place_draft_not_found', 'There is no place waiting to publish.');
+    Object.assign(place, { live: place.draft, publishedAt: new Date().toISOString() });
+    delete place.draft;
+    return placeView(handle, place);
+  }
 
   function route(method, path, headers, body) {
     let match;
@@ -174,6 +202,8 @@ export async function fakeControl() {
     if (method === 'POST' && (match = /^\/v1\/publishing\/bits\/([^/]+)\/versions$/.exec(path))) return [200, publish(match[1], headers, body)];
     if (method === 'GET' && (match = /^\/v1\/publishing\/bits\/([^/]+)\/operations\/([^/]+)$/.exec(path))) return [200, operation(match[1], match[2], headers)];
     if (method === 'GET' && (match = /^\/v1\/publishing\/bits\/([^/]+)$/.exec(path))) return [200, publicState(match[1])];
+    if (method === 'PUT' && path === '/v1/publishing/place/draft') return [200, uploadPlace(headers, body)];
+    if (method === 'POST' && path === '/v1/publishing/place/draft/publish') return [200, publishPlace(headers, body)];
     if (method === 'POST' && path === '/oauth/device') {
       if (!only(body, ['client_id', 'resource', 'scope']) || body.client_id !== 'differ-plugin') oauthReject(400, 'invalid_client', 'Device login is available for the Differ creator plugin.');
       if (body.resource !== `${control.origin}/mcp` || body.scope !== 'profile bits:write') oauthReject(400, 'invalid_target', 'Use the Differ MCP resource.');

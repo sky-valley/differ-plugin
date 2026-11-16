@@ -1,8 +1,9 @@
 # Publishing contract
 
 The local bridge exposes publisher_status, check_content, publish_directory,
-publication_status, get_bit, connect_account, connection_status and
-disconnect_account, plus optional media helpers. It transfers local asset bytes
+publication_status, get_bit, publish_place, publish_place_draft,
+connect_account, connection_status and disconnect_account, plus optional media
+helpers. It transfers local asset bytes
 without making the model transcribe them. Copied web app prompts retain their
 reserved bit and upload pass; do not replace them with a fresh plugin publication.
 
@@ -57,9 +58,12 @@ return `draft: true`, a draft `url` where the maker previews it, confirms its
 caption and publishes it, the `versionId` it becomes, and an expiry, with no
 runtime URL. The next upload names that pending version as `expectedVersionId`.
 The helper reports drafts as unpublished and skips public-content
-verification. It does not send `publish: true`; the human publishes from the
-returned draft page. The remote connector supports that flag when explicitly
-asked to skip preview. artifactId is the lowercase SHA-256 of compact UTF-8
+verification. It sends `publish: true` only when given --publish (tool input
+publish), for a human who explicitly asked to skip preview, and then needs a
+caption (caption_required, checked before upload); Control publishes that
+version at once, replacing any draft. The same content as a saved draft is sent
+again with the flag, naming the draft as `expectedVersionId`. A guest version
+is live anyway. artifactId is the lowercase SHA-256 of compact UTF-8
 JSON `{"files":{"path":"sha256 of file bytes"}}`, with paths sorted lexically.
 The helper computes that same manifest digest to recognize unchanged content.
 
@@ -84,6 +88,20 @@ differ:open counts only from preview.html within a second of a tap, and
 differ:close only from index.html, which closes it. Open and close are logged
 on the page and in the console. Stateful bundles (rules.html) need a runtime
 preview instead.
+
+## A creator's place
+
+A place is a connected creator's own page behind their profile, at most 8 MiB;
+there are no guest places (connection_required). `place APP` (publish_place)
+sends PUT /v1/publishing/place/draft with the account's bearer and {files
+[{path, base64 content}]}, plus `publish: true` with --publish. The answer is
+{url, live, draft, publishedAt, reviewUrl}: reviewUrl, the app page where the
+creator looks at the draft in their profile's frame and publishes it, comes
+only while it waits as a draft. `place-publish` (publish_place_draft) sends
+POST /v1/publishing/place/draft/publish {} and answers the place without
+reviewUrl; with no draft it is place_draft_not_found. A place has no journal or
+binding: an upload replaces the draft and an uncertain one is sent again.
+Control checks differ.json and the files as it does for the app's own upload.
 
 ## Claims and ownership
 
@@ -117,8 +135,9 @@ target_changed: run connect. Disconnect revokes the grant before selecting
 guest mode. The web app's /connect page can revoke other connections.
 
 Remote MCP at <publisher>/mcp offers get_profile, start_bit, publish_bit,
-get_bit, publish_as_me and start_upload_as_me, whose inputs name caption,
-expectedVersionId, parentBitId and parentVersionId. Guest tools use bounded
+get_bit, publish_as_me, start_upload_as_me, upload_place_as_me and
+publish_place_as_me; the bit tools' inputs name caption, expectedVersionId,
+parentBitId and parentVersionId. Guest tools use bounded
 per-bit capabilities. Protected tools advertise OAuth scopes and return MCP
 authorization challenges. Discovery uses RFC 9728 and OAuth
 authorization-server metadata, exact registered redirects, authorization code +

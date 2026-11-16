@@ -369,3 +369,89 @@ test('a caption is checked before upload; a new bit or a diff never inherits the
   assert.deepEqual([child.body.parentBitId, child.body.parentVersionId, child.body.caption], [first.bitId, first.versionId, undefined], 'a diff never copies saved words');
   assert.equal(diff.state, 'succeeded');
 });
+
+test('asked to publish now, a connected upload goes live with the confirmed caption; without one it stops before sending', async t => {
+  const h = await harness(t);
+  await h.connectAs('maker');
+  const directory = h.bit('now', { 'index.html': '<title>Now</title>live at once' });
+  h.control.reset();
+  const refused = await h.cli('publish', directory, '--publish');
+  assert.equal(refused.code, 'caption_required');
+  assert.equal(h.control.calls().some(request => request.path.endsWith('/versions')), false, 'nothing is sent without a caption');
+
+  h.control.reset();
+  const live = await h.cli('publish', directory, '--caption', 'Tap to start', '--publish');
+  const upload = h.control.calls().find(request => request.path.endsWith('/versions'));
+  assert.equal(upload.body.publish, true);
+  assert.equal(upload.body.caption, 'Tap to start');
+  assert.equal(live.draft, undefined);
+  assert.equal(live.contentVerified, true);
+  assert.equal(h.control.bit(live.bitId).versions.length, 1);
+  assert.equal(h.control.bit(live.bitId).draft, undefined);
+});
+
+test('a draft the maker approved goes live when publish is asked for the same content', async t => {
+  const h = await harness(t);
+  await h.connectAs('maker');
+  const directory = h.bit('approved', { 'index.html': '<title>Approved</title>looked at first' });
+  const draft = await h.cli('publish', directory, '--caption', 'Mine');
+  assert.equal(draft.draft, true);
+  h.control.reset();
+  const live = await h.cli('publish', directory, '--caption', 'Mine', '--publish');
+  const upload = h.control.calls().find(request => request.path.endsWith('/versions'));
+  assert.ok(upload, 'the same content is sent again to publish it, not answered from the saved draft');
+  assert.equal(upload.body.publish, true);
+  assert.equal(upload.body.expectedVersionId, draft.versionId);
+  assert.equal(live.draft, undefined);
+  assert.equal(h.control.bit(draft.bitId).versions.length, 1);
+});
+
+test('a place uploads as the connected creator\'s draft, publishes when asked, and has no guest mode', async t => {
+  const h = await harness(t);
+  const frame = '{"v":1}';
+  const directory = h.bit('place', { 'index.html': '<p>rooftop', 'differ.json': frame });
+  const guest = await h.cli('place', directory);
+  assert.equal(guest.code, 'connection_required');
+  assert.equal(h.control.calls().some(request => request.path.includes('/place')), false);
+
+  await h.connectAs('maker');
+  const token = h.config().accessToken;
+  h.control.reset();
+  const draft = await h.cli('place', directory);
+  const [upload, ...rest] = h.control.calls();
+  assert.deepEqual(rest, []);
+  assert.deepEqual([upload.method, upload.path, upload.authorization, upload.contentType], ['PUT', '/v1/publishing/place/draft', `Bearer ${token}`, 'application/json']);
+  assert.deepEqual(Object.keys(upload.body), ['files'], 'a place is not published unless asked');
+  assert.deepEqual(Object.fromEntries(upload.body.files.map(file => [file.path, file.content])), { 'differ.json': b64(frame), 'index.html': b64('<p>rooftop') });
+  assert.equal(draft.draft, true);
+  assert.equal(draft.live, false);
+  assert.equal(draft.reviewUrl, 'https://app.test/create/place');
+  assert.match(draft.notice, /not published yet/);
+
+  h.control.reset();
+  const published = await h.cli('place-publish');
+  const [publish] = h.control.calls();
+  assert.deepEqual([publish.method, publish.path, publish.authorization, publish.body], ['POST', '/v1/publishing/place/draft/publish', `Bearer ${token}`, {}]);
+  assert.equal(published.live, true);
+  assert.equal(published.draft, false);
+  assert.match(published.notice, /^Published/);
+  assert.equal((await h.cli('place-publish')).code, 'place_draft_not_found');
+
+  writeFileSync(join(directory, 'index.html'), '<p>rooftop at night');
+  h.control.reset();
+  const now = await h.cli('place', directory, '--publish');
+  assert.equal(h.control.calls()[0].body.publish, true);
+  assert.deepEqual([now.live, now.draft, now.reviewUrl], [true, false, undefined]);
+  assert.equal(h.control.place('maker').draft, undefined, 'publishing at upload leaves no draft behind');
+});
+
+test('a place over 8 MiB is refused before anything is sent', async t => {
+  const h = await harness(t);
+  await h.connectAs('maker');
+  const directory = h.bit('big-place', { 'index.html': '<p>big' });
+  writeFileSync(join(directory, 'sky.png'), Buffer.alloc((8 << 20) + 1));
+  h.control.reset();
+  const refused = await h.cli('place', directory);
+  assert.equal(refused.code, 'place_too_large');
+  assert.deepEqual(h.control.calls(), []);
+});
