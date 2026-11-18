@@ -20,14 +20,13 @@ assets in another folder, such as `assets/`. The folders `-/`, `v/`, `uploads/`,
 Guests can publish and interact locally; the bit must be claimed before
 signed-in visitors can contribute shared state.
 
-## Caption and title
+## Caption
 
 Every public version carries a caption: the maker's own words shown over the
 bit, 1–200 characters, at most 3 line breaks. Suggest one from what the human
 said, in their voice, and let them confirm or rewrite it. In Differ the maker
-confirms it again when publishing a draft or claiming a guest bit. Never write
-a title. Differ names each bit itself after it has looked at it; until then
-the bit has no name. Keep the bit's own `<title>` and headings whatever the piece needs.
+confirms it again when publishing a draft or claiming a guest bit. A bit has no
+other name. Keep the bit's own `<title>` and headings whatever the piece needs.
 
 ## The feed and the open bit
 

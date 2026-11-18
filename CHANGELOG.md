@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.9.1
+
+- Skills synced from Control: a bit has no title, only its caption, and a
+  place's `differ.bits()` items carry `caption` instead of `title`. The place
+  reference also says where Differ's back and ⋯ keys sit and how a place
+  colours them.
+
 ## 0.9.0
 
 - The task receiver runs a creator's prompt from Diff's editor with their own

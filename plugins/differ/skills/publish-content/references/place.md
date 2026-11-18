@@ -28,7 +28,8 @@ never reference `/__differ/sdk.js`. Read the creator's data only through it:
 - `const { handle, pinnedBitId } = await differ.profile();`
 - `const { items, next } = await differ.bits({ limit: 24 });` then
   `differ.bits({ limit: 24, after: next })`. Items are
-  `{ id, title, cover, url, preview }`: `cover` is a picture URL or null, so
+  `{ id, caption, cover, url, preview }`: `caption` is the current
+  version's caption, `cover` is a picture URL or null, so
   give it `loading="lazy"`; `url` is the bit's page and `preview` its 390×520
   feed preview, or null when it has none.
 - `differ.followers()` and `differ.following()` page the same way; their items
@@ -97,7 +98,9 @@ it when the place is uploaded and refuses anything it can't draw well, with a
 ```
 
 - `at` is the top-left corner. Keep both fully between 98 and 619 px from the
-  top, and don't let them overlap.
+  top, and don't let them overlap. y 98 is right under Differ's back and ⋯
+  keys on every phone: Differ moves the name and Follow with them, and says
+  where in `layout`.
 - `font`: a kit font by name (bebas-neue, fraunces, nunito, pixelify-sans,
   zen-maru-gothic), or the path of a `.woff2` in the place of at most 300 KB.
   Leave it out for Differ's own.
@@ -110,6 +113,10 @@ it when the place is uploaded and refuses anything it can't draw well, with a
   `following` colours, after the tap.
 - Follow is 44 to 96 px tall. Differ writes the words: @handle, Follow and
   Following.
+- Optional `corners` colours Differ's back and ⋯ keys to suit the place:
+  `{ "background": "#fffdf6", "color": "#1b1a17", "border": { "color": "#1b1a17", "width": 2 } }`.
+  The icon `color` contrasts with `background` at least 4.5:1; `border` is
+  optional, width 0 to 6. Without it the keys are Differ's dark glass.
 
 ## Uploading and publishing it
 
