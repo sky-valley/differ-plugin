@@ -74,7 +74,7 @@ Portal: <https://claude.ai/directory/manage>. Two submissions.
 - URL `https://publish.getdiffer.com/mcp`.
 - Authentication OAuth, **required only when the server asks** (lazy auth),
   client registration by DCR. Guests publish with no account; only
-  `get_profile`, `publish_as_me` and `start_upload_as_me` ask.
+  `get_profile`, `publish_as_me`, `upload_place_as_me` and `publish_place_as_me` ask.
 - A connector added to a separate test Claude org does not change the submitted
   one; nothing to refresh as long as URL and auth are unchanged.
 

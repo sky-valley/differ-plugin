@@ -4,7 +4,9 @@
 // the OpenAI domain-verification token.
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
-const origin = 'https://publish.getdiffer.com';
+import { publisher } from '../helper/connection.mjs';
+// DIFFER_PUBLISH_URL points it at another Control, such as a local one.
+const origin = publisher();
 const endpoint = `${origin}/mcp`;
 // Well-formed arguments, so the call reaches the account check rather than schema
 // validation. Without a token nothing is uploaded or published.
@@ -12,7 +14,6 @@ const html = Buffer.from('<p>preflight</p>');
 const accountTools = {
   get_profile: () => ({}),
   publish_as_me: () => ({ id: crypto.randomUUID(), requestId: crypto.randomUUID(), files: [{ path: 'index.html', content: html.toString('base64') }] }),
-  start_upload_as_me: async () => ({ id: crypto.randomUUID(), requestId: crypto.randomUUID(), files: [{ path: 'index.html', sha256: Buffer.from(await crypto.subtle.digest('SHA-256', html)).toString('hex') }] }),
 };
 const client = new Client({ name: 'differ-directory-preflight', version: '1' });
 const findings = [];
@@ -31,6 +32,10 @@ const anonymousCall = async (name, args, userAgent) => {
 try {
   await client.connect(new StreamableHTTPClientTransport(new URL(endpoint)));
   const { tools } = await client.listTools();
+  // OpenAI refuses a tool that hands the model a credential (review, 2026-11).
+  for (const tool of tools) {
+    if (['start_upload_as_me', 'start_bit'].includes(tool.name)) findings.push(`${tool.name} returns a credential: OpenAI rejects it`);
+  }
   for (const tool of tools) {
     // Both directories require a human title on every tool.
     if (!tool.title?.trim()) findings.push(`${tool.name}: missing title`);

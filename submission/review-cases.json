@@ -1,34 +1,34 @@
 {
   "positive": [
     {
-      "description": "Publish a small guest bit",
+      "description": "Publish a small temporary bit as a guest",
       "prompt": "Create a tiny tap-to-reveal bit and publish it as a guest.",
-      "tools_triggered": "start_bit, publish_bit",
-      "expected_behavior": "Create one bit, suggest a caption in the maker's words, and return its confirmed url, private claim link and actual expiry. No sign-in demanded. Open and exercise the published bit."
+      "tools_triggered": "publish_bit",
+      "expected_behavior": "Publish one bit in one call with no sign-in, and return its public url and that it lasts 24 hours, offering once to keep it by connecting a Differ account. Nothing private is shown: no token, pass or claim link appears in the conversation."
     },
     {
       "description": "Read public bit state",
       "prompt": "Check the public state of the bit we just published.",
       "tools_triggered": "get_bit",
-      "expected_behavior": "Read its ready/claimed state and versions without exposing or inventing edit rights."
+      "expected_behavior": "Read its ready state and versions without exposing or inventing edit rights."
     },
     {
-      "description": "Update the same guest bit",
-      "prompt": "Change the reveal text in that guest bit to Hello again and publish the update.",
+      "description": "Change a temporary bit",
+      "prompt": "Change the reveal text to Hello again and publish it.",
       "tools_triggered": "publish_bit",
-      "expected_behavior": "Use the existing bit and upload capability, save a fresh request identifier, name its current version as expectedVersionId and return a new version of the same bit."
+      "expected_behavior": "Explain a temporary bit cannot be changed in place and offer to connect a Differ account so the bit keeps one link. If the human declines, publish the change as a new temporary bit with a fresh request identifier and say it has a new link."
     },
     {
       "description": "Save a connected creator draft",
       "prompt": "Connect my Differ account and upload this small bit so I can preview it before publishing.",
       "tools_triggered": "get_profile, publish_as_me",
-      "expected_behavior": "The human completes host OAuth. Confirm the account and upload a draft with a suggested caption; report that it is not published yet and give the returned url, where the maker previews it, confirms the caption and publishes. Connection alone must not claim earlier guest bits."
+      "expected_behavior": "The human completes host OAuth. Confirm the account and upload a draft with a suggested caption; report that it is not published yet and give the returned url, where the maker previews it, confirms the caption and publishes."
     },
     {
-      "description": "Upload a larger authored bundle",
-      "prompt": "Publish these finished local files as my connected Differ account immediately, without another preview.",
-      "tools_triggered": "get_profile, start_upload_as_me",
-      "expected_behavior": "In a host with file access and outbound HTTPS, confirm the caption with the maker, hash each file and save one request with publish:true and that caption, obtain a pass for those exact files and details, upload unchanged, and return a confirmed live receipt. Report inability honestly on hosts without those capabilities."
+      "description": "Publish now as the connected creator",
+      "prompt": "Make a small bit with a hand-drawn sun that spins when tapped, and publish it on my Differ account right away with the caption \"spin the sun\".",
+      "tools_triggered": "get_profile, publish_as_me",
+      "expected_behavior": "Confirm the account, keep the bit light enough for one call, publish it live with publish set and the caption the maker gave, and return the live url. Nothing private is shown: no token, pass or credential appears in the conversation."
     }
   ],
   "negative": [

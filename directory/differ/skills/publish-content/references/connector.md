@@ -1,14 +1,18 @@
 # Publishing with the Differ connector
 
 The connector's tools run on Differ's server and cannot read the human's files.
-If you can run code with outbound HTTPS, upload anything but a small bit to an
-upload URL: a guest bit's comes from `start_bit`, a connected creator's
-from `start_upload_as_me`. Otherwise send every finished file in the call,
-base64 encoded, with `index.html` at the root: that suits a small, mostly-text
-bit, and a whole call must stay under 4 MiB. If an upload URL cannot be
-reached, publish a small bit through the call instead of starting again, and
-tell the human how to allow its host, as the skill's section on Differ being
-unreachable says.
+A bit travels in the call: every finished file base64 encoded, with
+`index.html` at the root, and the whole call under 4 MiB. Keep a bit light:
+compress images (JPEG or WebP), prefer SVG and CSS to bitmaps, and leave out
+anything it does not use. No tool answers with a credential, and none needs
+one: a guest needs nothing, a connected creator's sign-in is the host's.
+
+Every refusal is JSON with a `code` and a `message` that says what to do next;
+do that, and tell the human plainly when it needs them. A call too large to
+run says it is too large: make the bit lighter and retry, or give the
+human a .zip of the content with `index.html` at its root for Differ's Create
+page, or, on a computer, install the Differ plugin, whose helper publishes
+bits up to 20 MiB from disk.
 
 The connector's sign-in belongs to the human's account, not this machine, so
 in a cloud sandbox it is usually already connected: check `get_profile` before
@@ -16,23 +20,22 @@ asking them to sign in.
 
 ## As a guest
 
-1. `start_bit` reserves one new bit and returns its `id`, a private
-   `uploadToken`, its `uploadUrl`, the private `claimUrl` and `expiresAt`. Call
-   it once per new bit and keep all of them for new versions.
-2. Publish with a fresh `requestId` UUID saved before sending, an optional
-   `caption`, `expectedVersionId` (null first, then the last confirmed
-   `versionId`) and `files` as `{path, content}` pairs, content base64 encoded:
-   - over HTTPS, POST that JSON (`Content-Type: application/json`) to
-     `uploadUrl` with `Authorization: Bearer <uploadToken>`, without following
-     redirects;
-   - or call `publish_bit` with the same fields plus `id` and
-     `uploadToken`.
-3. After an uncertain response, find out before resending. Over HTTPS, GET the
-   upload URL with its final `/versions` replaced by `/operations/<requestId>`,
-   with the same header: a receipt means it landed; `{"state":"unknown"}` means
-   resend the identical request. Through the tool, retry the identical call.
-4. Return the public `url`, the private `claimUrl` and `expiresAt`. A guest
-   caption is provisional: the maker confirms their caption when they claim.
+`publish_bit` publishes a temporary bit in one call, when the human asks to
+publish: a fresh `requestId` UUID saved before sending, an optional `caption`
+and `files` as `{path, content}` pairs, content base64 encoded. After an
+uncertain response, retry the identical call: the same `requestId` answers the
+same bit. Its public `url` works for 24 hours, until `expiresAt`.
+
+1. Give the human the public `url` and say it lasts 24 hours.
+2. Offer once to keep it. If they want to, they connect their Differ account
+   through the host's sign-in, you ask them for its caption in chat, and you
+   publish the same files with `publish_as_me`, a fresh `id` and
+   `"publish": true`. That is a permanent bit in their name, with a new link.
+3. A temporary bit cannot be changed. When the human asks for a change, offer
+   to connect first so the bit keeps one link from then on; if they would
+   rather not, publish the change with `publish_bit` and a new `requestId`, a
+   new temporary bit with a new link, and say so.
+4. Past the guest limits a refusal says so: connecting lifts them.
 
 ## As the connected creator
 
@@ -51,26 +54,6 @@ The draft keeps the `caption` you suggest, if any. The receipt's `expiresAt`
 is when an unpublished draft lapses. Add `"publish": true` to the request only
 when the human explicitly asked to publish now without previewing; it then
 goes live at once, replacing any draft, and needs the `caption` they confirmed.
-
-Anything but a small bit as the creator uploads over HTTPS:
-
-1. Build and save the publishing request as a guest would: a fresh
-   `requestId`, any `caption`, `expectedVersionId`, any `parentBitId` and
-   `parentVersionId`, and every file's base64 `content`.
-2. Call `start_upload_as_me` with the bit's `id` and the same `requestId`,
-   `caption`, `expectedVersionId`, `parentBitId`, `parentVersionId` and any
-   `publish`, and `files` as `{path, sha256}` pairs: each file's path and the lowercase hex
-   SHA-256 of its decoded bytes, not of the base64. It returns an `uploadUrl`,
-   a private `uploadToken` and `expiresAt`, at most 30 minutes away.
-3. POST the saved request (`Content-Type: application/json`) to `uploadUrl`
-   with `Authorization: Bearer <uploadToken>`, without following redirects.
-   The pass makes only that publication and refuses any changed file or
-   detail; after a change, start a new upload with a fresh `requestId`.
-   Recover an uncertain response as a guest would, with the same header. If
-   the pass has expired, call `start_upload_as_me` again with the identical
-   arguments and the same `requestId`: a publication that already landed
-   returns its receipt through the new pass, and one that did not can be
-   sent unchanged.
 
 ## The creator's place
 

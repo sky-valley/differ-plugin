@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.9.2
+
+- The connector's tools no longer return any credential. The connected
+  upload pass tool is gone: a connected bit travels in `publish_as_me`'s call,
+  under 4 MiB, and a call over that answers a readable refusal saying how to
+  recover (make it lighter, hand the human a .zip for the Create page, or use
+  the local helper). A guest publishes a temporary 24-hour bit in one
+  `publish_bit` call with no upload pass or claim link, and is offered to keep
+  it by connecting. Every refusal carries a next step.
+- Skills synced from Control to match. Review cases follow the new guest flow.
+
 ## 0.9.1
 
 - Skills synced from Control: a bit has no title, only its caption, and a
