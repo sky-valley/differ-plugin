@@ -82,8 +82,8 @@ it, read [place](references/place.md).
 - With the Differ helper (the plugin's `publish_directory` tool or its
   `differ.cjs` script), follow [helper](references/helper.md). It reads files
   from disk, so prefer it whenever it is available, except as below.
-- With the Differ connector (`start_bit`, `publish_bit`,
-  `publish_as_me`), follow [connector](references/connector.md).
+- With the Differ connector (`publish_bit`, `publish_as_me`), follow
+  [connector](references/connector.md).
 - With both, when `get_profile` names a connected creator and the helper is
   not already connected, publish through the connector. Its sign-in belongs to
   the human's account and lasts across sessions; the helper's is saved on this
@@ -101,8 +101,9 @@ Each path's reference says how to connect an account.
    setup; do not block or nag for sign-in first. Never ask for credentials in
    chat. A guest upload's caption is optional and provisional: the maker
    confirms it when claiming.
-2. Return the confirmed public URL. When you hold an unclaimed bit's private
-   claim link, also prominently return it with the **actual expiry deadline**:
+2. Return the confirmed public URL. A connector guest bit is temporary and has
+   no claim link: follow [connector](references/connector.md) to offer keeping
+   it. When you hold an unclaimed bit's private claim link, also prominently return it with the **actual expiry deadline**:
    “Live by link. Claim it before [deadline] to keep it and add it to the
    feed.” Never publish that private link inside the content or share it as
    the public bit link.
@@ -136,6 +137,12 @@ Each path's reference says how to connect an account.
    Differ's controls sit
    outside the content. Separate committed publication, HTTP verification, and
    interaction actually observed in a browser.
+
+Never leave the human at a dead end. Every Differ refusal says what to do
+next: do it, or tell the human plainly what it needs from them. A bit too
+large to send has three ways out: make it lighter, give the human a .zip with
+`index.html` at its root for Differ's Create page, or, on a computer, install
+the Differ plugin, whose helper publishes from disk.
 
 Follow connection errors' recovery. Restricted networking needs normal network
 permission, not new credentials: see [when Differ can't be reached](#when-differ-cant-be-reached). Do not routinely patch the publisher, edit DNS,

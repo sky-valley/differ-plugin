@@ -134,11 +134,13 @@ never falls back to guest. A connection saved for another publisher fails with
 target_changed: run connect. Disconnect revokes the grant before selecting
 guest mode. The web app's /connect page can revoke other connections.
 
-Remote MCP at <publisher>/mcp offers get_profile, start_bit, publish_bit,
-get_bit, publish_as_me, start_upload_as_me, upload_place_as_me and
-publish_place_as_me; the bit tools' inputs name caption, expectedVersionId,
-parentBitId and parentVersionId. Guest tools use bounded
-per-bit capabilities. Protected tools advertise OAuth scopes and return MCP
+Remote MCP at <publisher>/mcp offers get_profile, publish_bit, get_bit,
+publish_as_me, upload_place_as_me and publish_place_as_me; the bit tools'
+inputs name caption, parentBitId and parentVersionId, and publish_as_me's
+expectedVersionId. No tool answers with a credential. publish_bit publishes a
+temporary 24-hour guest bit in one call, retry-safe by requestId, with no
+claim link; keeping it means connecting and publishing it with publish_as_me.
+Every refusal carries a next step. Protected tools advertise OAuth scopes and return MCP
 authorization challenges. Discovery uses RFC 9728 and OAuth
 authorization-server metadata, exact registered redirects, authorization code +
 S256 PKCE, resource validation, and revocation. Dynamic client registration is

@@ -12,8 +12,8 @@
     },
     {
       "uri": "skill://publish-content/SKILL.md",
-      "digest": "sha256:b277d68772d749bf5e84b8f2055310619d4a54428b18ec53894a88d0c2b41acc",
-      "size": 9325
+      "digest": "sha256:7985f1e7ca96cd91dedd53de847c761614e5e3d9b1e05483c24033dea51bdc8e",
+      "size": 9796
     },
     {
       "uri": "skill://publish-content/examples/board/README.md",
@@ -32,8 +32,8 @@
     },
     {
       "uri": "skill://publish-content/references/connector.md",
-      "digest": "sha256:73f791d5e68933cd8cce5b3acda971acacfba32c8af584dcc479becc636877e8",
-      "size": 5193
+      "digest": "sha256:66278e88045fca08dcd72c4e19bd34a7e59e0e76d76fbaabbb1e9992ed1e9ff1",
+      "size": 4085
     },
     {
       "uri": "skill://publish-content/references/helper.md",
