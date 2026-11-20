@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Every bit needs a root `preview.html`, the 390×520 interactive preview
+  Differ shows of it everywhere outside the open bit. `check` and `publish`
+  now fail without one (`missing_preview`) instead of warning, as Differ
+  refuses such a bit. A place needs none.
+
 ## 0.9.2
 
 - The connector's tools no longer return any credential. The connected

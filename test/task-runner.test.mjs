@@ -11,7 +11,7 @@ test('runner freezes publication bytes and retries one publication after a lost 
  const f=await fixture(t); const env={DIFFER_CONFIG:process.env.DIFFER_CONFIG,DIFFER_PUBLISH_URL:process.env.DIFFER_PUBLISH_URL};
  process.env.DIFFER_CONFIG=f.config;process.env.DIFFER_PUBLISH_URL=f.url;
  t.after(()=>{for(const [k,v] of Object.entries(env)){if(v===undefined)delete process.env[k];else process.env[k]=v;}});
- const dir=taskDirectory(task.id);mkdirSync(join(dir,'workspace','content'),{recursive:true,mode:0o700});writeFileSync(join(dir,'workspace','content','index.html'),'<h1>Done</h1>');
+ const dir=taskDirectory(task.id);mkdirSync(join(dir,'workspace','content'),{recursive:true,mode:0o700});writeFileSync(join(dir,'workspace','content','index.html'),'<h1>Done</h1>');writeFileSync(join(dir,'workspace','content','preview.html'),'<p>Look</p>');
  writeFileSync(join(dir,'workspace','source.json'),JSON.stringify({bitId:bit,versionId:version}));
  const record={schema:1,id:task.id,claimId,publisher:f.url,offerVersion:1,state:'ready',prepared:true,sessionId:bit,delivery:{parentBitId:bit,parentVersionId:version,prompt:JSON.stringify({schema:1,instructions:'Use my data',caption:'My own caption',publish:false})}};
  saveTask(record);let uploads=0; const bodies=[];
@@ -118,7 +118,7 @@ test('new bit starts with an empty workspace and returns an unparented private d
   assert.match(options.prompt,/new bit/);
   assert.match(options.prompt,/index.html/);
   assert.match(options.prompt,/private draft/);
-  writeFileSync(join(options.cwd,'content','index.html'),'<h1>Marble game</h1>');
+  writeFileSync(join(options.cwd,'content','index.html'),'<h1>Marble game</h1>');writeFileSync(join(options.cwd,'content','preview.html'),'<p>Look</p>');
   await options.onSession(bit);
   return {status:'completed',text:'{"status":"ready"}'};
  }});
@@ -134,7 +134,7 @@ test('a worked-around denial still waits for input on a task that would publish 
  Object.assign(process.env,{DIFFER_CONFIG:f.config,DIFFER_PUBLISH_URL:f.url});
  t.after(()=>{for(const[k,v]of Object.entries(before)){if(v===undefined)delete process.env[k];else process.env[k]=v;}});
  const dir=taskDirectory(task.id);mkdirSync(join(dir,'workspace','content'),{recursive:true,mode:0o700});
- writeFileSync(join(dir,'workspace','content','index.html'),'<h1>Data</h1>');
+ writeFileSync(join(dir,'workspace','content','index.html'),'<h1>Data</h1>');writeFileSync(join(dir,'workspace','content','preview.html'),'<p>Look</p>');
  writeFileSync(join(dir,'workspace','source.json'),JSON.stringify({bitId:bit,versionId:version}));
  saveTask({schema:1,id:task.id,claimId,publisher:f.url,state:'received',prepared:true,delivery:{parentBitId:bit,parentVersionId:version,prompt:JSON.stringify({schema:1,instructions:'Use my data',caption:'Live now',publish:true})}});
  f.state.reply=call=>call.path.endsWith('/versions')?assert.fail('a denied turn must not publish at once'):{status:200,body:{id:task.id,state:'received',version:4}};

@@ -17,11 +17,12 @@ test('bundled checker accepts asset directories but rejects linked files', () =>
   try {
     mkdirSync(join(temporary, 'assets'));
     writeFileSync(join(temporary, 'index.html'), '<!doctype html><link rel="stylesheet" href="./assets/style.css">');
+    writeFileSync(join(temporary, 'preview.html'), '<!doctype html><p>Look</p>');
     const asset = join(temporary, 'assets/style.css');
     writeFileSync(asset, 'body { color: black; }');
     const valid = check();
     assert.equal(valid.status, 0, valid.stderr);
-    assert.equal(JSON.parse(valid.stdout).files, 2);
+    assert.equal(JSON.parse(valid.stdout).files, 3);
     const linked = join(temporary, 'assets/linked.css');
     for (const link of [linkSync, symlinkSync]) {
       link(asset, linked);

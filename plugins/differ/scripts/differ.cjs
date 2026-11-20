@@ -39008,12 +39008,16 @@ function readBinding(directory) {
   }
   return value;
 }
+function requirePreview(artifact) {
+  if (!artifact.files.some((f) => f.path === "preview.html"))
+    throw problem("missing_preview", "A bit needs a root preview.html.", "Add preview.html at the root: the 390\xD7520 interactive preview Differ shows of the bit everywhere outside it (see the publish-content skill).");
+  return artifact;
+}
 function assetReport(artifact) {
   const assets = artifact.files.map((f) => ({ path: f.path, bytes: Buffer.byteLength(f.content, "base64") })).sort((a, b) => b.bytes - a.bytes || a.path.localeCompare(b.path));
   const stateful = artifact.files.some((f) => f.path === "rules.html");
   const text = artifact.files.filter((f) => /\.(html|css|js|mjs|json|txt|webmanifest)$/.test(f.path)).map((f) => Buffer.from(f.content, "base64").toString()).join("\n");
   const warnings = assets.filter((f) => /\.(png|jpe?g)$/i.test(f.path) && f.bytes > 512 * 1024).map((f) => ({ code: "large_image", path: f.path, bytes: f.bytes, action: "Compare a compressed candidate visually; retain the original." }));
-  if (!artifact.files.some((f) => f.path === "preview.html")) warnings.push({ code: "missing_preview", path: "preview.html", action: "Add a root preview.html: the 390\xD7520 interactive preview the feed shows. Without it the feed shows index.html scaled into that box." });
   return {
     largestAssets: assets.slice(0, 10),
     warnings,
@@ -39504,7 +39508,7 @@ function pack(directory) {
   return { root, files, artifactId: validated.artifactId, bytes: validated.bytes };
 }
 function check2(directory) {
-  const artifact = pack(directory);
+  const artifact = requirePreview(pack(directory));
   const participation = artifact.files.some((file2) => file2.path === "rules.html") ? {
     state: "unverified",
     rules: "rules.html",
@@ -39570,7 +39574,7 @@ async function publish(directory, caption2, { newBit = false, parentBitId, paren
   const words = caption2 !== void 0 ? caption(caption2) : newBit || parentBitId ? "" : readBinding(directory)?.caption || "";
   if (now && !words) throw problem("caption_required", "Publishing now needs the caption the maker confirmed.", "Ask the maker to confirm a caption and pass it with --caption, or upload a draft they publish in Differ.");
   const config2 = await activeConfiguration();
-  const artifact = pack(directory);
+  const artifact = requirePreview(pack(directory));
   const unlock = lock(directory);
   try {
     return await publishCreator(config2, stateFor(directory, config2), directory, artifact, words, { newBit, parentBitId, parentVersionId, now });

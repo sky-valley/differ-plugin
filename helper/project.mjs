@@ -42,12 +42,19 @@ export function readBinding(directory) {
   catch { throw problem('invalid_binding', 'Invalid publisher origin in differ-bit.json.', 'Restore the intended public publisher origin.'); }
   return value;
 }
+// Every bit has a root preview.html, the 390×520 interactive preview Differ
+// shows of it outside its open view; Differ refuses a bit without one. A
+// place needs none.
+export function requirePreview(artifact) {
+  if (!artifact.files.some(f => f.path === 'preview.html'))
+    throw problem('missing_preview', 'A bit needs a root preview.html.', 'Add preview.html at the root: the 390×520 interactive preview Differ shows of the bit everywhere outside it (see the publish-content skill).');
+  return artifact;
+}
 export function assetReport(artifact) {
   const assets = artifact.files.map(f => ({ path: f.path, bytes: Buffer.byteLength(f.content, 'base64') })).sort((a,b) => b.bytes - a.bytes || a.path.localeCompare(b.path));
   const stateful = artifact.files.some(f => f.path === 'rules.html');
   const text = artifact.files.filter(f => /\.(html|css|js|mjs|json|txt|webmanifest)$/.test(f.path)).map(f => Buffer.from(f.content, 'base64').toString()).join('\n');
   const warnings = assets.filter(f => /\.(png|jpe?g)$/i.test(f.path) && f.bytes > 512 * 1024).map(f => ({ code: 'large_image', path: f.path, bytes: f.bytes, action: 'Compare a compressed candidate visually; retain the original.' }));
-  if (!artifact.files.some(f => f.path === 'preview.html')) warnings.push({ code: 'missing_preview', path: 'preview.html', action: 'Add a root preview.html: the 390×520 interactive preview the feed shows. Without it the feed shows index.html scaled into that box.' });
   return { largestAssets: assets.slice(0, 10), warnings,
     // These are consumed by the runtime at installation, not by an HTML link.
     unreferencedCandidates: assets.filter(f => !['index.html', 'preview.html'].includes(f.path)

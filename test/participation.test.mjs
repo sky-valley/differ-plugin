@@ -8,7 +8,7 @@ import { check } from '../helper/client.mjs';
 test('a statically valid stateful bundle explicitly remains behaviorally unverified', () => {
   const directory = mkdtempSync(join(tmpdir(), 'differ-participation-'));
   try {
-    writeFileSync(join(directory, 'index.html'), '<h1>Vote</h1>');
+    writeFileSync(join(directory, 'index.html'), '<h1>Vote</h1>'); writeFileSync(join(directory, 'preview.html'), '<p>Vote</p>');
     writeFileSync(join(directory, 'rules.html'), '<p>No useful grants at all</p>');
     mkdirSync(join(directory, 'data'));
     writeFileSync(join(directory, 'data', 'answers.html'), '<ul id="answers"></ul>');

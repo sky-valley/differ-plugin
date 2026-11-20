@@ -11,6 +11,7 @@ const bundle = fileURLToPath(new URL('../plugins/differ/scripts/differ.cjs', imp
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const json = path => JSON.parse(readFileSync(path, 'utf8'));
 const b64 = text => Buffer.from(text).toString('base64');
+const preview = '<p>Tap to open</p>';
 const lines = requests => requests.map(r => `${r.method} ${r.path}`);
 
 // Each test drives the bundled CLI, as agents and the MCP bridge do, against a
@@ -45,7 +46,7 @@ test('guest publishing reserves once, sends the upload pass as a bearer and the 
   const h = await harness(t);
   const html = '<!doctype html><title>Guest piece</title><link rel="stylesheet" href="style.css"><h1>One</h1>';
   const css = 'h1{color:red}';
-  const directory = h.bit('guest', { 'index.html': html, 'style.css': css });
+  const directory = h.bit('guest', { 'preview.html': preview, 'index.html': html, 'style.css': css });
 
   const first = await h.cli('publish', directory, '--caption', '  Tap the\nred one  ');
   const id = first.bitId;
@@ -62,7 +63,7 @@ test('guest publishing reserves once, sends the upload pass as a bearer and the 
   assert.equal(upload.body.expectedVersionId, null);
   assert.equal(upload.body.caption, 'Tap the\nred one', 'the caption is sent trimmed, never taken from the page title');
   assert.match(upload.body.requestId, uuid);
-  assert.deepEqual(upload.body.files, [{ path: 'index.html', content: b64(html) }, { path: 'style.css', content: b64(css) }]);
+  assert.deepEqual(upload.body.files, [{ path: 'index.html', content: b64(html) }, { path: 'preview.html', content: b64(preview) }, { path: 'style.css', content: b64(css) }]);
 
   assert.equal(first.state, 'succeeded');
   assert.equal(first.versionId, h.control.bit(id).versions[0].id);
@@ -107,7 +108,7 @@ test('guest publishing reserves once, sends the upload pass as a bearer and the 
 
 test('an unknown outcome keeps the exact saved request; a 4xx rejection drops it', async t => {
   const h = await harness(t);
-  const directory = h.bit('retry', { 'index.html': '<title>Retry</title>v1' });
+  const directory = h.bit('retry', { 'preview.html': preview, 'index.html': '<title>Retry</title>v1' });
   const edit = text => writeFileSync(join(directory, 'index.html'), `<title>Retry</title>${text}`);
   const first = await h.cli('publish', directory);
   const id = first.bitId;
@@ -183,7 +184,7 @@ test('connecting uses the device grant, saves the account handle and uploads dra
   assert.deepEqual(h.control.calls().map(r => [r.method, r.path, r.authorization]), [['GET', '/v1/publishing/account', `Bearer ${tokens.access_token}`]]);
   h.control.reset();
 
-  const directory = h.bit('mine', { 'index.html': '<title>Mine</title>made by me' });
+  const directory = h.bit('mine', { 'preview.html': preview, 'index.html': '<title>Mine</title>made by me' });
   const receipt = await h.cli('publish', directory);
   assert.match(receipt.bitId, uuid);
   const [whoami, upload, ...rest] = h.control.calls();
@@ -201,8 +202,8 @@ test('connecting uses the device grant, saves the account handle and uploads dra
 
 test('a claimed guest bit refuses its upload pass and is updated as its connected owner; another owner stops before upload', async t => {
   const h = await harness(t);
-  const mine = h.bit('mine', { 'index.html': '<title>Mine</title>v1' });
-  const theirs = h.bit('theirs', { 'index.html': '<title>Theirs</title>v1' });
+  const mine = h.bit('mine', { 'preview.html': preview, 'index.html': '<title>Mine</title>v1' });
+  const theirs = h.bit('theirs', { 'preview.html': preview, 'index.html': '<title>Theirs</title>v1' });
   const guest = await h.cli('publish', mine);
   const other = await h.cli('publish', theirs);
   h.control.claim(guest.bitId, 'maker', 'Mine, claimed');
@@ -240,7 +241,7 @@ test('a claimed guest bit refuses its upload pass and is updated as its connecte
 
 test('refresh keeps the handle, unclaimed guest drafts keep their pass, a refused token never falls back to guest, and disconnect revokes', async t => {
   const h = await harness(t);
-  const draft = h.bit('draft', { 'index.html': '<title>Draft</title>v1' });
+  const draft = h.bit('draft', { 'preview.html': preview, 'index.html': '<title>Draft</title>v1' });
   await h.cli('publish', draft);
   await h.connectAs('maker');
   const before = h.config();
@@ -281,7 +282,7 @@ test('refresh keeps the handle, unclaimed guest drafts keep their pass, a refuse
   assert.equal(refused.code, 'reconnect_required');
   assert.match(refused.recovery, /Run connect/);
   assert.deepEqual(lines(h.control.calls()), ['GET /v1/publishing/account'], 'the guest draft is not published with its upload pass');
-  const fresh = h.bit('fresh', { 'index.html': '<title>Fresh</title>new' });
+  const fresh = h.bit('fresh', { 'preview.html': preview, 'index.html': '<title>Fresh</title>new' });
   h.control.reset();
   assert.equal((await h.cli('publish', fresh)).code, 'reconnect_required');
   assert.deepEqual(lines(h.control.calls()), ['GET /v1/publishing/account'], 'no guest reservation');
@@ -306,7 +307,7 @@ test('OAuth errors surface as code and message', async t => {
 test('a connected draft is reported as unpublished and replaced by naming its pending version', async t => {
   const h = await harness(t);
   await h.connectAs('maker');
-  const directory = h.bit('draft-receipt', { 'index.html': '<title>Draft</title>First' });
+  const directory = h.bit('draft-receipt', { 'preview.html': preview, 'index.html': '<title>Draft</title>First' });
   h.control.reset();
   const first = await h.cli('publish', directory);
   assert.equal(first.draft, true);
@@ -331,7 +332,7 @@ test('a connected draft is reported as unpublished and replaced by naming its pe
 
 test('an older helper\'s differ-post.json or journal stops every command before anything is sent', async t => {
   const h = await harness(t);
-  const directory = h.bit('older', { 'index.html': '<title>Older</title>v1' });
+  const directory = h.bit('older', { 'preview.html': preview, 'index.html': '<title>Older</title>v1' });
   const legacy = { version: 1, publisher: h.control.origin, postId: '11111111-1111-4111-8111-111111111111', revisionId: '22222222-2222-4222-8222-222222222222', title: 'Older' };
   writeFileSync(join(directory, 'differ-post.json'), JSON.stringify(legacy));
   for (const args of [['publish', directory, '--caption', 'Older'], ['check', directory], ['status', directory], ['bind', directory, '--bit', legacy.postId]]) {
@@ -351,7 +352,7 @@ test('an older helper\'s differ-post.json or journal stops every command before 
 
 test('a caption is checked before upload; a new bit or a diff never inherits the saved caption', async t => {
   const h = await harness(t);
-  const directory = h.bit('words', { 'index.html': '<title>Words</title>v1' });
+  const directory = h.bit('words', { 'preview.html': preview, 'index.html': '<title>Words</title>v1' });
   for (const caption of ['   ', 'x'.repeat(201), 'one\ntwo\nthree\nfour\nfive', 'tab\tinside']) {
     assert.equal((await h.cli('publish', directory, '--caption', caption)).code, 'invalid_caption', JSON.stringify(caption));
   }
@@ -380,7 +381,7 @@ test('a caption is checked before upload; a new bit or a diff never inherits the
 test('asked to publish now, a connected upload goes live with the confirmed caption; without one it stops before sending', async t => {
   const h = await harness(t);
   await h.connectAs('maker');
-  const directory = h.bit('now', { 'index.html': '<title>Now</title>live at once' });
+  const directory = h.bit('now', { 'preview.html': preview, 'index.html': '<title>Now</title>live at once' });
   h.control.reset();
   const refused = await h.cli('publish', directory, '--publish');
   assert.equal(refused.code, 'caption_required');
@@ -400,7 +401,7 @@ test('asked to publish now, a connected upload goes live with the confirmed capt
 test('a draft the maker approved goes live when publish is asked for the same content', async t => {
   const h = await harness(t);
   await h.connectAs('maker');
-  const directory = h.bit('approved', { 'index.html': '<title>Approved</title>looked at first' });
+  const directory = h.bit('approved', { 'preview.html': preview, 'index.html': '<title>Approved</title>looked at first' });
   const draft = await h.cli('publish', directory, '--caption', 'Mine');
   assert.equal(draft.draft, true);
   h.control.reset();

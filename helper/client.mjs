@@ -4,7 +4,7 @@ import { createServer } from 'node:http';
 import { randomUUID, randomBytes } from 'node:crypto';
 import { validateArtifact, mimeTypes, safePath, reserved, reservedPrefixes, limits } from './artifact.mjs';
 import { problem } from './diagnostics.mjs';
-import { contentDirectory, caption as checkCaption, bindingName, readBinding, assetReport } from './project.mjs';
+import { contentDirectory, caption as checkCaption, bindingName, readBinding, assetReport, requirePreview } from './project.mjs';
 import { previewPage, sdkStandIn } from './preview.mjs';
 
 import { atomic, configuration, activeConfiguration, request } from './connection.mjs';
@@ -45,7 +45,7 @@ export function pack(directory) {
   return { root, files, artifactId: validated.artifactId, bytes: validated.bytes };
 }
 export function check(directory) {
-  const artifact = pack(directory);
+  const artifact = requirePreview(pack(directory));
   const participation = artifact.files.some(file => file.path === 'rules.html') ? {
     state: 'unverified', rules: 'rules.html',
     nextStep: 'Read publish-content/references/participation.md and run its disposable runtime rehearsal with the actual UI payloads, an anonymous viewer and two participants. Static validation and a publication receipt do not verify permissions or live updates.',
@@ -104,7 +104,7 @@ export async function publish(directory, caption, { newBit = false, parentBitId,
   // A new bit or a diff starts with no words: a child never copies its parent's.
   const words = caption !== undefined ? checkCaption(caption) : newBit || parentBitId ? '' : readBinding(directory)?.caption || '';
   if (now && !words) throw problem('caption_required', 'Publishing now needs the caption the maker confirmed.', 'Ask the maker to confirm a caption and pass it with --caption, or upload a draft they publish in Differ.');
-  const config = await activeConfiguration(); const artifact = pack(directory); const unlock = lock(directory);
+  const config = await activeConfiguration(); const artifact = requirePreview(pack(directory)); const unlock = lock(directory);
   try { return await publishCreator(config, stateFor(directory, config), directory, artifact, words, { newBit, parentBitId, parentVersionId, now }); }
   finally { unlock(); }
 }
