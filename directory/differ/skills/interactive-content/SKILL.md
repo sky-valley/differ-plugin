@@ -56,9 +56,9 @@ Infer from the brief; ask only about consequential gaps.
   Keep authoring controls and implementation details off the consuming surface
   unless needed there; respect Differ's existing navigation and sharing.
 - On Differ the open bit fills the phone, so make it responsive and check it
-  at 390×693 CSS px. Its root `preview.html`, when it has one, is the 390×520
-  interactive preview the feed shows, the piece's first impression: give it
-  the hook, and let a tap open the bit. Read the publishing skill's section on
+  at 390×693 CSS px. Its root `preview.html`, which every bit needs, is the
+  390×520 interactive preview Differ shows outside the open bit, the piece's
+  first impression: give it the hook, and let a tap open the bit. Read the publishing skill's section on
   the feed and the open bit for its rules and Differ's SDK before building it.
 
 ## Look

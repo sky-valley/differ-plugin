@@ -19,14 +19,18 @@ test('app-name resolution, media report, preview and portable binding checks nev
     writeFileSync(join(content, 'assets/photo.png'), Buffer.alloc(600 * 1024));
     writeFileSync(join(content, 'assets/nested/style.css'), 'body{color:black}');
     writeFileSync(join(content, 'assets/unused.svg'), '<svg/>');
-    const first = cli('check', root); assert.equal(first.status, 0); assert.equal(first.data.files, 4);
+    const unpreviewed = cli('check', root);
+    assert.notEqual(unpreviewed.status, 0);
+    assert.equal(unpreviewed.data.code, 'missing_preview', 'every bit needs a root preview.html');
+    writeFileSync(join(content, 'preview.html'), '<p>Tap to open</p>');
+    const first = cli('check', root); assert.equal(first.status, 0); assert.equal(first.data.files, 5);
     assert.equal(first.data.largestAssets[0].bytes, 600 * 1024);
-    assert.equal(first.data.warnings[0].code, 'large_image');
     assert.deepEqual(first.data.unreferencedCandidates, ['assets/unused.svg']);
-    assert.deepEqual(first.data.warnings.map(w => w.code), ['large_image', 'missing_preview'], 'a missing preview.html warns without failing');
+    assert.deepEqual(first.data.warnings.map(w => w.code), ['large_image']);
+    assert.ok(!first.data.unreferencedCandidates.includes('preview.html'), 'preview.html is an entrypoint, not a stray asset');
     const binding = { version: 1, publisher: 'https://publish.example', bitId: '11111111-1111-4111-8111-111111111111', versionId: '22222222-2222-4222-8222-222222222222', caption: 'Saved words' };
     writeFileSync(join(content, 'differ-bit.json'), JSON.stringify(binding));
-    const second = cli('check', root); assert.equal(second.data.artifactId, first.data.artifactId); assert.equal(second.data.files, 4);
+    const second = cli('check', root); assert.equal(second.data.artifactId, first.data.artifactId); assert.equal(second.data.files, 5);
     assert.equal(readFileSync(join(content, 'index.html'), 'utf8'), html);
     writeFileSync(join(content, 'differ-bit.json'), JSON.stringify({ ...binding, token: 'must-not-be-accepted' }));
     assert.equal(cli('check', root).data.code, 'invalid_binding');
@@ -39,11 +43,6 @@ test('app-name resolution, media report, preview and portable binding checks nev
     assert.notEqual(stale.status, 0);
     assert.equal(stale.data.code, 'stale_binding', 'an older binding is refused, never uploaded as a file');
     rmSync(join(content, 'differ-post.json'));
-    writeFileSync(join(content, 'preview.html'), '<p>Tap to open</p>');
-    const previewed = cli('check', root);
-    assert.equal(previewed.data.files, 5);
-    assert.deepEqual(previewed.data.warnings.map(w => w.code), ['large_image']);
-    assert.ok(!previewed.data.unreferencedCandidates.includes('preview.html'), 'preview.html is an entrypoint, not a stray asset');
     for (const reserved of ['__differ', '__dfr', '-', 'v', 'uploads']) {
       mkdirSync(join(content, reserved));
       writeFileSync(join(content, reserved, 'sdk.js'), '');

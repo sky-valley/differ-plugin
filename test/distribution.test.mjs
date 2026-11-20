@@ -68,7 +68,7 @@ test('release ZIPs are reproducible, contain only runtime files and work after e
       if (variant === 'local') {
         const bit = join(temporary, 'vote');
         mkdirSync(join(bit, 'data'), { recursive: true });
-        writeFileSync(join(bit, 'index.html'), '<h1>Vote</h1>');
+        writeFileSync(join(bit, 'index.html'), '<h1>Vote</h1>'); writeFileSync(join(bit, 'preview.html'), '<p>Vote</p>');
         writeFileSync(join(bit, 'rules.html'), '<p>Rules</p>');
         writeFileSync(join(bit, 'data/votes.html'), '<ul id="votes"></ul>');
         const output = execFileSync(process.execPath, [join(plugin, 'scripts/differ.cjs'), 'check', bit], { encoding: 'utf8', cwd: temporary });

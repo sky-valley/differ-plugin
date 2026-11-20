@@ -30,15 +30,14 @@ other name. Keep the bit's own `<title>` and headings whatever the piece needs.
 
 ## The feed and the open bit
 
-A bundle has a root `index.html`, the open bit, and may have a root
-`preview.html`, what the feed shows of it.
+A bundle has a root `index.html`, the open bit, and a root `preview.html`,
+what Differ shows of it everywhere outside the open bit: the feed, search,
+profiles. Differ refuses a bit without one.
 
 - The open bit fills the phone. Its size varies by device, so it must be
   responsive; check it at 390×693 CSS px.
 - `preview.html` is a 390×520 CSS px interactive preview, laid out at exactly
-  that size. Without it the feed shows `index.html` laid out at 390×693 and
-  scaled into that box. It may use any file in the bundle and is checked like
-  any page. A tap on it should show the piece's promise and lead into the
+  that size. It may use any file in the bundle and is checked like any page. A tap on it should show the piece's promise and lead into the
   open bit.
 - In the preview, people only tap, hold and drag sideways: vertical swipes
   belong to the feed. Use pointer events only, never touch events. No native
