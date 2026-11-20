@@ -7,7 +7,7 @@ To install it, read [setup](references/setup.md).
 1. `publisher_status` / `doctor` reports guest or connected creator mode.
 2. `check_content` / `check APP` selects `content/` or root `index.html` and
    validates static files, explicitly reporting participation as unverified.
-   It fails on Differ's reserved folders and warns when `preview.html` is
+   It fails on Differ's reserved folders and when `preview.html` is
    missing. Read `references/participation.md` and use its complete example
    and real runtime checks for shared state. Resolve the named app, not the
    repository. Keep source notes, recordings and credentials outside the

@@ -1,11 +1,13 @@
 # Changelog
 
-## Unreleased
+## 0.9.3
 
 - Every bit needs a root `preview.html`, the 390×520 interactive preview
   Differ shows of it everywhere outside the open bit. `check` and `publish`
   now fail without one (`missing_preview`) instead of warning, as Differ
   refuses such a bit. A place needs none.
+- Skills synced from Control: every bit has a preview, and the helper fails
+  without one.
 
 ## 0.9.2
 

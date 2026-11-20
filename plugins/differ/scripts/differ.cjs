@@ -39769,7 +39769,7 @@ var import_node_child_process3 = require("node:child_process");
 // package.json
 var package_default = {
   name: "differ-plugin",
-  version: "0.9.2",
+  version: "0.9.3",
   private: true,
   type: "module",
   engines: {
