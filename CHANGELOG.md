@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.9.4
+
+- Skills synced from Control: a bit stays smooth and cool on a mid-range
+  phone, with its pixel ratio capped at 1.5 (was 2) and nothing redrawn while
+  the screen is still.
+
 ## 0.9.3
 
 - Every bit needs a root `preview.html`, the 390×520 interactive preview
