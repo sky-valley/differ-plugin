@@ -79,8 +79,9 @@ Infer from the brief; ask only about consequential gaps.
   standing in for a character, object or place, and no default system styling.
 - Make the interface part of the world: few controls in thumb reach, made of
   the world's own materials and type.
-- Keep it smooth on a mid-range phone: steady frame rate, pixel ratio capped
-  at 2, textures sized to their display, a first screen that appears at once.
+- Keep it smooth and cool on a mid-range phone: steady frame rate, pixel ratio
+  capped at 1.5, textures sized to their display, nothing redrawn while the
+  screen is still, and a first screen that appears at once.
 
 ## Implement
 
