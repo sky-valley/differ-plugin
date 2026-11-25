@@ -1,7 +1,7 @@
 # Our patch of sky
 
-If your copy of the skill has no code files, get them first, as "Get the
-example code" in [participation](references/participation.md) describes.
+If your copy of the skill has no code files, read them where "The example
+code" in [participation](references/participation.md) describes.
 
 Publish `examples/collection/content/`: a complete photo collection using
 `index.html`, `app.mjs`, `rules.html` and `data/skies.html`. Guests can watch live;

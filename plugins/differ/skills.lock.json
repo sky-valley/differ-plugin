@@ -12,23 +12,23 @@
     },
     {
       "uri": "skill://publish-content/SKILL.md",
-      "digest": "sha256:3b359d4572006d5f15ffaa787a1e02f6c0182dad065742bc910e17e53fea09e6",
-      "size": 9902
+      "digest": "sha256:bb3cf18127e094c5ee18dd4bf20ae5275c5307949fcb3120475e26cbd94a73d9",
+      "size": 10026
     },
     {
       "uri": "skill://publish-content/examples/board/README.md",
-      "digest": "sha256:cd1de4ca9fa0a1273b3245d0adab76082740c857d690b62a98eb94c710ea9cd0",
-      "size": 1466
+      "digest": "sha256:f1219a49cfcd863de24cc83c828e9992c8c0e7954eb5f06ad63ef81405b36813",
+      "size": 1459
     },
     {
       "uri": "skill://publish-content/examples/collection/README.md",
-      "digest": "sha256:58ab0e89418e7ed605a0c449ed59a1ca84801957158f4d19aa325833c90fd316",
-      "size": 1567
+      "digest": "sha256:5c3f2e53bddcb8f83b3b4023bd32d0cfaac695d007f50d96285f835e59f2dbd7",
+      "size": 1560
     },
     {
       "uri": "skill://publish-content/examples/vote/README.md",
-      "digest": "sha256:e839180a965e1ef18f28865e75db4a1f3c8c310927dc6431b719f907442f9af3",
-      "size": 2732
+      "digest": "sha256:585c22eb5d36717054bc234743d0e8cd71d254823b64526fe28ca03112b69cb1",
+      "size": 2725
     },
     {
       "uri": "skill://publish-content/references/connector.md",
@@ -42,8 +42,8 @@
     },
     {
       "uri": "skill://publish-content/references/participation.md",
-      "digest": "sha256:14f9f673d6bcb1c4d6e256b601190bd277e239df324947455082363ded000db2",
-      "size": 18212
+      "digest": "sha256:b1e11cd4fc08b2fc56ae8dcd38c96ba9eb36fe8d98ad5249a3f9be112298e24b",
+      "size": 17241
     },
     {
       "uri": "skill://publish-content/references/place.md",
@@ -52,8 +52,8 @@
     },
     {
       "uri": "skill://publish-content/references/setup.md",
-      "digest": "sha256:179c39f8ef299d0add5ee2814ae65b36a049739fb24af9ea92a07ed9d6006c37",
-      "size": 2203
+      "digest": "sha256:9ef176b8ba8f1e4c52f8903af7799c432f003eb086086c3f6dea2a5341cdcad0",
+      "size": 1926
     }
   ]
 }

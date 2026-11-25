@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.9.7
+
+- Skills synced from Control: plugin copies read the participation examples'
+  code through the connector's resources or Differ's public JSON instead of
+  running a command that downloads it, and the helper's install steps point at
+  this repository's README.
+
 ## 0.9.6
 
 - The local helper's bundled hono dependency is updated to a patched version.

@@ -133,7 +133,7 @@ Each path's reference says how to connect an account.
    change its meaning only in a diff.
 6. Check the actual frames: the preview at 390×520 and the open bit at
    390×693, as the helper's preview shows them; in your own Playwright checks
-   `scripts/browser.mjs` (see "Get the example code" in
+   `scripts/browser.mjs` (see "The example code" in
    references/participation.md) opens them with `previewer` and `viewer`. The
    Differ's controls sit
    outside the content. Separate committed publication, HTTP verification, and
@@ -142,8 +142,10 @@ Each path's reference says how to connect an account.
 Never leave the human at a dead end. Every Differ refusal says what to do
 next: do it, or tell the human plainly what it needs from them. A bit too
 large to send has three ways out: make it lighter, give the human a .zip with
-`index.html` at its root for Differ's Create page, or, on a computer, install
-the Differ plugin, whose helper publishes from disk.
+`index.html` at its root for Differ's Create page
+(https://app.getdiffer.com/create), or, on a computer, install the Differ
+plugin for Claude Code or Codex, whose helper publishes from disk: the README
+at https://github.com/sky-valley/differ-plugin says how.
 
 Follow connection errors' recovery. Restricted networking needs normal network
 permission, not new credentials: see [when Differ can't be reached](#when-differ-cant-be-reached). Do not routinely patch the publisher, edit DNS,
