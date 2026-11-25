@@ -22,6 +22,13 @@ implement opportunities inherent in the premise, not unrelated mechanics.
 Participation is optional for visitors, not optional to consider.
 Infer from the brief; ask only about consequential gaps.
 
+When the human is exploring or asks what they could make, offer a few
+distinct directions, not variations of one: for example a passive piece, a
+personal result, something everyone adds to, and something the creator runs
+(a reveal, rounds, a winner). Make each concrete in a line or two: what
+people do and what they get. The participation reference's "What shared state
+can do" lists what Differ can hold and enforce; promise nothing outside it.
+
 ## Author
 
 - Start with a finished, specific piece: this dog, this handshake, someone's
@@ -95,7 +102,10 @@ publishing authority.
 On Differ, a root `rules.html` selects the document runtime. Authored HTML can
 compose live documents under `/data/`; `/uploads/` holds participant images.
 Read the publishing skill's participation reference before building shared
-state, including its complete examples and runtime checks. Decide what each
+state, including what shared state can do, the creator's controls, rules
+the server enforces, and its complete examples and runtime checks. Enforce
+the brief's limits (one each, short entries, creator-only actions) on the
+server, not only in the page. Decide what each
 person may do from the premise; do not treat every board as private contributions
 or every interactive bit as shared state. Visitors can explore without signing in; ask them to join only when
 they choose to save a contribution. Keep paid/server model actions out of bits.
@@ -122,5 +132,13 @@ serve the experience.
 When testing diff behaviour, distinguish consumption, participation, diffing,
 and subsequent sharing. Forced steps do not demonstrate desire. Inherited
 exposure is a distribution condition to verify, not assume; accept null results.
+
+When you hand over, offer two to four concrete next steps for this bit, a
+line each, chosen for this human from what Differ can do: for example a
+creator control (reveal, close, pick a winner, remove junk), a new round
+that keeps the last one readable, their own photo of the real thing, a
+server-rendered count or reveal, or a limit they may want. Say plainly what
+they asked for that Differ can't do, and the nearest thing it can. Describe
+limits and protections only as you built and checked them.
 
 For requested social videos, read [recording](references/recording.md).

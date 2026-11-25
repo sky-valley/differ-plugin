@@ -59,6 +59,9 @@ never reference `/__differ/sdk.js`. Read the creator's data only through it:
   and a tap on it asks to open the bit.
 - `differ.showBit(id)` asks Differ to open one of the creator's bits. Show
   their bits however suits the place, or not at all.
+- `differ.showList("followers")`, `differ.showList("following")` and
+  `differ.showList("bits")` ask Differ to open that list, as the profile does.
+  Make every count the place shows a button that calls it.
 - `differ.on("hide", …)` and `differ.on("show", …)`: pause everything, sound
   included, while the place is hidden. Sound may start as soon as the place
   opens.

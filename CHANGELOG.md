@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.9.5
+
+- Skills synced from Control: shared state in a bit now covers what it can
+  do, controls only the bit's creator can use, limits the server enforces
+  (one entry each, length, a close switch), pages rendered from live data, a
+  hidden answer revealed later, and how to change live data after
+  publishing (spam, a fresh round, closing). Agents offer creators distinct
+  directions and a few concrete next steps.
+- Skills synced from Control: a place can open its follower, following and
+  bit lists.
+
 ## 0.9.4
 
 - Skills synced from Control: a bit stays smooth and cool on a mid-range
