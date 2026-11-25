@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.9.6
+
+- The local helper's bundled hono dependency is updated to a patched version.
+
 ## 0.9.5
 
 - Skills synced from Control: shared state in a bit now covers what it can
