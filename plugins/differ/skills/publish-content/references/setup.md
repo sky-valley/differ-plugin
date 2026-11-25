@@ -2,13 +2,9 @@
 
 ## The Differ helper
 
-The helper ships in the local `differ` plugin from the public repository
-https://github.com/sky-valley/differ-plugin. In Claude Code, add the marketplace
-with `/plugin marketplace add sky-valley/differ-plugin`, then install
-`differ@differ`. In Codex, run `codex plugin marketplace add
-sky-valley/differ-plugin`, then install Differ from the host's plugin browser.
-Claude Code can also load a checkout with
-`--plugin-dir /absolute/path/to/differ-plugin/plugins/differ`.
+The helper ships in the local `differ` plugin for Claude Code and Codex. The
+README of its public repository, https://github.com/sky-valley/differ-plugin,
+says how to install it in each host.
 Start a fresh task after updates.
 Node 24+ is the only local dependency; the bridge is bundled, and missing MCP
 tools do not block running its script directly. `doctor` is ready as a guest

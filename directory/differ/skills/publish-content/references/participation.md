@@ -220,10 +220,7 @@ checks that come up often:
   over the first:
   `(${li} from "/data/finds.html").filter(l => l.attr("id") == line.attr("id")).count() > 0`.
 - One entry each: a quota of 1 as above. For a changeable choice, let the
-  page count each person's latest entry, as the vote example does. Today a
-  burst of simultaneous requests from one person can slip a few past a
-  quota, so the page should still count each person's entries as the brief
-  means them.
+  page count each person's latest entry, as the vote example does.
 
 Add a ShapeConstraint, as in the vote example, to permit only the element
 shapes the bit uses. Show the message from a refused write's error document
@@ -268,38 +265,27 @@ You can read a publicly readable document at
 
 ## pagelike's own documentation
 
-The runtime is pagelike (`https://github.com/sky-valley/pagelike`), a
-PageLove-compatible server. Its docs, starting at
+The runtime is pagelike, a PageLove-compatible server. Its docs, starting at
 `https://sky-valley.github.io/pagelike/llms.txt`, specify Sessel, composition,
 Liquid and schemas in depth under `https://sky-valley.github.io/pagelike/spec/`
 (`sessel/`, `composing/`, `liquid/`, `modeling/`). On Differ, this reference
 wins where they differ: there is no WebDAV, sign-in route, local account or
 authoring key; data is inert; only Differ's identity and the actors above
-exist; and uploads follow the limits here. Check anything else from there
-with the rehearsal before relying on it.
+exist; and uploads follow the limits here. Rely on anything else from there
+only once a rehearsal shows it works.
 
 ## Complete example and rehearsal
 
-### Get the example code
+### The example code
 
 The examples' code and the rehearsal scripts (`scripts/` and every `.mjs`,
-`.js` and `.html` file under `examples/`) may not be in your copy of this
-skill: plugin directories accept instructions only. Over MCP, Differ serves
-them as `skill://publish-content/...` resources. Differ also publishes them,
-from the same source and with each file's SHA-256, at
-`https://app.getdiffer.com/agent/participation-examples.json`. To run the
-examples and checks, write them into a checking workspace outside the bit's
-content directory with this one command (replace `<workspace>`):
-
-```sh
-node -e 'const fs=require("fs"),p=require("path"),h=require("crypto");fetch("https://app.getdiffer.com/agent/participation-examples.json").then(r=>r.json()).then(j=>{for(const[f,{sha256,text}]of Object.entries(j.files)){if(h.createHash("sha256").update(text).digest("hex")!==sha256)throw Error("digest mismatch: "+f);const t=p.join(process.argv[1],f);fs.mkdirSync(p.dirname(t),{recursive:true});fs.writeFileSync(t,text)}console.log(Object.keys(j.files).length+" files")})' <workspace>
-```
-
-Paths below that name a `.mjs`, `.js` or `.html` file mean the copies in
-`<workspace>`, or in the skill directory when your copy has them. If the
-download is refused before Differ answers, follow
-[when Differ can't be reached](SKILL.md#when-differ-cant-be-reached) for
-`app.getdiffer.com`.
+`.js` and `.html` file under `examples/`) are part of this skill when Differ
+serves it over MCP, as `skill://publish-content/...` resources. Plugin copies
+of this skill carry its instructions only, since plugin directories accept
+nothing else. There, read the code through the Differ connector's resources, or
+in `https://app.getdiffer.com/agent/participation-examples.json`, which holds
+the same files' text with each one's SHA-256. Paths below that name a `.mjs`,
+`.js` or `.html` file mean those files.
 
 Read [the changeable-vote example](examples/vote/README.md). It includes every
 publishable file and executable checks, not just a grant fragment. Its trigger
@@ -310,19 +296,21 @@ or [the deliberately shared wall](examples/board/README.md). These are examples,
 not mandatory categories or interchangeable permission templates.
 
 The skill also serves `scripts/runtime.mjs`, a dependency-free Node rehearsal
-fixture. Set `PAGELIKE_BINARY` to a built pagelike executable, then run
-`node <workspace>/examples/vote/check.mjs`. It starts a fresh loopback runtime
+fixture. Where your copy of the skill has it, set `PAGELIKE_BINARY` to a built
+pagelike executable, then run `node examples/vote/check.mjs` from the skill
+directory. It starts a fresh loopback runtime
 with separate anonymous, Alice, Bob and creator identities and removes its data
 afterward. Its browser transport serves the Differ SDK at `/__differ/sdk.js` and
 puts it first in every page, as the content Worker does, so the global `differ`
 is there. Adapt the example's checks to your bit's real payloads and promises;
 a passing vote check does not certify an unrelated bit. Run browser checks too.
 The collection and board each provide `check.mjs` with actual browser interactions;
-install Playwright in the checking workspace, or set `PLAYWRIGHT_MODULE` to its
+install Playwright, or set `PLAYWRIGHT_MODULE` to its
 absolute `index.mjs`, and run the chosen example's check with `PAGELIKE_BINARY`.
-Hosts without a filesystem can read every file through MCP resources or in that JSON. If they
-cannot run the runtime, report participation as unverified and provide the
-bundle and checks for a capable host; do not claim a static preview proved it.
+A copy without the scripts, or a host without a filesystem, cannot rehearse:
+build from the examples you read, report participation as unverified, and
+provide the bundle and its checks for a capable host; do not claim a static
+preview proved it.
 If `PAGELIKE_BINARY` or browser tooling is unavailable, stop that verification
 step and report the missing dependency. Do not search unrelated projects or
 substitute a mock runtime as authorization evidence.
