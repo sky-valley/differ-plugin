@@ -106,6 +106,178 @@ fail with an actionable error. Logging out revokes the runtime sessions created
 by that browser login. Browser copies may survive bit removal, but the platform
 stops delivering the removed bit and accepting its writes.
 
+## What shared state can do
+
+Use this to choose a design and to show the human what they could ask for.
+Offer the options that serve their idea, not the whole list.
+
+- **Kinds of shared state**: a collection people add to (answers, photos,
+  places), one choice per person (votes, picks, guesses), a shared surface
+  anyone may rewrite (a board, a story), and state only the creator changes
+  (an answer, a round, a winner).
+- **Server-enforced rules**: who may write what, one entry or N entries per
+  person, length or value limits, a creator-controlled open/closed switch.
+- **The creator's controls** inside the bit: reveal an answer, close or reopen
+  a round, pin a winner, clear a document. Nobody else can use them.
+- **Pages rendered from live data**: counts, tallies or a reveal computed on
+  the server, and views only the creator sees.
+- **Photos** people upload, and live updates for everyone watching.
+- **Lifecycle**: updates keep everything people added; a new round is a new
+  document in an update; closing participation keeps what is there; a diff
+  starts empty.
+
+It cannot send notifications or email, show participants' names or handles
+(people type a name if the bit asks), keep secrets, call paid or model APIs,
+reach other servers, or run anything on a schedule. Don't rely on
+server-side clock checks: close a round with the creator's switch or an
+update. Participation is per bit.
+
+## The creator's controls
+
+The actor `role:moderator` is the bit's creator when they open it signed in
+on Differ. Grant them what visitors lack:
+
+```html
+<div itemscope itemtype="https://pagelove.org/AuthorizationRule">
+  <meta itemprop="actor" content="role:moderator">
+  <meta itemprop="resource" content="/data/state.html">
+  <meta itemprop="method" content="PUT">
+  <meta itemprop="action" content="Allow">
+</div>
+```
+
+Seed `data/state.html`, for example `<div id="state" data-open="yes"></div>`,
+and have the creator replace it with a selector-scoped `PUT`
+(`Range: selector=#state`) to reveal an answer or close a round. A `PUT` of
+a whole document (no Range) clears it, for example to empty a board. Show the
+controls only when `await (await fetch('/-/me')).json()` has
+`moderator: true`; the rule, not the hidden button, is what protects them.
+Everyone watching gets the change live. Give the creator only what the
+brief reserves for them; what it gives participants (marking their own find
+returned, editing their own entry) stays theirs.
+
+Authored files and seeds are public, so a secret never goes in the bundle.
+The creator can type it in later instead: deny public reads of its document,
+let `role:moderator` `GET` and `PUT` it, and render it on the server only
+once revealed (see below):
+
+```html
+<p r:answer="#answer" r:shown="#state[data-revealed=yes]" p:template="text/liquid">
+  {% if shown.size > 0 or request.auth.roles contains "moderator" %}{{ answer | first }}{% else %}Revealed on Friday{% endif %}
+</p>
+```
+
+with `data/secret.html` seeded as `<p id="answer"></p>`, a rule with actor
+`*`, method `GET` and action `Deny` on it, and `data/state.html` as the
+creator's switch.
+
+## Rules the server enforces
+
+A rule in `rules.html` says who may write; a Trigger checks each write and
+can refuse it with a status and a message the bit shows. These run on the
+server, so a modified browser cannot skip them. One Trigger can check
+identity, shape, length, a per-person quota and the creator's switch:
+
+```html
+<div itemscope itemtype="https://pagelove.org/Trigger">
+  <meta itemprop="resource" content="/data/lines.html">
+  <meta itemprop="method" content="POST">
+  <div itemprop="action" itemscope itemtype="https://pagelove.org/Sessel">
+    <script itemprop="source" type="text/sessel">
+      @schema Context url("https://pagelove.org/Context");
+      @schema HTTPResponse url("https://pagelove.org/HTTPResponse");
+      let me = Context.request.auth.username;
+      let body = Document.parse("<div>" + Context.request.body + "</div>");
+      if (body.children().count() != 1 || body.${li}.count() != 1) {
+        throw new HTTPResponse { status: 422, message: "Add one line." }
+      }
+      let line = body.children().first();
+      if (line.attr("data-by") != me) {
+        throw new HTTPResponse { status: 403, message: "Write only as yourself." }
+      }
+      if (line.text().count() > 140) {
+        throw new HTTPResponse { status: 422, message: "Keep it under 140 characters." }
+      }
+      if ((${li} from "/data/lines.html").filter(l => l.attr("data-by") == me).count() >= 2) {
+        throw new HTTPResponse { status: 429, message: "Two lines each." }
+      }
+      if ((${#state[data-open="no"]} from "/data/state.html").count() > 0) {
+        throw new HTTPResponse { status: 403, message: "This round is closed." }
+      }
+    </script>
+  </div>
+</div>
+```
+
+The client sends `data-by` set to its `pagelike.participate()` identity; the
+Trigger refuses any other. Enforce on the server every limit the page
+promises, or a signed-in person can bypass it with a plain request. Some
+checks that come up often:
+
+- Text that must be real: `let text = line.text().trim();` then refuse
+  `text.isEmpty()`, and `text.contains("\n")` for one line.
+- Ids the client picks: refuse one that exists, or a second entry can take
+  over the first:
+  `(${li} from "/data/finds.html").filter(l => l.attr("id") == line.attr("id")).count() > 0`.
+- One entry each: a quota of 1 as above. For a changeable choice, let the
+  page count each person's latest entry, as the vote example does. Today a
+  burst of simultaneous requests from one person can slip a few past a
+  quota, so the page should still count each person's entries as the brief
+  means them.
+
+Add a ShapeConstraint, as in the vote example, to permit only the element
+shapes the bit uses. Show the message from a refused write's error document
+to the person.
+
+## Pages rendered from live data
+
+Authored HTML pages are composed on the server on every request. Declare
+`xmlns:p="https://pagelove.org/1.0"` and
+`xmlns:r="https://pagelove.org/Binding/CSS"` on `<html>`. `r:name="selector"`
+binds every matching element in the bit's documents; `p:template="text/liquid"`
+renders the element's content with Liquid; `<p:include selector="#x"
+resource="/data/x.html"></p:include>` splices one element in:
+
+```html
+<p r:guesses="#guesses > li" p:template="text/liquid">{{ guesses.size }} guesses so far</p>
+<p p:template="text/liquid">{% if request.auth.roles contains "moderator" %}You made this bit.{% endif %}</p>
+```
+
+Bindings read every document, even one whose public GET a rule denies, so a
+page can show a count of entries nobody can read directly, or reveal them only
+to the creator. Escape participants' text with `| escape`. Server rendering
+happens on load; for live changes, subscribe with `EventSource` and refetch.
+
+## After publishing
+
+No tool reads, edits, resets or exports a published bit's live data for you.
+You can read a publicly readable document at
+`https://<bit>.differ.page/data/<name>`. To change live data, offer the human:
+
+- **Spam or a wrong entry**: as the creator, remove it in the bit's
+  **Your participation** (`/-/manage`); anyone removes their own there.
+- **Something the creator does again and again** (reveal, close, reset, pick
+  a winner): a creator control in the bit, added by an update.
+- **A fresh round on the same bit**: an update whose code reads and writes a
+  new document, seeded as a new path such as `data/december.html`. The old
+  round stays readable, so the bit can show last round's result. Changing an
+  existing seed does nothing: a seed applies once per path.
+- **Stop new entries**: an update without the write grant, or the creator's
+  switch. Existing entries stay.
+- **A different activity, or empty data under a new link**: a diff.
+
+## pagelike's own documentation
+
+The runtime is pagelike (`https://github.com/sky-valley/pagelike`), a
+PageLove-compatible server. Its docs, starting at
+`https://sky-valley.github.io/pagelike/llms.txt`, specify Sessel, composition,
+Liquid and schemas in depth under `https://sky-valley.github.io/pagelike/spec/`
+(`sessel/`, `composing/`, `liquid/`, `modeling/`). On Differ, this reference
+wins where they differ: there is no WebDAV, sign-in route, local account or
+authoring key; data is inert; only Differ's identity and the actors above
+exist; and uploads follow the limits here. Check anything else from there
+with the rehearsal before relying on it.
+
 ## Complete example and rehearsal
 
 ### Get the example code

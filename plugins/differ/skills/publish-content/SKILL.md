@@ -11,7 +11,9 @@ version, and a published version never changes. Each bit has its own origin on
 differ.page and normal browser storage and capabilities, subject to the
 browser's permission prompts. Private audiences and arbitrary Node servers are
 unsupported. For shared durable state, use the document runtime described in
-[participation](references/participation.md).
+[participation](references/participation.md): what it can do, the creator's
+controls, rules the server enforces, and how to change live data after
+publishing.
 A bit is at most 256 files and 20 MiB. Files under `data/` need a root
 `rules.html`, since only live participation serves them; a bundle with them and
 no `rules.html` is refused with the code data_without_rules, so put static
